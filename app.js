@@ -16,7 +16,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 41;
+const VERSIONE_SITO = 42;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -1475,6 +1475,18 @@ function chiudiPopupConserve() {
   document.body.style.overflow = "";
 }
 
+// informativa privacy: si apre dalla crocetta del passo 4 e dal fondo della pagina
+function apriPrivacy() {
+  $("#popupPrivacy").hidden = false;
+  $("#popupPrivacy .privacy-testo").scrollTop = 0;
+  document.body.style.overflow = "hidden";
+}
+
+function chiudiPrivacy() {
+  $("#popupPrivacy").hidden = true;
+  document.body.style.overflow = $("#popupConserve").hidden ? "" : "hidden";
+}
+
 function confirmOrder() {
   // "come mi hai conosciuto" e' facoltativa: se non risponde, va bene lo stesso
   const origine = $('input[name="discovery"]:checked')?.value || "";
@@ -1538,8 +1550,11 @@ function confirmOrder() {
 
   $$(".order-step").forEach(el => el.classList.remove("active"));
   $("#orderSuccess").classList.add("active");
-  $("#successCopy").innerHTML = `Grazie <strong>${escapeHtml(order.name.split(" ")[0])}</strong>. L'ordine <strong>#${orderId}</strong> è confermato: arriverà ${formatDate(state.orderData.date).toLowerCase()} tra le <strong>${escapeHtml(state.selectedTime)}</strong>. Si apre WhatsApp solo per mandarmi il riepilogo: non devi attendere risposta. <br><a class="whatsapp-inline" href="${whatsappUrl}" target="_blank" rel="noopener">INVIA RIEPILOGO WHATSAPP</a>`;
-  showToast("Ordine confermato!");
+  // l'ordine mi arriva solo se il cliente preme INVIA su WhatsApp: prima il sito diceva "confermato"
+  // e chi chiudeva WhatsApp senza inviare credeva di aver ordinato
+  $("#successCopy").innerHTML = `Grazie <strong>${escapeHtml(order.name.split(" ")[0])}</strong>! Si è aperto WhatsApp con il riepilogo dell'ordine <strong>#${orderId}</strong>: <strong class="success-invia">premi INVIA, altrimenti l'ordine non mi arriva.</strong> Appena è inviato la consegna è prenotata per ${formatDate(state.orderData.date).toLowerCase()} tra le <strong>${escapeHtml(state.selectedTime)}</strong>, e non serve aspettare una mia risposta. Se WhatsApp non si è aperto, tocca il pulsante qui sotto.`;
+  $("#successWhatsapp").href = whatsappUrl;
+  showToast("Ultimo passo: premi INVIA su WhatsApp.", 5000);
   svuotaCarrello();
 }
 
@@ -2393,6 +2408,18 @@ function setupEvents() {
     state.conserveProposte = true;   // ha detto no: non lo richiedo per questo ordine
     chiudiPopupConserve();
     confirmOrder();
+  });
+  // informativa privacy: il link sta dentro l'etichetta della crocetta e non deve spuntarla
+  document.addEventListener("click", event => {
+    if (event.target.closest("[data-apri-privacy]")) {
+      event.preventDefault();
+      apriPrivacy();
+    } else if (event.target.closest("[data-chiudi-privacy]") || event.target.id === "popupPrivacy") {
+      chiudiPrivacy();
+    }
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !$("#popupPrivacy").hidden) chiudiPrivacy();
   });
   $("#popupConserve").addEventListener("click", event => {
     if (event.target === event.currentTarget && !popupAppenaAperto()) chiudiPopupConserve();   // tocco fuori: torno al riepilogo

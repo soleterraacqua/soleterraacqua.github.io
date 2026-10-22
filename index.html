@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=41">
+  <link rel="stylesheet" href="styles.css?v=42">
 </head>
 <body>
   <div class="app-shell">
@@ -542,7 +542,7 @@
                 <span>04</span>
                 <div>
                   <h2>MANCA POCO</h2>
-                  <p>Controlla i dettagli: appena premi OK l'ordine risulta confermato. WhatsApp serve solo per inviare il riepilogo all'azienda.</p>
+                  <p>Controlla i dettagli e premi CONFERMA ORDINE: si apre WhatsApp con il riepilogo già scritto. <strong>L'ordine mi arriva solo quando premi INVIA.</strong></p>
                 </div>
               </div>
               <div class="checkout-card" id="checkoutCard"></div>
@@ -566,7 +566,7 @@
 
               <label class="privacy-check">
                 <input type="checkbox" id="privacyCheck">
-                <span>Accetto l'informativa privacy e autorizzo il trattamento dei dati per la gestione dell'ordine.</span>
+                <span>Ho letto l'<button type="button" class="link-privacy" data-apri-privacy>informativa privacy</button> e accetto che i miei dati siano usati per preparare e consegnare l'ordine.</span>
               </label>
 
               <div class="payoff">Sostieni il sostenibile</div>
@@ -577,12 +577,13 @@
             </section>
 
             <section class="order-success" id="orderSuccess">
-              <div class="success-mark">✓</div>
-              <p class="eyebrow">ORDINE CONFERMATO</p>
-              <h2>LA TUA CASSETTA<br>HA MESSO <em>RADICI.</em></h2>
+              <div class="success-mark success-whatsapp" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 4.5A11.4 11.4 0 0 0 6.1 21.6L4.6 27.4l6-1.5A11.4 11.4 0 1 0 16 4.5Z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><path d="M12.3 10.6c.3-.6.6-.6.9-.6h.7c.3 0 .5.1.7.5l1 2.4c.1.3.1.5-.1.8l-.6.8c-.2.2-.2.4 0 .7.8 1.4 1.8 2.4 3.2 3.2.3.2.5.2.7 0l.8-.8c.3-.3.5-.3.8-.2l2.4 1.1c.3.2.5.3.5.6 0 1.1-.8 2.2-1.9 2.5-1.3.4-3.1.1-5.5-1.6-2.4-1.7-4.1-4.2-4.5-5.7-.4-1.4.1-2.8.9-3.7Z" fill="#fff"/></svg></div>
+              <p class="eyebrow">ULTIMO PASSO</p>
+              <h2>PREMI INVIA<br>SU <em>WHATSAPP.</em></h2>
               <p id="successCopy"></p>
               <div class="success-actions">
-                <button class="primary-button" data-view-link="home">TORNA ALLA HOME</button>
+                <a class="primary-button whatsapp-invia" id="successWhatsapp" href="#" target="_blank" rel="noopener">APRI WHATSAPP E INVIA <span>→</span></a>
+                <button class="back-button" data-view-link="home">TORNA ALLA HOME</button>
               </div>
             </section>
           </div>
@@ -853,9 +854,43 @@
         <a href="#home" data-view-link="home">HOME</a>
         <a href="#componi" data-view-link="builder">CASSETTA</a>
         <a href="#contatti" data-home-anchor="contatti">CONTATTI</a>
+        <a href="#privacy" data-apri-privacy>PRIVACY</a>
       </nav>
-      <small>SOLE TERRA ACQUA · ORDINI ONLINE · <span id="versioneSito"></span></small>
+      <small class="footer-legale">SOLE TERRA ACQUA DI ALESSIO FALLI<br>P.IVA 02456550561 · VITERBO<br><span id="versioneSito"></span></small>
     </footer>
+  </div>
+
+  <div class="popup-conserve" id="popupPrivacy" hidden>
+    <div class="popup-conserve-card privacy-card" role="dialog" aria-modal="true" aria-labelledby="privacyTitolo">
+      <button type="button" class="privacy-chiudi" data-chiudi-privacy aria-label="Chiudi l'informativa">×</button>
+      <p class="popup-conserve-aspetta">PRIVACY</p>
+      <h2 id="privacyTitolo">INFORMATIVA <em>PRIVACY</em></h2>
+      <div class="privacy-testo">
+        <p>Ti spiego in modo semplice come uso i dati che inserisci quando ordini sul sito.</p>
+        <h3>CHI TRATTA I TUOI DATI</h3>
+        <p>Alessio Falli, impresa agricola Sole Terra Acqua, Viterbo · P.IVA 02456550561. Per qualsiasi domanda sui tuoi dati scrivimi su WhatsApp al +39 320 273 2892 o all'email agricolasoleacquaterra@gmail.com.</p>
+        <h3>QUALI DATI</h3>
+        <p>Nome e cognome, numero di telefono, indirizzo e zona di consegna, giorno e fascia oraria, cosa hai ordinato, le eventuali note e, solo se rispondi, come mi hai conosciuto.</p>
+        <h3>PERCHÉ LI USO</h3>
+        <p>Solo per preparare e consegnare il tuo ordine, contattarti se serve qualcosa sulla consegna e tenere il conto delle cassette per il regalo alla decima. Per questo non serve un consenso: i dati servono a eseguire l'ordine che mi chiedi (art. 6.1.b del Regolamento UE 2016/679). La risposta a "come mi hai conosciuto" è facoltativa e mi serve solo a capire dove far conoscere il mio lavoro.</p>
+        <p>Non uso i tuoi dati per pubblicità, non li vendo e non li cedo a nessuno.</p>
+        <h3>COME MI ARRIVANO</h3>
+        <p>Il sito non ha un archivio online: quando confermi, i dati mi arrivano solo nel messaggio WhatsApp che mi invii tu. Io registro l'ordine nella mia area riservata, che conserva i dati solo sul mio telefono.</p>
+        <p>Una copia del carrello e degli ordini che fai resta nella memoria del browser del tuo dispositivo: puoi cancellarla quando vuoi cancellando i dati del sito dal browser.</p>
+        <h3>CHI ALTRO LI VEDE</h3>
+        <p>WhatsApp (WhatsApp Ireland Ltd., gruppo Meta), che trasporta il messaggio con l'ordine secondo la propria informativa privacy. GitHub Pages (GitHub Inc.), che ospita il sito e per motivi tecnici e di sicurezza può registrare l'indirizzo IP di chi lo visita. Questi servizi possono trattare dati anche fuori dall'Unione europea, con le garanzie previste dalla legge.</p>
+        <h3>PER QUANTO TEMPO</h3>
+        <p>Tengo i dati degli ordini per il tempo necessario a consegnarli e a gestire il regalo della decima cassetta; se non ordini più, li cancello entro 24 mesi dall'ultimo ordine. I dati che la legge mi obbliga a conservare per motivi fiscali restano per il tempo previsto dalla legge.</p>
+        <h3>COOKIE</h3>
+        <p>Il sito non usa cookie di profilazione né strumenti di statistica. Usa solo la memoria del browser per ricordare il carrello: è uno strumento tecnico e non richiede consenso.</p>
+        <h3>I TUOI DIRITTI</h3>
+        <p>Puoi chiedermi in ogni momento di vedere, correggere o cancellare i tuoi dati, di limitarne l'uso o di opporti, e di averne una copia: scrivimi su WhatsApp o per email. Se pensi che i tuoi dati non siano trattati correttamente puoi rivolgerti al Garante per la protezione dei dati personali (garanteprivacy.it).</p>
+        <p class="privacy-data">Ultimo aggiornamento: 22 ottobre 2026.</p>
+      </div>
+      <div class="popup-conserve-azioni">
+        <button type="button" class="primary-button" data-chiudi-privacy>HO LETTO <span>✓</span></button>
+      </div>
+    </div>
   </div>
 
   <div class="popup-conserve" id="popupConserve" hidden>
@@ -880,6 +915,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=41"></script>
+  <script src="app.js?v=42"></script>
 </body>
 </html>
