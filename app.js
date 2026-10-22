@@ -16,7 +16,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 38;
+const VERSIONE_SITO = 39;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -231,6 +231,10 @@ const state = {
   box: "media",
   quantities: Object.fromEntries(PRODUCTS.map(p => [p.id, 0])),
   selectionOrder: [],
+  // le cassette dell'ordine (una, o due per chi ne ha bisogno): quella che si sta riempiendo
+  // vive in box / quantities / selectionOrder, l'altra resta qui finche' non la si riapre
+  cassette: [{ box: "media", selectionOrder: [] }],
+  attiva: 0,
   deliveryDays: [],
   deliveryFee: 0,
   selectedDate: "",
@@ -254,7 +258,27 @@ const extraCost = () => Math.max(0, quotaCount() - boxData().included) * 2;
 const conserveInVendita = () => CONSERVE.filter(conserva => conserva.disponibile !== false && conserva.prezzo > 0);
 const pezziConserve = () => Object.values(state.conserve).reduce((sum, value) => sum + value, 0);
 const costoConserve = () => CONSERVE.reduce((sum, conserva) => sum + (state.conserve[conserva.id] || 0) * conserva.prezzo, 0);
-const total = () => boxData().price + extraCost() + state.deliveryFee + costoConserve();
+const extraCassetta = cassetta => Math.max(0, cassetta.selectionOrder.length - BOXES[cassetta.box].included) * 2;
+const prezzoCassetta = cassetta => BOXES[cassetta.box].price + extraCassetta(cassetta);
+const costoCassette = () => cassetteOrdine().reduce((sum, cassetta) => sum + prezzoCassetta(cassetta), 0);
+const extraTotale = () => cassetteOrdine().reduce((sum, cassetta) => sum + extraCassetta(cassetta), 0);
+const prodottiTotali = () => cassetteOrdine().reduce((sum, cassetta) => sum + cassetta.selectionOrder.length, 0);
+const nomeScatola = key => BOXES[key].label[0] + BOXES[key].label.slice(1).toLowerCase();
+const total = () => costoCassette() + state.deliveryFee + costoConserve();
+
+// tutte le cassette dell'ordine, con quella aperta aggiornata a come e' adesso
+function cassetteOrdine() {
+  state.cassette[state.attiva] = { box: state.box, selectionOrder: [...state.selectionOrder] };
+  return state.cassette;
+}
+
+function caricaCassetta(cassetta) {
+  state.box = cassetta.box;
+  state.selectionOrder = [...cassetta.selectionOrder];
+  Object.keys(state.quantities).forEach(id => { state.quantities[id] = 0; });
+  state.selectionOrder.forEach(id => { state.quantities[id]++; });
+  $$(".box-option").forEach(el => el.classList.toggle("selected", el.dataset.box === state.box));
+}
 
 function normalizePhone(value = "") {
   const digits = String(value).replace(/\D/g, "");
@@ -276,19 +300,14 @@ function customerDisplayPhone(value = "") {
   return phone.startsWith("39") ? `+${phone.slice(0, 2)} ${phone.slice(2)}` : `+${phone}`;
 }
 
-function getOrderItems() {
+function getOrderItems(selectionOrder = state.selectionOrder) {
   const grouped = new Map();
-  state.selectionOrder.forEach(id => {
+  selectionOrder.forEach(id => {
     const product = PRODUCTS.find(item => item.id === id);
     if (!product) return;
-    const current = grouped.get(id) || { id, name: product.name, weight: product.weight, quantity: 0 };
+    const current = grouped.get(id) || { id, name: product.name, weight: product.weight, emoji: product.emoji, quantity: 0 };
     current.quantity++;
     grouped.set(id, current);
-  });
-  PRODUCTS.forEach(product => {
-    if (state.quantities[product.id] > 0 && !grouped.has(product.id)) {
-      grouped.set(product.id, { id: product.id, name: product.name, weight: product.weight, quantity: state.quantities[product.id] });
-    }
   });
   return [...grouped.values()];
 }
@@ -479,7 +498,7 @@ function codificaOrdine(order) {
     normalizePhone(order.phone || ""),
     testoPerLink(order.address),
     Math.max(0, LOCALITA.findIndex(localita => localita.nome === order.area)),
-    String(order.box || "M").charAt(0).toUpperCase(),
+    String(order.box || "M").split(" + ").map(nome => nome.charAt(0).toUpperCase()).join(""),   // "Media + Piccola" -> MP
     Math.round(Number(order.total || 0) * 100),                               // in centesimi
     origine >= 0 ? origine : testoPerLink(order.source),
     (order.conserve || []).map(item => `${CONSERVE.findIndex(conserva => conserva.id === item.id)}x${item.quantita}`).join(",")
@@ -505,7 +524,7 @@ function decodificaOrdine(testo) {
     phone: telefono || "",
     address: testoDalLink(indirizzo),
     area,
-    box: { P: "Piccola", M: "Media", G: "Grande" }[scatola] || "Media",
+    box: [...String(scatola || "")].map(lettera => ({ P: "Piccola", M: "Media", G: "Grande" }[lettera])).filter(Boolean).join(" + ") || "Media",
     total: Number(centesimi || 0) / 100,
     source: /^\d+$/.test(origine || "") ? ORIGINI_CLIENTE[Number(origine)] || "" : testoDalLink(origine),
     status: "Confermato",
@@ -740,9 +759,18 @@ function aggiornaCassettaFluttuante() {
 }
 
 function goToStep(step) {
-  if (step > 2 && quotaCount() < boxData().min) {
-    showToast(`Scegli almeno ${boxData().min} prodotti per continuare.`);
-    step = 2;
+  if (step > 2) {
+    // con due cassette devono essere pronte tutte e due: se manca qualcosa riapro quella giusta
+    const cassette = cassetteOrdine();
+    const incompleta = cassette.findIndex(cassetta => cassetta.selectionOrder.length < BOXES[cassetta.box].min);
+    if (incompleta >= 0) {
+      const mancano = BOXES[cassette[incompleta].box].min - cassette[incompleta].selectionOrder.length;
+      if (incompleta !== state.attiva) scegliCassetta(incompleta);
+      showToast(cassette.length > 1
+        ? `Completa la ${incompleta + 1}ª cassetta: ${mancano === 1 ? "manca ancora 1 prodotto" : `mancano ancora ${mancano} prodotti`}.`
+        : `Scegli almeno ${boxData().min} prodotti per continuare.`);
+      step = 2;
+    }
   }
   state.step = step;
   $$(".order-step").forEach(el => el.classList.toggle("active", Number(el.dataset.step) === step));
@@ -762,6 +790,65 @@ function selectBox(key) {
   renderProducts();
   updateSummary();
   dropCrates();
+}
+
+// passa dalla 1ª alla 2ª cassetta e viceversa: quella lasciata resta com'era
+function scegliCassetta(indice) {
+  if (indice === state.attiva || !state.cassette[indice]) return;
+  cassetteOrdine();
+  state.attiva = indice;
+  caricaCassetta(state.cassette[indice]);
+  renderProducts();
+  updateSummary();
+  dropCrates();
+}
+
+// "uguale": la 2ª nasce gia' piena come la prima e si puo' ancora cambiare;
+// "nuova": si sceglie la dimensione e poi le verdure, come per la prima
+function aggiungiSecondaCassetta(come) {
+  const [prima] = cassetteOrdine();
+  state.cassette = [prima, { box: prima.box, selectionOrder: come === "uguale" ? [...prima.selectionOrder] : [] }];
+  state.attiva = 0;
+  scegliCassetta(1);
+  if (come === "uguale") {
+    goToStep(2);
+    showToast("2ª cassetta aggiunta, uguale alla prima: se vuoi cambiala qui.", 4000);
+  } else {
+    goToStep(1);
+    showToast("1ª cassetta pronta ✓ Ora scegli la dimensione della 2ª.", 4000);
+  }
+}
+
+function togliSecondaCassetta() {
+  if (state.cassette.length < 2) return;
+  if (!window.confirm("Tolgo la 2ª cassetta e le verdure che ci hai messo?")) return;
+  if (state.attiva !== 0) scegliCassetta(0);
+  state.cassette = cassetteOrdine().slice(0, 1);
+  updateSummary();
+  showToast("2ª cassetta tolta.");
+}
+
+function renderSecondaCassetta() {
+  const cassette = cassetteOrdine();
+  const due = cassette.length > 1;
+  const schede = $("#cassetteSchede");
+  schede.hidden = !due || state.step > 2;
+  if (due) {
+    schede.innerHTML = cassette.map((cassetta, indice) => {
+      const quante = cassetta.selectionOrder.length;
+      const mancano = BOXES[cassetta.box].min - quante;
+      return `
+        <button type="button" data-cassetta="${indice}" class="${indice === state.attiva ? "attiva" : ""}" aria-pressed="${indice === state.attiva}">
+          <b>${indice + 1}ª CASSETTA</b>
+          <small>${BOXES[cassetta.box].label} · ${mancano > 0 ? `MANCANO ${mancano}` : `${quante} PRODOTTI ✓`}</small>
+        </button>`;
+    }).join("") + `<button type="button" class="togli" data-togli-seconda aria-label="Togli la 2ª cassetta" title="Togli la 2ª cassetta">✕</button>`;
+  }
+  // la proposta compare quando la prima cassetta e' pronta
+  $("#secondaCassetta").hidden = due || quotaCount() < boxData().min;
+  const quale = due ? `${state.attiva + 1}ª ` : "";
+  $("#titoloPasso1").textContent = due ? `SCEGLI LA DIMENSIONE DELLA ${quale}CASSETTA` : "SCEGLI LA DIMENSIONE";
+  $("#titoloPasso2").textContent = due ? `RIEMPI LA ${quale}CASSETTA` : "RIEMPI LA TUA CASSETTA";
 }
 
 function renderProducts() {
@@ -933,14 +1020,22 @@ function updateSummary() {
   const extraItems = Math.max(0, count - box.included);
 
   const pezzi = pezziConserve();
-  $("#headerCartCount").textContent = count + pezzi;
-  $("#summaryBoxLabel").textContent = `${box.label} · ${box.price} €`;
-  $("#summaryQuota").textContent = `${count} PRODOTTI · INCLUSI ${includedRange}`;
-  $("#summaryExtras").textContent = money(extraCost());
+  const cassette = cassetteOrdine();
+  const due = cassette.length > 1;
+  $("#headerCartCount").textContent = prodottiTotali() + pezzi;
+  $("#summaryCassetteTitolo").textContent = due ? "LE TUE 2 CASSETTE" : "LA TUA CASSETTA";
+  $("#summaryBoxLabel").textContent = due
+    ? cassette.map(cassetta => BOXES[cassetta.box].label).join(" + ")
+    : `${box.label} · ${box.price} €`;
+  $("#summaryQuota").textContent = due
+    ? `${cassette.map(cassetta => cassetta.selectionOrder.length).join(" + ")} PRODOTTI`
+    : `${count} PRODOTTI · INCLUSI ${includedRange}`;
+  $("#summaryExtras").textContent = money(extraTotale());
   $("#summaryDelivery").textContent = state.selectedTime ? `${state.selectedTime}${state.deliveryFee ? ` · ${money(state.deliveryFee)}` : " · GRATIS"}` : "DA DEFINIRE";
   $("#summaryTotal").textContent = money(total());
   $("#mobileTotal").textContent = money(total());
-  $("#mobileQuota").textContent = `${count} prodotti${pezzi ? ` + ${pezzi} ${pezzi === 1 ? "conserva" : "conserve"}` : ""}`;
+  $("#mobileQuotaTitolo").textContent = due ? "2 CASSETTE" : "CASSETTA";
+  $("#mobileQuota").textContent = `${prodottiTotali()} prodotti${pezzi ? ` + ${pezzi} ${pezzi === 1 ? "conserva" : "conserve"}` : ""}`;
   $("#summaryConserveRiga").hidden = !pezzi;
   $("#summaryConserve").textContent = `${pezzi} · ${money(costoConserve())}`;
   $("#quotaStatus").textContent = `${count} PRODOTTI SCELTI`;
@@ -949,9 +1044,10 @@ function updateSummary() {
     : extraItems
       ? `${extraItems} ${extraItems === 1 ? "prodotto extra" : "prodotti extra"} · ${money(extraCost())}`
       : `Nel prezzo sono inclusi da ${box.min} a ${box.included} prodotti`;
-  $("#liveCrateLabel").textContent = `CASSETTA ${box.label}`;
+  $("#liveCrateLabel").textContent = due ? `${state.attiva + 1}ª CASSETTA · ${box.label}` : `CASSETTA ${box.label}`;
   $("#toDelivery").disabled = count < box.min;
   $("#invitoConserve").hidden = count < box.min || !conserveInVendita().length;
+  renderSecondaCassetta();
 
   $("#quotaDots").innerHTML = Array.from({ length: Math.max(box.included, count) }, (_, index) => {
     const filled = index < count;
@@ -973,7 +1069,8 @@ function updateSummary() {
 
 function salvaCarrello() {
   try {
-    localStorage.setItem(CARRELLO_KEY, JSON.stringify({ box: state.box, prodotti: state.selectionOrder, conserve: state.conserve }));
+    const cassette = cassetteOrdine().map(cassetta => ({ box: cassetta.box, prodotti: cassetta.selectionOrder }));
+    localStorage.setItem(CARRELLO_KEY, JSON.stringify({ box: state.box, prodotti: state.selectionOrder, conserve: state.conserve, cassette, attiva: state.attiva }));
   } catch (_) {}
 }
 
@@ -981,23 +1078,28 @@ function ripristinaCarrello() {
   let salvato = null;
   try { salvato = JSON.parse(localStorage.getItem(CARRELLO_KEY)); } catch (_) {}
   if (!salvato || typeof salvato !== "object") return;
-  if (BOXES[salvato.box]) state.box = salvato.box;
   const attivi = new Set(PRODUCTS.filter(product => product.enabled !== false).map(product => product.id));
-  state.selectionOrder = (Array.isArray(salvato.prodotti) ? salvato.prodotti : []).filter(id => attivi.has(id));
-  Object.keys(state.quantities).forEach(id => { state.quantities[id] = 0; });
-  state.selectionOrder.forEach(id => { state.quantities[id]++; });
+  const pulisci = prodotti => (Array.isArray(prodotti) ? prodotti : []).filter(id => attivi.has(id));
+  // i carrelli salvati prima della seconda cassetta hanno solo box e prodotti
+  const salvate = (Array.isArray(salvato.cassette) ? salvato.cassette : []).filter(cassetta => BOXES[cassetta?.box]).slice(0, 2);
+  state.cassette = salvate.length
+    ? salvate.map(cassetta => ({ box: cassetta.box, selectionOrder: pulisci(cassetta.prodotti) }))
+    : [{ box: BOXES[salvato.box] ? salvato.box : state.box, selectionOrder: pulisci(salvato.prodotti) }];
+  state.attiva = Math.min(Math.max(0, Number(salvato.attiva) || 0), state.cassette.length - 1);
+  caricaCassetta(state.cassette[state.attiva]);
   const vendibili = new Set(conserveInVendita().map(conserva => conserva.id));
   state.conserve = {};
   Object.entries(salvato.conserve || {}).forEach(([id, quante]) => {
     if (vendibili.has(id) && quante > 0) state.conserve[id] = Math.min(20, Math.floor(quante));
   });
-  $$(".box-option").forEach(el => el.classList.toggle("selected", el.dataset.box === state.box));
 }
 
 function svuotaCarrello() {
   state.conserveProposte = false;
-  state.selectionOrder = [];
-  Object.keys(state.quantities).forEach(id => { state.quantities[id] = 0; });
+  // dopo l'ordine si riparte da una cassetta sola, della dimensione della prima
+  state.cassette = [{ box: cassetteOrdine()[0].box, selectionOrder: [] }];
+  state.attiva = 0;
+  caricaCassetta(state.cassette[0]);
   state.conserve = {};
   try { localStorage.removeItem(CARRELLO_KEY); } catch (_) {}
   renderProducts();
@@ -1202,15 +1304,20 @@ function validateDelivery() {
 }
 
 function renderCheckout() {
-  const selected = PRODUCTS.filter(product => state.quantities[product.id] > 0);
+  const cassette = cassetteOrdine();
+  const due = cassette.length > 1;
   $("#checkoutCard").innerHTML = `
     <h3>IL TUO ORDINE</h3>
     <div class="checkout-products">
-      ${selected.map(product => `<span>${product.emoji} ${state.quantities[product.id]}× ${product.name.toUpperCase()}</span>`).join("")}
+      ${cassette.map((cassetta, indice) => `
+        ${due ? `<b class="checkout-cassetta">${indice + 1}ª CASSETTA · ${BOXES[cassetta.box].label}</b>` : ""}
+        ${getOrderItems(cassetta.selectionOrder).map(item => `<span>${item.emoji} ${item.quantity}× ${item.name.toUpperCase()}</span>`).join("")}
+      `).join("")}
+      ${due && pezziConserve() ? `<b class="checkout-cassetta">CONSERVE</b>` : ""}
       ${conserveOrdinate().map(item => `<span>🫙 ${item.quantita}× ${item.nome.toUpperCase()}</span>`).join("")}
     </div>
     <div class="checkout-detail">
-      <div><small>CASSETTA</small><strong>${boxData().label} · ${quotaCount()} PRODOTTI</strong></div>
+      <div><small>${due ? "CASSETTE" : "CASSETTA"}</small><strong>${cassette.map(cassetta => `${BOXES[cassetta.box].label} · ${cassetta.selectionOrder.length} PRODOTTI`).join("<br>")}</strong></div>
       ${pezziConserve() ? `<div><small>CONSERVE</small><strong>${pezziConserve()} ${pezziConserve() === 1 ? "VASETTO" : "VASETTI"} · ${money(costoConserve())}</strong></div>` : ""}
       <div><small>CONSEGNA</small><strong>${formatDate(state.orderData.date)}<br>${state.orderData.time}</strong></div>
       <div><small>CLIENTE</small><strong>${escapeHtml(state.orderData.fullName)}<br>${escapeHtml(state.orderData.phone)}</strong></div>
@@ -1232,12 +1339,16 @@ function buildWhatsAppUrl(orderInput, discoverySource) {
   const order = typeof orderInput === "object" ? orderInput : null;
   const orderId = order?.id || orderInput;
   const notes = (order?.notes || state.orderData.notes || "").trim();
-  const items = order?.items?.length ? order.items : getOrderItems();
-  const verdure = items.map(item => `${item.quantity > 1 ? `${item.quantity}× ` : ""}${item.name}`).join(", ");
+  const elenco = voci => voci.map(item => `${item.quantity > 1 ? `${item.quantity}× ` : ""}${item.name}`).join(", ");
+  const cassette = order?.cassette?.length
+    ? order.cassette
+    : cassetteOrdine().map(cassetta => ({ box: nomeScatola(cassetta.box), items: getOrderItems(cassetta.selectionOrder) }));
+  const righeCassette = cassette.length > 1
+    ? cassette.map((cassetta, indice) => `🧺 ${indice + 1}ª cassetta ${cassetta.box.toLowerCase()}: ${elenco(cassetta.items)}`)
+    : [`🧺 Cassetta ${cassette[0].box.toLowerCase()}: ${elenco(cassette[0].items)}`];
   const conserve = (order?.conserve || conserveOrdinate()).map(item => `${item.quantita > 1 ? `${item.quantita}× ` : ""}${item.nome}`).join(", ");
   const area = order?.area || state.orderData.area;
   const giorno = formatDate(order?.date || state.orderData.date);
-  const scatola = (order?.box || boxData().label).toLowerCase();
   const importUrl = order ? dashboardImportUrl(order) : "";
   const message = [
     `*NUOVO ORDINE ${orderId}*`,
@@ -1245,7 +1356,7 @@ function buildWhatsAppUrl(orderInput, discoverySource) {
     `📍 ${order?.address || state.orderData.address}, ${area}`,
     `👤 ${order?.name || state.orderData.fullName} · ${order?.phone || state.orderData.phone}`,
     "",
-    `🧺 Cassetta ${scatola}: ${verdure}`,
+    ...righeCassette,
     conserve ? `🫙 Conserve: ${conserve}` : "",
     notes ? `📝 ${notes}` : "",
     "",
@@ -1324,13 +1435,15 @@ function confirmOrder() {
 
   // codice unico: prima ogni cliente al primo ordine riceveva lo stesso numero e in dashboard gli ordini si sovrapponevano
   const orderId = `R${Date.now().toString(36).slice(-5).toUpperCase()}${Math.floor(Math.random() * 36).toString(36).toUpperCase()}`;
+  const cassette = cassetteOrdine().map(cassetta => ({ box: nomeScatola(cassetta.box), items: getOrderItems(cassetta.selectionOrder) }));
   const order = {
     id: orderId,
     time: state.selectedTime.split("–")[0],
     name: state.orderData.fullName,
     area: state.orderData.area,
     address: state.orderData.address,
-    box: boxData().label[0] + boxData().label.slice(1).toLowerCase(),
+    box: cassette.map(cassetta => cassetta.box).join(" + "),
+    cassette,
     total: total(),
     source: origine,
     status: "Confermato"
@@ -1339,7 +1452,7 @@ function confirmOrder() {
   order.date = state.orderData.date;
   order.deliveryWindow = state.orderData.time;
   order.phone = state.orderData.phone;
-  order.items = getOrderItems();
+  order.items = cassette.flatMap(cassetta => cassetta.items);
   order.conserve = conserveOrdinate();
   order.notes = state.orderData.notes || "";
   order.loyaltyCredited = false;
@@ -1421,11 +1534,10 @@ function applicaSettimana(dati) {
   const vendibili = new Set(conserveInVendita().map(conserva => conserva.id));
   Object.keys(state.conserve).forEach(id => { if (!vendibili.has(id)) delete state.conserve[id]; });
   state.settimanaPubblicata = typeof dati.aggiornato === "string" ? dati.aggiornato : "";
-  // dalla cassetta tolgo le verdure che questa settimana non ci sono
+  // dalle cassette tolgo le verdure che questa settimana non ci sono
   const attive = new Set(PRODUCTS.filter(product => product.enabled !== false).map(product => product.id));
-  state.selectionOrder = state.selectionOrder.filter(id => attive.has(id));
-  Object.keys(state.quantities).forEach(id => { state.quantities[id] = 0; });
-  state.selectionOrder.forEach(id => { state.quantities[id]++; });
+  cassetteOrdine().forEach(cassetta => { cassetta.selectionOrder = cassetta.selectionOrder.filter(id => attive.has(id)); });
+  caricaCassetta(state.cassette[state.attiva]);
   return true;
 }
 
@@ -2100,6 +2212,12 @@ function setupEvents() {
     else showToast("Completa questo passaggio prima di continuare.");
   }));
   $$(".box-option").forEach(button => button.addEventListener("click", () => selectBox(button.dataset.box)));
+  $$("[data-seconda]").forEach(button => button.addEventListener("click", () => aggiungiSecondaCassetta(button.dataset.seconda)));
+  $("#cassetteSchede").addEventListener("click", event => {
+    if (event.target.closest("[data-togli-seconda]")) togliSecondaCassetta();
+    const scheda = event.target.closest("[data-cassetta]");
+    if (scheda) scegliCassetta(Number(scheda.dataset.cassetta));
+  });
   $("#areaChoices").addEventListener("change", event => {
     if (event.target.name !== "area") return;
     const zona = LOCALITA.find(localita => localita.nome === event.target.value);
