@@ -16,7 +16,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 42;
+const VERSIONE_SITO = 43;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -1552,7 +1552,12 @@ function confirmOrder() {
   $("#orderSuccess").classList.add("active");
   // l'ordine mi arriva solo se il cliente preme INVIA su WhatsApp: prima il sito diceva "confermato"
   // e chi chiudeva WhatsApp senza inviare credeva di aver ordinato
-  $("#successCopy").innerHTML = `Grazie <strong>${escapeHtml(order.name.split(" ")[0])}</strong>! Si è aperto WhatsApp con il riepilogo dell'ordine <strong>#${orderId}</strong>: <strong class="success-invia">premi INVIA, altrimenti l'ordine non mi arriva.</strong> Appena è inviato la consegna è prenotata per ${formatDate(state.orderData.date).toLowerCase()} tra le <strong>${escapeHtml(state.selectedTime)}</strong>, e non serve aspettare una mia risposta. Se WhatsApp non si è aperto, tocca il pulsante qui sotto.`;
+  const [dalle, alle] = state.selectedTime.split("–");
+  $("#successCopy").innerHTML = `
+    <p class="success-saluto">Grazie ${escapeHtml(order.name.split(" ")[0])}, ci siamo quasi!</p>
+    <p class="success-invia-box">Su WhatsApp trovi già pronto il riepilogo del tuo ordine <strong>#${orderId}</strong>. Ti basta premere <strong>INVIA</strong>: è l'ultimo passo, e solo così l'ordine arriva a me.</p>
+    <p>Poi non devi fare altro: la tua cassetta te la porto io <strong>${formatDate(state.orderData.date).toLowerCase()}</strong>, tra le <strong>${escapeHtml(dalle || "")}</strong> e le <strong>${escapeHtml(alle || "")}</strong>.</p>
+    <p class="success-nota">WhatsApp non si è aperto? Tocca il pulsante qui sotto.</p>`;
   $("#successWhatsapp").href = whatsappUrl;
   showToast("Ultimo passo: premi INVIA su WhatsApp.", 5000);
   svuotaCarrello();

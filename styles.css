@@ -971,7 +971,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 /* dopo la conferma: l'ultimo passo e' premere INVIA su WhatsApp */
 .success-mark.success-whatsapp { background: #25d366; box-shadow: 0 10px 26px rgba(37,211,102,.35); }
 .success-whatsapp svg { width: 42px; height: 42px; }
-.order-success .success-invia { color: #1f7a45; }
+.success-testo { max-width: 520px; margin: 0 auto; font-family: Arial, sans-serif; font-size: .97rem; line-height: 1.65; color: var(--muted); }
+.success-testo p { margin: 0 0 14px; }
+.success-testo strong { color: var(--ink); }
+.success-testo .success-saluto { font: italic 1.55rem/1.25 Georgia, serif; color: var(--green-deep); }
+.success-testo .success-invia-box { padding: 14px 18px; border-radius: var(--small-radius); background: #e8f8ee; border: 1px solid rgba(37,211,102,.45); color: var(--ink); }
+.success-testo .success-invia-box strong { color: #1f7a45; }
+.success-testo .success-nota { margin-bottom: 0; font-size: .84rem; }
 .whatsapp-invia { background: #25d366; color: #fff; gap: 18px; text-decoration: none; }
 .whatsapp-invia:hover { background: #1fb457; }
 .site-footer .footer-legale { line-height: 1.8; }
