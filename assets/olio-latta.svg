@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 420" role="img" aria-labelledby="t">
-  <title id="t">Latta da 5 litri dell'olio di Soriano nel Cimino</title>
+  <title id="t">Latta d'olio da 5 litri</title>
   <defs>
     <linearGradient id="fronte" x1="0" x2="1">
       <stop offset="0" stop-color="#3b5025"/>
@@ -67,8 +67,8 @@
   <rect x="139" y="88" width="15" height="9" rx="3" fill="#1b2712"/>
   <rect x="231" y="83" width="15" height="9" rx="3" fill="#1b2712"/>
 
-  <!-- scritta sopra l'etichetta -->
-  <text x="133" y="141" text-anchor="middle" font-family="'Trebuchet MS', Arial, sans-serif" font-size="10.5" font-weight="700" letter-spacing="3.2" fill="#e3c46e">MONTI CIMINI</text>
+  <!-- filetto dorato sopra l'etichetta -->
+  <path d="M92 136 H174" stroke="#c9a24a" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>
 
   <!-- etichetta -->
   <rect x="56" y="152" width="154" height="200" rx="10" fill="url(#carta)"/>
@@ -76,7 +76,7 @@
   <rect x="66" y="162" width="134" height="180" rx="5" fill="none" stroke="#c9a24a" stroke-width=".7" opacity=".7"/>
 
   <!-- ramo d'olivo -->
-  <g>
+  <g transform="translate(0 16)">
     <path d="M86 205 C106 190, 140 184, 182 188" fill="none" stroke="#6d5a33" stroke-width="2.2" stroke-linecap="round"/>
     <g fill="#5d7334">
       <ellipse cx="100" cy="190" rx="11" ry="3.6" transform="rotate(-38 100 190)"/>
@@ -99,10 +99,8 @@
     <circle cx="170.6" cy="197.8" r="1.3" fill="#fff" opacity=".45"/>
   </g>
 
-  <text x="133" y="252" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="46" font-style="italic" fill="#34451f">Olio</text>
-  <text x="133" y="275" text-anchor="middle" font-family="'Trebuchet MS', Arial, sans-serif" font-size="11.5" font-weight="700" letter-spacing="2.6" fill="#34451f">DI SORIANO</text>
-  <text x="133" y="291" text-anchor="middle" font-family="'Trebuchet MS', Arial, sans-serif" font-size="11.5" font-weight="700" letter-spacing="2.6" fill="#34451f">NEL CIMINO</text>
-  <path d="M100 303 H166" stroke="#c9a24a" stroke-width="1.2"/>
-  <rect x="98" y="312" width="70" height="22" rx="11" fill="#b8664c"/>
-  <text x="133" y="327" text-anchor="middle" font-family="'Trebuchet MS', Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.8" fill="#fffaf0">5 LITRI</text>
+  <!-- sulla latta solo la scritta "Olio" -->
+  <text x="133" y="296" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="60" font-style="italic" fill="#34451f">Olio</text>
+  <path d="M104 318 H162" stroke="#c9a24a" stroke-width="1.4" stroke-linecap="round"/>
+  <circle cx="133" cy="318" r="2.6" fill="#c9a24a"/>
 </svg>

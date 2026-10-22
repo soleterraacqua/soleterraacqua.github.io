@@ -16,7 +16,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 40;
+const VERSIONE_SITO = 41;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -148,9 +148,10 @@ const CONSERVE = [
   }
 ];
 
-// l'olio di Soriano nel Cimino, in latta da 5 litri. Prezzo al litro e disponibilita' si cambiano
-// dalla dashboard (voce "olio" di settimana.json); finche' non c'e', valgono questi
-const OLIO = { nome: "Olio di Soriano nel Cimino", litri: 5, prezzoLitro: 14, disponibile: true, foto: "assets/olio-latta.svg" };
+// l'olio in latta da 5 litri: nei nomi e sulla latta solo "Olio", la provenienza (Soriano nel Cimino)
+// sta nella descrizione. Prezzo al litro e disponibilita' si cambiano dalla dashboard (voce "olio"
+// di settimana.json); finche' non c'e', valgono questi
+const OLIO = { nome: "Olio", litri: 5, prezzoLitro: 14, disponibile: true, foto: "assets/olio-latta.svg" };
 
 CONSERVE.forEach(conserva => { conserva.prezzo = 0; conserva.disponibile = true; });
 
@@ -1228,7 +1229,7 @@ function changeOlio(delta) {
   state.olio = Math.max(0, Math.min(10, state.olio + delta));
   renderOlio();
   updateSummary();
-  if (delta > 0) showToast(`Olio di Soriano: ${latte(state.olio)} nel carrello.`);
+  if (delta > 0) showToast(`Olio: ${latte(state.olio)} nel carrello.`);
 }
 
 // l'olio compare in home (sezione dedicata) e in fondo ai prodotti, sotto le conserve
@@ -1244,14 +1245,13 @@ function renderOlio() {
   const prezzi = $("#olioPrezzi");
   if (prezzi) {
     prezzi.innerHTML = `
-      <div><strong>${OLIO.litri} L</strong><span>LA LATTA</span></div>
-      <div><strong>${money(OLIO.prezzoLitro).replace(",00", "")}</strong><span>AL LITRO</span></div>
-      <div class="olio-prezzo-latta"><strong>${money(prezzoLatta()).replace(",00", "")}</strong><span>UNA LATTA</span></div>`;
+      <strong>${money(prezzoLatta()).replace(",00", "")}</strong>
+      <span>LA LATTA DA ${OLIO.litri} LITRI<small>${money(OLIO.prezzoLitro).replace(",00", "")} al litro</small></span>`;
     prezzi.hidden = !inVendita;
   }
   const azioni = $("#olioAzioni");
   if (azioni) {
-    const whatsapp = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Ciao Alessio, vorrei informazioni sull'olio di Soriano nel Cimino.")}`;
+    const whatsapp = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Ciao Alessio, vorrei informazioni sull'olio.")}`;
     azioni.innerHTML = !inVendita
       ? `<p class="olio-esaurito">In questo momento è finito: scrivimi e ti dico quando torna.</p>
          <a class="primary-button" href="${whatsapp}" target="_blank" rel="noopener">CHIEDIMELO SU WHATSAPP <span>→</span></a>`
@@ -1265,7 +1265,7 @@ function renderOlio() {
   if (carrello) {
     carrello.hidden = !inVendita;
     carrello.classList.toggle("selected", quante > 0);
-    $("#olioCarrelloPrezzo").textContent = `${money(OLIO.prezzoLitro)} al litro · ${money(prezzoLatta())} la latta`;
+    $("#olioCarrelloPrezzo").innerHTML = `<b>${money(prezzoLatta()).replace(",00", "")}</b> la latta <small>· ${money(OLIO.prezzoLitro).replace(",00", "")} al litro</small>`;
     $("#olioCarrelloContatore").innerHTML = contatore;
   }
 }
@@ -1383,7 +1383,7 @@ function renderCheckout() {
       ${due && pezziConserve() ? `<b class="checkout-cassetta">CONSERVE</b>` : ""}
       ${conserveOrdinate().map(item => `<span>🫙 ${item.quantita}× ${item.nome.toUpperCase()}</span>`).join("")}
       ${due && state.olio ? `<b class="checkout-cassetta">OLIO</b>` : ""}
-      ${state.olio ? `<span>🫒 ${state.olio}× OLIO DI SORIANO · LATTA ${OLIO.litri} L</span>` : ""}
+      ${state.olio ? `<span>🫒 ${state.olio}× OLIO · LATTA ${OLIO.litri} L</span>` : ""}
     </div>
     <div class="checkout-detail">
       <div><small>${due ? "CASSETTE" : "CASSETTA"}</small><strong>${cassette.map(cassetta => `${BOXES[cassetta.box].label} · ${cassetta.selectionOrder.length} PRODOTTI`).join("<br>")}</strong></div>
@@ -1430,7 +1430,7 @@ function buildWhatsAppUrl(orderInput, discoverySource) {
     ...righeCassette,
     // le righe facoltative entrano solo se ci sono: una riga vuota in mezzo lascerebbe un buco nel messaggio
     ...(conserve ? [`🫙 Conserve: ${conserve}`] : []),
-    ...(olio ? [`🫒 Olio di Soriano: ${latte(olio)}`] : []),
+    ...(olio ? [`🫒 Olio: ${latte(olio)}`] : []),
     ...(notes ? [`📝 ${notes}`] : []),
     "",
     `💶 *Totale ${money(order?.total || total())}* (${area === "Viterbo" ? "consegna gratuita" : `consegna ${money(2.5)} inclusa`})`,
@@ -1699,7 +1699,7 @@ function renderRiepilogoSettimana() {
       <p>${conserve.map(conserva => `<span>${conserva.nome} <em>${money(conserva.prezzo)}</em></span>`).join("") || "<span>Nessuna</span>"}</p>
     </div>
     <div class="riepilogo-blocco">
-      <small>OLIO DI SORIANO · LATTA ${OLIO.litri} L</small>
+      <small>OLIO · LATTA ${OLIO.litri} L</small>
       <p>${olioInVendita() ? `<span>${money(OLIO.prezzoLitro)} al litro <em>${money(prezzoLatta())} la latta</em></span>` : "<span>Non in vendita</span>"}</p>
     </div>
   `;

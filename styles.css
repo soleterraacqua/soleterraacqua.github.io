@@ -399,7 +399,7 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .conserve-omaggio { margin: 22px 0 0; text-align: center; color: var(--muted); font-size: .9rem; }
 .conserve-omaggio strong { color: var(--terracotta); letter-spacing: .08em; font-size: .78rem; margin-right: 6px; }
 
-/* Olio di Soriano nel Cimino: la latta a sinistra su un alone color grano, il testo a destra */
+/* Olio: la latta a sinistra su un alone color grano, il testo a destra */
 .olio { padding-block: 0 110px; }
 .olio-scheda { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(26px, 5vw, 72px); align-items: center; padding: clamp(30px, 5vw, 64px); border-radius: var(--radius); border: 1px solid var(--line); background: radial-gradient(circle at 24% 52%, rgba(239,217,146,.62) 0, rgba(239,217,146,0) 44%), linear-gradient(135deg, #eef1dd 0%, #f7f0df 58%, #f4e7c8 100%); }
 .olio-figura { display: grid; place-items: center; }
@@ -408,13 +408,11 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .olio-testo h2 em { color: var(--green); }
 .olio-testo > p:not(.eyebrow) { color: var(--muted); font-family: Arial, sans-serif; font-size: .97rem; line-height: 1.75; max-width: 500px; margin: 0; }
 .olio-prezzi[hidden] { display: none; }
-.olio-prezzi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 480px; margin: 28px 0 22px; }
-.olio-prezzi div { display: grid; gap: 4px; padding: 14px 10px 12px; text-align: center; border-radius: var(--small-radius); background: rgba(255,253,247,.8); border: 1px solid var(--line); }
-.olio-prezzi strong { font: italic 700 1.6rem/1 Georgia, serif; color: var(--green-deep); }
-.olio-prezzi span { font-size: .66rem; font-weight: 900; letter-spacing: .14em; color: var(--muted); }
-.olio-prezzi .olio-prezzo-latta { background: var(--green); border-color: var(--green); }
-.olio-prezzi .olio-prezzo-latta strong { color: #f7e3a4; }
-.olio-prezzi .olio-prezzo-latta span { color: #d4e1d6; }
+/* in grande il prezzo della latta, in piccolo quello al litro */
+.olio-prezzi { display: flex; align-items: center; gap: 16px; margin: 28px 0 22px; }
+.olio-prezzi strong { font: italic 700 3.4rem/1 Georgia, serif; color: var(--green-deep); letter-spacing: -.02em; }
+.olio-prezzi span { display: grid; gap: 4px; padding-left: 16px; border-left: 2px solid #c9a24a; font-size: .74rem; font-weight: 900; letter-spacing: .14em; color: var(--green-deep); }
+.olio-prezzi small { font-size: .8rem; font-weight: 400; letter-spacing: .02em; color: var(--muted); }
 .olio-azioni { display: grid; gap: 10px; justify-items: start; max-width: 480px; }
 .olio-azioni .primary-button { gap: 18px; }
 .olio-nel-carrello { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
@@ -430,6 +428,9 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .olio-carrello-testo h3 { margin: 4px 0 3px; font-size: 1.02rem; line-height: 1.15; letter-spacing: .02em; }
 .olio-carrello-testo h3 em { color: var(--green); font-family: Georgia, serif; font-weight: 400; }
 .olio-carrello-testo p { margin: 0; color: var(--muted); font-size: .8rem; }
+.olio-carrello-testo .olio-carrello-prezzo { margin-top: 5px; color: var(--green-deep); font-size: .8rem; }
+.olio-carrello-prezzo b { font: italic 700 1.35rem/1 Georgia, serif; margin-right: 2px; }
+.olio-carrello-prezzo small { color: var(--muted); font-size: .74rem; }
 .olio-carrello .counter { margin: 0; height: 40px; background: #fffdf7; }
 /* nel menu del computer "Componi la cassetta" e' un pulsante pieno */
 .desktop-nav a[data-view-link="builder"] { padding: 11px 20px; border-radius: 999px; background: var(--green); color: var(--cream); box-shadow: 0 8px 18px rgba(52,69,31,.22); transition: background .2s, transform .2s; }
@@ -441,7 +442,7 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
   .olio-scheda { grid-template-columns: 1fr; gap: 6px; padding: 26px 18px 24px; background: radial-gradient(circle at 50% 22%, rgba(239,217,146,.62) 0, rgba(239,217,146,0) 38%), linear-gradient(160deg, #eef1dd 0%, #f7f0df 60%, #f4e7c8 100%); }
   .olio-figura img { width: min(62%, 220px); }
   .olio-testo h2 { font-size: 2.55rem; }
-  .olio-prezzi strong { font-size: 1.35rem; }
+  .olio-prezzi strong { font-size: 3rem; }
   .olio-azioni, .olio-azioni .primary-button { width: 100%; justify-items: stretch; }
   .olio-azioni .primary-button { justify-content: space-between; }
   .olio-nel-carrello .counter { flex: 1; }
