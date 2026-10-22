@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=39">
+  <link rel="stylesheet" href="styles.css?v=40">
 </head>
 <body>
   <div class="app-shell">
@@ -29,6 +29,7 @@
         <a href="#home" data-view-link="home">HOME</a>
         <a href="#storia" data-home-anchor="storia">CHI SONO</a>
         <a href="#conserve" data-home-anchor="conserve">CONSERVE</a>
+        <a href="#olio" data-home-anchor="olio">OLIO</a>
         <a href="#componi" data-view-link="builder">COMPONI LA CASSETTA</a>
         <a href="#contatti" data-home-anchor="contatti">CONTATTI</a>
       </nav>
@@ -50,8 +51,9 @@
         <a href="#home" data-view-link="home"><span>01</span> Home</a>
         <a href="#storia" data-home-anchor="storia"><span>02</span> Chi sono</a>
         <a href="#conserve" data-home-anchor="conserve"><span>03</span> Le mie conserve</a>
-        <a href="#componi" data-view-link="builder"><span>04</span> Componi la cassetta</a>
-        <a href="#contatti" data-home-anchor="contatti"><span>05</span> Contatti</a>
+        <a href="#olio" data-home-anchor="olio"><span>04</span> Olio di Soriano</a>
+        <a href="#componi" data-view-link="builder"><span>05</span> Componi la cassetta</a>
+        <a href="#contatti" data-home-anchor="contatti"><span>06</span> Contatti</a>
       </nav>
       <div class="menu-note">
         <span class="status-dot"></span>
@@ -181,18 +183,27 @@
             <h1>LA TUA SPESA<br><em>HA RADICI.</em></h1>
             <p>Verdure di stagione raccolte vicino a te, nella cassetta che componi tu.</p>
             <button class="primary-button hero-button" data-start-builder>
-              COMPONI LA TUA CASSETTA
+              <span class="hero-button-testo">
+                <svg class="hero-button-icona" viewBox="0 0 26 24" aria-hidden="true"><path d="M8 9.5C5.6 8.6 5 5.6 6.6 3.4c2.2 1.2 2.9 4 1.4 6.1ZM12.5 9.5c-.4-3 1.8-5.6 5-5.7.3 3.1-1.9 5.6-5 5.7Z"/><rect x="2.5" y="9.5" width="21" height="11" rx="1.6"/><path d="M2.5 15h21M9.5 9.5v11M16.5 9.5v11"/></svg>
+                COMPONI LA TUA CASSETTA
+              </span>
               <span aria-hidden="true">→</span>
             </button>
-            <a class="hero-conserve" href="#conserve" data-home-anchor="conserve">
-              <span class="hero-conserve-vasetti" aria-hidden="true">
-                <img src="assets/conserva-mini-salsa.webp" alt="" width="44" height="44">
-                <img src="assets/conserva-mini-pesto.webp" alt="" width="44" height="44">
-                <img src="assets/conserva-mini-zucca.webp" alt="" width="44" height="44">
-              </span>
-              <span class="hero-conserve-testo"><small>NOVITÀ</small><strong>CI SONO ANCHE <span class="intero">LE MIE CONSERVE</span></strong></span>
-              <span class="hero-conserve-freccia" aria-hidden="true">→</span>
-            </a>
+            <div class="hero-extra">
+              <a class="hero-conserve" href="#conserve" data-home-anchor="conserve">
+                <span class="hero-conserve-vasetti" aria-hidden="true">
+                  <img src="assets/conserva-mini-salsa.webp" alt="" width="44" height="44">
+                  <img src="assets/conserva-mini-pesto.webp" alt="" width="44" height="44">
+                </span>
+                <span class="hero-conserve-testo"><small>NOVITÀ</small><strong>LE MIE CONSERVE</strong></span>
+                <span class="hero-conserve-freccia" aria-hidden="true">→</span>
+              </a>
+              <a class="hero-conserve hero-olio" href="#olio" data-home-anchor="olio">
+                <img class="hero-olio-latta" src="assets/olio-latta.svg" alt="" width="40" height="52">
+                <span class="hero-conserve-testo"><small>LATTA DA 5 L</small><strong>OLIO DI SORIANO</strong></span>
+                <span class="hero-conserve-freccia" aria-hidden="true">→</span>
+              </a>
+            </div>
           </div>
           <div class="hero-proof">
             <strong>KM 0</strong>
@@ -269,6 +280,21 @@
           <div class="conserve-scelta" id="conserveScelta" role="tablist" aria-label="Scegli una conserva"></div>
           <article class="conserva-scheda" id="conservaScheda" role="tabpanel" aria-live="polite"></article>
           <p class="conserve-omaggio"><strong>ALLA DECIMA CASSETTA</strong> una conserva te la regalo io: scegli tu quale.</p>
+        </section>
+
+        <section class="olio section-wrap" id="olio">
+          <div class="olio-scheda reveal">
+            <div class="olio-figura">
+              <img src="assets/olio-latta.svg" alt="Latta da 5 litri dell'olio di Soriano nel Cimino" width="320" height="420" loading="lazy">
+            </div>
+            <div class="olio-testo">
+              <p class="eyebrow">DAI MONTI CIMINI · NOVITÀ</p>
+              <h2>L'OLIO DI<br><em>SORIANO NEL CIMINO.</em></h2>
+              <p>Olio prodotto a Soriano nel Cimino, sulle colline dei Monti Cimini vicino a Viterbo. Lo trovi nella latta da 5 litri, la scorta per la cucina di tutti i giorni, e te lo porto io insieme alla cassetta.</p>
+              <div class="olio-prezzi" id="olioPrezzi"></div>
+              <div class="olio-azioni" id="olioAzioni"></div>
+            </div>
+          </div>
         </section>
 
         <section class="field-gallery section-wrap">
@@ -438,6 +464,15 @@
                 </div>
                 <div class="conserve-carrello-griglia" id="conserveCarrelloGriglia"></div>
               </div>
+              <div class="olio-carrello" id="olioCarrello" hidden>
+                <img src="assets/olio-latta.svg" alt="" width="64" height="84" loading="lazy">
+                <div class="olio-carrello-testo">
+                  <small>DAI MONTI CIMINI · LATTA DA 5 L</small>
+                  <h3>OLIO DI <em>SORIANO NEL CIMINO</em></h3>
+                  <p id="olioCarrelloPrezzo"></p>
+                </div>
+                <div class="olio-carrello-contatore" id="olioCarrelloContatore"></div>
+              </div>
               <div class="seconda-cassetta" id="secondaCassetta" hidden>
                 <div class="seconda-cassetta-testo">
                   <small>PER CHI NE HA BISOGNO</small>
@@ -568,6 +603,7 @@
               <div><span>PRODOTTI</span><strong id="summaryQuota">0 PRODOTTI · INCLUSI 4-6</strong></div>
               <div><span>EXTRA PRODOTTI</span><strong id="summaryExtras">0,00 €</strong></div>
               <div id="summaryConserveRiga" hidden><span>CONSERVE</span><strong id="summaryConserve">0</strong></div>
+              <div id="summaryOlioRiga" hidden><span>OLIO</span><strong id="summaryOlio">0</strong></div>
               <div><span>CONSEGNA</span><strong id="summaryDelivery">DA DEFINIRE</strong></div>
             </div>
             <div class="basket-total">
@@ -682,7 +718,7 @@
               <div class="editor-title">
                 <div>
                   <small>NEGOZIO</small>
-                  <h3>CONSERVE IN VENDITA</h3>
+                  <h3>CONSERVE E OLIO IN VENDITA</h3>
                 </div>
                 <span>PREZZO · IN VENDITA</span>
               </div>
@@ -843,6 +879,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=39"></script>
+  <script src="app.js?v=40"></script>
 </body>
 </html>

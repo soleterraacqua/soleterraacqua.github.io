@@ -16,7 +16,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 39;
+const VERSIONE_SITO = 40;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -148,6 +148,10 @@ const CONSERVE = [
   }
 ];
 
+// l'olio di Soriano nel Cimino, in latta da 5 litri. Prezzo al litro e disponibilita' si cambiano
+// dalla dashboard (voce "olio" di settimana.json); finche' non c'e', valgono questi
+const OLIO = { nome: "Olio di Soriano nel Cimino", litri: 5, prezzoLitro: 14, disponibile: true, foto: "assets/olio-latta.svg" };
+
 CONSERVE.forEach(conserva => { conserva.prezzo = 0; conserva.disponibile = true; });
 
 const DEFAULT_PRESERVES = CONSERVE.map(conserva => ({ id: conserva.id, name: conserva.nome, enabled: true }));
@@ -241,6 +245,7 @@ const state = {
   selectedTime: "",
   area: "",
   conserve: {},
+  olio: 0,
   orderData: {},
   orders: [...DEMO_ORDERS],
   customers: {},
@@ -264,7 +269,11 @@ const costoCassette = () => cassetteOrdine().reduce((sum, cassetta) => sum + pre
 const extraTotale = () => cassetteOrdine().reduce((sum, cassetta) => sum + extraCassetta(cassetta), 0);
 const prodottiTotali = () => cassetteOrdine().reduce((sum, cassetta) => sum + cassetta.selectionOrder.length, 0);
 const nomeScatola = key => BOXES[key].label[0] + BOXES[key].label.slice(1).toLowerCase();
-const total = () => costoCassette() + state.deliveryFee + costoConserve();
+const olioInVendita = () => OLIO.disponibile !== false && OLIO.prezzoLitro > 0;
+const prezzoLatta = () => Math.round(OLIO.litri * OLIO.prezzoLitro * 100) / 100;
+const costoOlio = () => state.olio * prezzoLatta();
+const latte = quante => `${quante} ${quante === 1 ? "latta" : "latte"} da ${OLIO.litri} L`;
+const total = () => costoCassette() + state.deliveryFee + costoConserve() + costoOlio();
 
 // tutte le cassette dell'ordine, con quella aperta aggiornata a come e' adesso
 function cassetteOrdine() {
@@ -500,13 +509,18 @@ function codificaOrdine(order) {
     Math.max(0, LOCALITA.findIndex(localita => localita.nome === order.area)),
     String(order.box || "M").split(" + ").map(nome => nome.charAt(0).toUpperCase()).join(""),   // "Media + Piccola" -> MP
     Math.round(Number(order.total || 0) * 100),                               // in centesimi
-    origine >= 0 ? origine : testoPerLink(order.source),
-    (order.conserve || []).map(item => `${CONSERVE.findIndex(conserva => conserva.id === item.id)}x${item.quantita}`).join(",")
+    origine >= 0 ? origine : order.source ? testoPerLink(order.source) : 9,     // 9 = non ha risposto
+    [
+      ...(order.conserve || []).map(item => `${CONSERVE.findIndex(conserva => conserva.id === item.id)}x${item.quantita}`),
+      order.olio ? `O${order.olio}` : ""                                      // latte d'olio: O1, O2...
+    ].filter(Boolean).join(",")
   ].join(".").replace(/\.+$/, "");   // mai un punto finale: WhatsApp lo lascerebbe fuori dal link
 }
 
 function decodificaOrdine(testo) {
   const [, id, data, inizio, nome, telefono, indirizzo, zona, scatola, centesimi, origine, codiceConserve] = testo.split(".");
+  const codiceOlio = String(codiceConserve || "").split(",").find(pezzo => pezzo.startsWith("O")) || "";
+  const olio = Math.max(0, Math.floor(Number(codiceOlio.slice(1)) || 0));
   const area = LOCALITA[Number(zona)]?.nome || "Viterbo";
   const ora = `${String(inizio || "").slice(0, 2)}:${String(inizio || "").slice(2, 4)}`;
   const fascia = [...FASCE_ORARIE, ...FASCIA_ZONE_VICINE].find(([da]) => da === ora);
@@ -529,7 +543,8 @@ function decodificaOrdine(testo) {
     source: /^\d+$/.test(origine || "") ? ORIGINI_CLIENTE[Number(origine)] || "" : testoDalLink(origine),
     status: "Confermato",
     items: [],
-    notes: conserve ? `Conserve: ${conserve}` : "",
+    olio,
+    notes: [conserve ? `Conserve: ${conserve}` : "", olio ? `Olio: ${latte(olio)}` : ""].filter(Boolean).join(" · "),
     loyaltyCredited: false
   };
 }
@@ -661,7 +676,7 @@ function aggiornaPostoAiuto() {
   let copre = false;
   if (state.view === "home") {
     const a = aiuto.getBoundingClientRect();
-    copre = [".hero-button", ".hero-conserve"].some(selettore => {
+    copre = [".hero-button", ".hero-extra"].some(selettore => {
       const el = $(selettore);
       if (!el) return false;
       const r = el.getBoundingClientRect();
@@ -1022,7 +1037,7 @@ function updateSummary() {
   const pezzi = pezziConserve();
   const cassette = cassetteOrdine();
   const due = cassette.length > 1;
-  $("#headerCartCount").textContent = prodottiTotali() + pezzi;
+  $("#headerCartCount").textContent = prodottiTotali() + pezzi + state.olio;
   $("#summaryCassetteTitolo").textContent = due ? "LE TUE 2 CASSETTE" : "LA TUA CASSETTA";
   $("#summaryBoxLabel").textContent = due
     ? cassette.map(cassetta => BOXES[cassetta.box].label).join(" + ")
@@ -1035,9 +1050,11 @@ function updateSummary() {
   $("#summaryTotal").textContent = money(total());
   $("#mobileTotal").textContent = money(total());
   $("#mobileQuotaTitolo").textContent = due ? "2 CASSETTE" : "CASSETTA";
-  $("#mobileQuota").textContent = `${prodottiTotali()} prodotti${pezzi ? ` + ${pezzi} ${pezzi === 1 ? "conserva" : "conserve"}` : ""}`;
+  $("#mobileQuota").textContent = `${prodottiTotali()} prodotti${pezzi ? ` + ${pezzi} ${pezzi === 1 ? "conserva" : "conserve"}` : ""}${state.olio ? " + olio" : ""}`;
   $("#summaryConserveRiga").hidden = !pezzi;
   $("#summaryConserve").textContent = `${pezzi} · ${money(costoConserve())}`;
+  $("#summaryOlioRiga").hidden = !state.olio;
+  $("#summaryOlio").textContent = `${latte(state.olio).toUpperCase()} · ${money(costoOlio())}`;
   $("#quotaStatus").textContent = `${count} PRODOTTI SCELTI`;
   $("#quotaHint").textContent = missing
     ? `Scegli ancora ${missing} ${missing === 1 ? "prodotto" : "prodotti"} per completare la cassetta`
@@ -1070,7 +1087,7 @@ function updateSummary() {
 function salvaCarrello() {
   try {
     const cassette = cassetteOrdine().map(cassetta => ({ box: cassetta.box, prodotti: cassetta.selectionOrder }));
-    localStorage.setItem(CARRELLO_KEY, JSON.stringify({ box: state.box, prodotti: state.selectionOrder, conserve: state.conserve, cassette, attiva: state.attiva }));
+    localStorage.setItem(CARRELLO_KEY, JSON.stringify({ box: state.box, prodotti: state.selectionOrder, conserve: state.conserve, olio: state.olio, cassette, attiva: state.attiva }));
   } catch (_) {}
 }
 
@@ -1092,6 +1109,7 @@ function ripristinaCarrello() {
   Object.entries(salvato.conserve || {}).forEach(([id, quante]) => {
     if (vendibili.has(id) && quante > 0) state.conserve[id] = Math.min(20, Math.floor(quante));
   });
+  state.olio = olioInVendita() ? Math.max(0, Math.min(10, Math.floor(Number(salvato.olio) || 0))) : 0;
 }
 
 function svuotaCarrello() {
@@ -1101,10 +1119,12 @@ function svuotaCarrello() {
   state.attiva = 0;
   caricaCassetta(state.cassette[0]);
   state.conserve = {};
+  state.olio = 0;
   try { localStorage.removeItem(CARRELLO_KEY); } catch (_) {}
   renderProducts();
   renderConserve();
   renderConserveCarrello();
+  renderOlio();
   updateSummary();
 }
 
@@ -1201,6 +1221,53 @@ function renderConserve() {
       ${inVendita ? `<p class="conserva-nota">Arriva insieme alla tua cassetta di verdure. Domande? <a href="${whatsapp}" target="_blank" rel="noopener">Scrivimi su WhatsApp</a></p>` : ""}
     </div>
   `;
+}
+
+function changeOlio(delta) {
+  if (!olioInVendita()) return;
+  state.olio = Math.max(0, Math.min(10, state.olio + delta));
+  renderOlio();
+  updateSummary();
+  if (delta > 0) showToast(`Olio di Soriano: ${latte(state.olio)} nel carrello.`);
+}
+
+// l'olio compare in home (sezione dedicata) e in fondo ai prodotti, sotto le conserve
+function renderOlio() {
+  const inVendita = olioInVendita();
+  const quante = state.olio;
+  const contatore = `
+    <div class="counter">
+      <button type="button" data-olio-meno ${quante ? "" : "disabled"} aria-label="Togli una latta d'olio">−</button>
+      <b>${quante}</b>
+      <button type="button" data-olio-piu aria-label="Aggiungi una latta d'olio">+</button>
+    </div>`;
+  const prezzi = $("#olioPrezzi");
+  if (prezzi) {
+    prezzi.innerHTML = `
+      <div><strong>${OLIO.litri} L</strong><span>LA LATTA</span></div>
+      <div><strong>${money(OLIO.prezzoLitro).replace(",00", "")}</strong><span>AL LITRO</span></div>
+      <div class="olio-prezzo-latta"><strong>${money(prezzoLatta()).replace(",00", "")}</strong><span>UNA LATTA</span></div>`;
+    prezzi.hidden = !inVendita;
+  }
+  const azioni = $("#olioAzioni");
+  if (azioni) {
+    const whatsapp = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Ciao Alessio, vorrei informazioni sull'olio di Soriano nel Cimino.")}`;
+    azioni.innerHTML = !inVendita
+      ? `<p class="olio-esaurito">In questo momento è finito: scrivimi e ti dico quando torna.</p>
+         <a class="primary-button" href="${whatsapp}" target="_blank" rel="noopener">CHIEDIMELO SU WHATSAPP <span>→</span></a>`
+      : quante
+        ? `<div class="olio-nel-carrello">${contatore}<button type="button" class="primary-button" data-vai-carrello>VAI AL CARRELLO <span>→</span></button></div>
+           <p class="olio-nota">${latte(quante)} nel carrello: arriva insieme alla tua cassetta.</p>`
+        : `<button type="button" class="primary-button" data-olio-piu>AGGIUNGI AL CARRELLO · ${money(prezzoLatta())} <span>+</span></button>
+           <p class="olio-nota">Arriva insieme alla tua cassetta, nella stessa consegna.</p>`;
+  }
+  const carrello = $("#olioCarrello");
+  if (carrello) {
+    carrello.hidden = !inVendita;
+    carrello.classList.toggle("selected", quante > 0);
+    $("#olioCarrelloPrezzo").textContent = `${money(OLIO.prezzoLitro)} al litro · ${money(prezzoLatta())} la latta`;
+    $("#olioCarrelloContatore").innerHTML = contatore;
+  }
 }
 
 function oggiLocale() {
@@ -1315,10 +1382,13 @@ function renderCheckout() {
       `).join("")}
       ${due && pezziConserve() ? `<b class="checkout-cassetta">CONSERVE</b>` : ""}
       ${conserveOrdinate().map(item => `<span>🫙 ${item.quantita}× ${item.nome.toUpperCase()}</span>`).join("")}
+      ${due && state.olio ? `<b class="checkout-cassetta">OLIO</b>` : ""}
+      ${state.olio ? `<span>🫒 ${state.olio}× OLIO DI SORIANO · LATTA ${OLIO.litri} L</span>` : ""}
     </div>
     <div class="checkout-detail">
       <div><small>${due ? "CASSETTE" : "CASSETTA"}</small><strong>${cassette.map(cassetta => `${BOXES[cassetta.box].label} · ${cassetta.selectionOrder.length} PRODOTTI`).join("<br>")}</strong></div>
       ${pezziConserve() ? `<div><small>CONSERVE</small><strong>${pezziConserve()} ${pezziConserve() === 1 ? "VASETTO" : "VASETTI"} · ${money(costoConserve())}</strong></div>` : ""}
+      ${state.olio ? `<div><small>OLIO</small><strong>${latte(state.olio).toUpperCase()} · ${money(costoOlio())}</strong></div>` : ""}
       <div><small>CONSEGNA</small><strong>${formatDate(state.orderData.date)}<br>${state.orderData.time}</strong></div>
       <div><small>CLIENTE</small><strong>${escapeHtml(state.orderData.fullName)}<br>${escapeHtml(state.orderData.phone)}</strong></div>
       <div><small>INDIRIZZO</small><strong>${escapeHtml(state.orderData.address)}<br>${escapeHtml(state.orderData.area)}</strong></div>
@@ -1347,6 +1417,7 @@ function buildWhatsAppUrl(orderInput, discoverySource) {
     ? cassette.map((cassetta, indice) => `🧺 ${indice + 1}ª cassetta ${cassetta.box.toLowerCase()}: ${elenco(cassetta.items)}`)
     : [`🧺 Cassetta ${cassette[0].box.toLowerCase()}: ${elenco(cassette[0].items)}`];
   const conserve = (order?.conserve || conserveOrdinate()).map(item => `${item.quantita > 1 ? `${item.quantita}× ` : ""}${item.nome}`).join(", ");
+  const olio = order ? order.olio || 0 : state.olio;
   const area = order?.area || state.orderData.area;
   const giorno = formatDate(order?.date || state.orderData.date);
   const importUrl = order ? dashboardImportUrl(order) : "";
@@ -1357,8 +1428,10 @@ function buildWhatsAppUrl(orderInput, discoverySource) {
     `👤 ${order?.name || state.orderData.fullName} · ${order?.phone || state.orderData.phone}`,
     "",
     ...righeCassette,
-    conserve ? `🫙 Conserve: ${conserve}` : "",
-    notes ? `📝 ${notes}` : "",
+    // le righe facoltative entrano solo se ci sono: una riga vuota in mezzo lascerebbe un buco nel messaggio
+    ...(conserve ? [`🫙 Conserve: ${conserve}`] : []),
+    ...(olio ? [`🫒 Olio di Soriano: ${latte(olio)}`] : []),
+    ...(notes ? [`📝 ${notes}`] : []),
     "",
     `💶 *Totale ${money(order?.total || total())}* (${area === "Viterbo" ? "consegna gratuita" : `consegna ${money(2.5)} inclusa`})`,
     ...(discoverySource ? [`Mi ha conosciuto: ${discoverySource}`] : []),
@@ -1454,6 +1527,7 @@ function confirmOrder() {
   order.phone = state.orderData.phone;
   order.items = cassette.flatMap(cassetta => cassetta.items);
   order.conserve = conserveOrdinate();
+  order.olio = state.olio;
   order.notes = state.orderData.notes || "";
   order.loyaltyCredited = false;
   state.orders.unshift(order);
@@ -1531,6 +1605,12 @@ function applicaSettimana(dati) {
       if (typeof voce.disponibile === "boolean") conserva.disponibile = voce.disponibile;
     });
   }
+  if (dati.olio && typeof dati.olio === "object") {
+    const prezzo = Number(dati.olio.prezzoLitro);
+    if (Number.isFinite(prezzo)) OLIO.prezzoLitro = prezzo > 0 ? Math.round(prezzo * 100) / 100 : 0;
+    if (typeof dati.olio.disponibile === "boolean") OLIO.disponibile = dati.olio.disponibile;
+  }
+  if (!olioInVendita()) state.olio = 0;
   const vendibili = new Set(conserveInVendita().map(conserva => conserva.id));
   Object.keys(state.conserve).forEach(id => { if (!vendibili.has(id)) delete state.conserve[id]; });
   state.settimanaPubblicata = typeof dati.aggiornato === "string" ? dati.aggiornato : "";
@@ -1584,6 +1664,7 @@ async function aggiornaSettimanaDalSito() {
     renderProducts();
     renderConserve();
     renderConserveCarrello();
+    renderOlio();
     setupDatesAndTimes();
     updateSummary();
     renderWeekEditor();
@@ -1616,6 +1697,10 @@ function renderRiepilogoSettimana() {
     <div class="riepilogo-blocco">
       <small>CONSERVE IN VENDITA · ${conserve.length}</small>
       <p>${conserve.map(conserva => `<span>${conserva.nome} <em>${money(conserva.prezzo)}</em></span>`).join("") || "<span>Nessuna</span>"}</p>
+    </div>
+    <div class="riepilogo-blocco">
+      <small>OLIO DI SORIANO · LATTA ${OLIO.litri} L</small>
+      <p>${olioInVendita() ? `<span>${money(OLIO.prezzoLitro)} al litro <em>${money(prezzoLatta())} la latta</em></span>` : "<span>Non in vendita</span>"}</p>
     </div>
   `;
 }
@@ -1688,7 +1773,20 @@ function renderWeekEditor({ forza = false } = {}) {
         <span></span>
       </label>
     </div>
-  `).join("");
+  `).join("") + `
+    <div class="admin-conserva-row admin-olio-row">
+      <img src="${OLIO.foto}" alt="">
+      <span>${OLIO.nome}<small>latta ${OLIO.litri} L · prezzo AL LITRO</small></span>
+      <label class="prezzo-campo">
+        <input type="number" min="0" step="0.10" inputmode="decimal" value="${OLIO.prezzoLitro ? OLIO.prezzoLitro.toFixed(2) : ""}" placeholder="0,00" data-olio-prezzo aria-label="Prezzo al litro dell'olio">
+        <b>€/L</b>
+      </label>
+      <label class="availability-toggle" title="In vendita">
+        <input type="checkbox" data-olio-vendita ${OLIO.disponibile !== false ? "checked" : ""}>
+        <span></span>
+      </label>
+    </div>
+  `;
   contaVerdureAccese();
 }
 
@@ -1707,6 +1805,7 @@ function annullaModificaSettimana() {
   renderProducts();
   renderConserve();
   renderConserveCarrello();
+  renderOlio();
   setupDatesAndTimes();
   updateSummary();
   renderWeekEditor();
@@ -1812,6 +1911,11 @@ async function saveWeekSettings() {
       disponibile: Boolean($(`[data-conserva-vendita="${conserva.id}"]`)?.checked)
     };
   });
+  const prezzoOlio = parseFloat(String($("[data-olio-prezzo]")?.value || "").replace(",", "."));
+  const olio = {
+    prezzoLitro: Number.isFinite(prezzoOlio) && prezzoOlio > 0 ? Math.round(prezzoOlio * 100) / 100 : 0,
+    disponibile: Boolean($("[data-olio-vendita]")?.checked)
+  };
 
   const bottoni = $$("[data-salva-settimana]");
   const testi = bottoni.map(bottone => bottone.innerHTML);
@@ -1828,7 +1932,8 @@ async function saveWeekSettings() {
       aggiornato: new Date().toISOString(),
       giorni: deliveryDays,
       prodotti: verdure.map(voce => ({ ...voce, foto: PRODUCTS.find(product => product.id === voce.id).customImage || "" })),
-      conserve: conserveVendita
+      conserve: conserveVendita,
+      olio
     };
     const testo = `${JSON.stringify(dati, null, 2)}\n`;
     await scriviSuGitHub(chiave, SETTIMANA_FILE, base64Utf8(testo), "Settimana aggiornata dalla dashboard");
@@ -1852,6 +1957,7 @@ async function saveWeekSettings() {
   renderProducts();
   renderConserve();
   renderConserveCarrello();
+  renderOlio();
   updateSummary();
   renderWeekEditor();
 }
@@ -2232,6 +2338,8 @@ function setupEvents() {
     const meno = event.target.closest("[data-conserva-meno]");
     if (piu) changeConserva(piu.dataset.conservaPiu, 1);
     else if (meno) changeConserva(meno.dataset.conservaMeno, -1);
+    else if (event.target.closest("[data-olio-piu]")) changeOlio(1);
+    else if (event.target.closest("[data-olio-meno]")) changeOlio(-1);
     else if (event.target.closest("[data-vai-carrello]")) {
       navigate("builder");
       goToStep(quotaCount() ? 2 : 1);
@@ -2613,6 +2721,7 @@ function init() {
   ripristinaCarrello();
   renderConserve();
   renderConserveCarrello();
+  renderOlio();
   renderProducts();
   setupDatesAndTimes();
   setupEvents();
