@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=45">
+  <link rel="stylesheet" href="styles.css?v=46">
 </head>
 <body>
   <div class="app-shell">
@@ -660,6 +660,29 @@
           <article class="mint"><span>CLIENTI</span><strong id="statClienti">0</strong><small>recensioni: ancora nessuna</small></article>
         </div>
 
+        <section class="liste-giro">
+          <div class="panel-head compact">
+            <div>
+              <p class="eyebrow">FILE PDF</p>
+              <h2>LE LISTE DEL GIRO</h2>
+            </div>
+            <small class="liste-stato" id="listeStato">—</small>
+          </div>
+          <div class="liste-giro-grid">
+            <button type="button" class="lista-giro" data-lista="consegne">
+              <span class="lista-giro-icona"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8.2L19 7.6v13.6H6Z"/><path d="M14 2.8v5h5"/><path d="M8.8 12h7.4M8.8 15.2h7.4M8.8 18.4h4.6"/></svg></span>
+              <span class="lista-giro-testo"><strong>LISTA CONSEGNE</strong><small>Gli ordini in ordine di orario, con i km tra una consegna e l'altra</small></span>
+              <span class="lista-giro-freccia" aria-hidden="true">→</span>
+            </button>
+            <button type="button" class="lista-giro" data-lista="raccolta">
+              <span class="lista-giro-icona"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8.2L19 7.6v13.6H6Z"/><path d="M14 2.8v5h5"/><path d="M8.8 12h7.4M8.8 15.2h7.4M8.8 18.4h4.6"/></svg></span>
+              <span class="lista-giro-testo"><strong>LISTA RACCOLTA</strong><small>Quanta verdura raccogliere per ogni varietà, conserve e olio da preparare</small></span>
+              <span class="lista-giro-freccia" aria-hidden="true">→</span>
+            </button>
+          </div>
+          <p class="liste-nota">Si aggiornano da sole quando apri la dashboard, quando registri un ordine e ogni ora mentre resta aperta. Tocca una lista per vederla e scaricarla in PDF.</p>
+        </section>
+
         <section class="week-manager">
           <div class="panel-head week-manager-head">
             <div>
@@ -863,6 +886,18 @@
     </footer>
   </div>
 
+  <div class="visore-lista" id="visoreLista" hidden>
+    <div class="visore-barra">
+      <button type="button" class="visore-chiudi" data-chiudi-visore>← CHIUDI</button>
+      <strong id="visoreTitolo">LISTA</strong>
+      <div class="visore-azioni">
+        <button type="button" class="secondary-button" id="visoreCondividi" hidden>CONDIVIDI</button>
+        <a class="primary-button" id="visoreScarica" href="#" download>SCARICA PDF <span>↓</span></a>
+      </div>
+    </div>
+    <div class="visore-foglio" id="visoreFoglio"></div>
+  </div>
+
   <div class="popup-conserve" id="popupPrivacy" hidden>
     <div class="popup-conserve-card privacy-card" role="dialog" aria-modal="true" aria-labelledby="privacyTitolo">
       <button type="button" class="privacy-chiudi" data-chiudi-privacy aria-label="Chiudi l'informativa">×</button>
@@ -881,7 +916,7 @@
         <p>Il sito non ha un archivio online: quando confermi, i dati mi arrivano solo nel messaggio WhatsApp che mi invii tu. Io registro l'ordine nella mia area riservata, che conserva i dati solo sul mio telefono.</p>
         <p>Una copia del carrello e degli ordini che fai resta nella memoria del browser del tuo dispositivo: puoi cancellarla quando vuoi cancellando i dati del sito dal browser.</p>
         <h3>CHI ALTRO LI VEDE</h3>
-        <p>WhatsApp (WhatsApp Ireland Ltd., gruppo Meta), che trasporta il messaggio con l'ordine secondo la propria informativa privacy. GitHub Pages (GitHub Inc.), che ospita il sito e per motivi tecnici e di sicurezza può registrare l'indirizzo IP di chi lo visita. Questi servizi possono trattare dati anche fuori dall'Unione europea, con le garanzie previste dalla legge.</p>
+        <p>WhatsApp (WhatsApp Ireland Ltd., gruppo Meta), che trasporta il messaggio con l'ordine secondo la propria informativa privacy. GitHub Pages (GitHub Inc.), che ospita il sito e per motivi tecnici e di sicurezza può registrare l'indirizzo IP di chi lo visita. Per calcolare i chilometri del giro di consegne, dalla mia area riservata mando ai servizi di mappe di OpenStreetMap (Nominatim e OSRM) solo l'indirizzo e la località di consegna, mai nome o telefono. Questi servizi possono trattare dati anche fuori dall'Unione europea, con le garanzie previste dalla legge.</p>
         <h3>PER QUANTO TEMPO</h3>
         <p>Tengo i dati degli ordini per il tempo necessario a consegnarli e a gestire il regalo della decima cassetta; se non ordini più, li cancello entro 24 mesi dall'ultimo ordine. I dati che la legge mi obbliga a conservare per motivi fiscali restano per il tempo previsto dalla legge.</p>
         <h3>COOKIE</h3>
@@ -918,6 +953,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=45"></script>
+  <script src="app.js?v=46"></script>
 </body>
 </html>

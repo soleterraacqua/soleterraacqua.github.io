@@ -16,7 +16,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 45;
+const VERSIONE_SITO = 46;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -497,8 +497,30 @@ const testoDalLink = valore => {
   try { return decodeURIComponent(String(valore || "").replace(/-/g, "%20")); } catch (_) { return ""; }
 };
 
+// verdure nel link: posizione in questo elenco (x quantita' se piu' di una), cassette separate da "-".
+// Le verdure nuove vanno SOLO in fondo: spostarle cambierebbe il significato dei link gia' mandati.
+const VERDURE_NEL_LINK = [
+  "peperoni", "melanzane", "pomodori", "lattuga-romana", "lattuga-canasta", "lattuga-gentilina", "lattuga-iceberg",
+  "cicoria", "radicchio-treviso", "radicchio-chioggia", "bieta-colorata", "bieta-verde", "cocomero", "melone",
+  "broccolo-romanesco", "broccolo-siciliano", "cavolfiore", "cavolo-cappuccio", "cavolo-cappuccio-viola", "verza",
+  "cipolle-tropea", "cipolle-bianche", "ravanelli", "aglio", "odori-misti", "zucca", "carciofi", "asparagi", "patate",
+  "zucchine-romanesche", "cetrioli", "fiori-zucca", "peperoncini", "scarola-riccia", "scarola-liscia", "cavolo-nero",
+  "friggitelli"
+];
+
+const codiceVerdure = cassette => (cassette || []).map(cassetta => (cassetta.items || []).map(item => {
+  const posizione = VERDURE_NEL_LINK.indexOf(item.id);
+  if (posizione < 0) return "";
+  return item.quantity > 1 ? `${posizione}x${item.quantity}` : `${posizione}`;
+}).filter(Boolean).join(",")).join("-");
+
 function codificaOrdine(order) {
   const origine = ORIGINI_CLIENTE.indexOf(order.source);
+  const verdure = codiceVerdure(order.cassette);
+  const extra = [
+    ...(order.conserve || []).map(item => `${CONSERVE.findIndex(conserva => conserva.id === item.id)}x${item.quantita}`),
+    order.olio ? `O${order.olio}` : ""                                        // latte d'olio: O1, O2...
+  ].filter(Boolean).join(",");
   return [
     3,
     order.id,
@@ -511,25 +533,37 @@ function codificaOrdine(order) {
     String(order.box || "M").split(" + ").map(nome => nome.charAt(0).toUpperCase()).join(""),   // "Media + Piccola" -> MP
     Math.round(Number(order.total || 0) * 100),                               // in centesimi
     origine >= 0 ? origine : order.source ? testoPerLink(order.source) : 9,     // 9 = non ha risposto
-    [
-      ...(order.conserve || []).map(item => `${CONSERVE.findIndex(conserva => conserva.id === item.id)}x${item.quantita}`),
-      order.olio ? `O${order.olio}` : ""                                      // latte d'olio: O1, O2...
-    ].filter(Boolean).join(",")
+    extra || (verdure ? "n" : ""),                                            // n = niente conserve ne' olio
+    verdure                                                                   // le verdure di ogni cassetta
   ].join(".").replace(/\.+$/, "");   // mai un punto finale: WhatsApp lo lascerebbe fuori dal link
 }
 
 function decodificaOrdine(testo) {
-  const [, id, data, inizio, nome, telefono, indirizzo, zona, scatola, centesimi, origine, codiceConserve] = testo.split(".");
+  const [, id, data, inizio, nome, telefono, indirizzo, zona, scatola, centesimi, origine, codiceConserve, codiceCassette] = testo.split(".");
   const codiceOlio = String(codiceConserve || "").split(",").find(pezzo => pezzo.startsWith("O")) || "";
   const olio = Math.max(0, Math.floor(Number(codiceOlio.slice(1)) || 0));
   const area = LOCALITA[Number(zona)]?.nome || "Viterbo";
   const ora = `${String(inizio || "").slice(0, 2)}:${String(inizio || "").slice(2, 4)}`;
   const fascia = [...FASCE_ORARIE, ...FASCIA_ZONE_VICINE].find(([da]) => da === ora);
-  const conserve = String(codiceConserve || "").split(",").filter(Boolean).map(pezzo => {
+  const conserveOrdinate = String(codiceConserve || "").split(",").map(pezzo => {
     const [posizione, quantita] = pezzo.split("x").map(Number);
-    const conserva = CONSERVE[posizione];
-    return conserva ? `${quantita}× ${conserva.nome}` : "";
-  }).filter(Boolean).join("; ");
+    const conserva = /^\d+x\d+$/.test(pezzo) ? CONSERVE[posizione] : null;
+    return conserva ? { id: conserva.id, nome: conserva.nome, quantita } : null;
+  }).filter(Boolean);
+  const conserve = conserveOrdinate.map(item => `${item.quantita}× ${item.nome}`).join("; ");
+  const scatole = [...String(scatola || "")].map(lettera => ({ P: "Piccola", M: "Media", G: "Grande" }[lettera])).filter(Boolean);
+  if (!scatole.length) scatole.push("Media");
+  // i link mandati prima della versione 46 non hanno le verdure: restano solo nel messaggio WhatsApp
+  const codici = codiceCassette === undefined ? null : String(codiceCassette).split("-");
+  const cassette = scatole.map((box, indice) => {
+    if (!codici) return { box, items: [], senzaElenco: true };
+    const items = String(codici[indice] || "").split(",").filter(Boolean).map(pezzo => {
+      const [posizione, quantita] = pezzo.split("x").map(Number);
+      const product = PRODUCTS.find(item => item.id === VERDURE_NEL_LINK[posizione]);
+      return product ? { id: product.id, name: product.name, weight: product.weight, emoji: product.emoji, quantity: quantita || 1 } : null;
+    }).filter(Boolean);
+    return { box, items };
+  });
   return {
     id,
     date: data ? `20${data.slice(0, 2)}-${data.slice(2, 4)}-${data.slice(4, 6)}` : "",
@@ -539,12 +573,15 @@ function decodificaOrdine(testo) {
     phone: telefono || "",
     address: testoDalLink(indirizzo),
     area,
-    box: [...String(scatola || "")].map(lettera => ({ P: "Piccola", M: "Media", G: "Grande" }[lettera])).filter(Boolean).join(" + ") || "Media",
+    box: scatole.join(" + "),
+    cassette,
     total: Number(centesimi || 0) / 100,
     source: /^\d+$/.test(origine || "") ? ORIGINI_CLIENTE[Number(origine)] || "" : testoDalLink(origine),
     status: "Confermato",
-    items: [],
+    items: cassette.flatMap(cassetta => cassetta.items),
+    conserve: conserveOrdinate,
     olio,
+    registrato: Date.now(),
     notes: [conserve ? `Conserve: ${conserve}` : "", olio ? `Olio: ${latte(olio)}` : ""].filter(Boolean).join(" · "),
     loyaltyCredited: false
   };
@@ -2285,6 +2322,241 @@ function renderDashboard(filter = state.orderFilter || "all") {
   renderCustomers();
   renderWeekEditor();
   renderPreservesEditor();
+  aggiornaListe();
+  avviaListeOrarie();
+}
+
+// ---------- Liste del giro: consegne (con i km) e raccolta, in anteprima e in PDF ----------
+// Non c'e' un server: le liste si rifanno sul telefono quando si apre la dashboard, quando si
+// registra un ordine e ogni ora finche' la dashboard resta aperta.
+const ORA_IN_MS = 60 * 60 * 1000;
+const liste = { firma: "", alle: 0, consegne: null, raccolta: null, aperta: "", urlPdf: "", file: null, giro: 0 };
+let moduloListe = null;
+const caricaModuloListe = () => (moduloListe ||= import(`./liste.js?v=${VERSIONE_SITO}`));
+const inizioFascia = order => String(order.deliveryWindow || order.time || "").slice(0, 5);
+const kmTesto = km => km.toFixed(1).replace(".", ",");
+
+// ordini ancora da consegnare, per giorno e per fascia oraria
+function ordiniPerGiorno() {
+  const oggi = oggiLocale();
+  const ordini = state.orders
+    .map((order, posizione) => ({ order, posizione }))
+    .filter(({ order }) => order.status !== "Consegnato" && String(order.date || "") >= oggi)
+    .sort((a, b) => a.order.date.localeCompare(b.order.date)
+      || inizioFascia(a.order).localeCompare(inizioFascia(b.order))
+      || (a.order.registrato || 0) - (b.order.registrato || 0)
+      || b.posizione - a.posizione)   // in state.orders i piu' recenti sono in cima
+    .map(({ order }) => order);
+  const gruppi = [];
+  ordini.forEach(order => {
+    if (gruppi.at(-1)?.data !== order.date) gruppi.push({ data: order.date, ordini: [] });
+    gruppi.at(-1).ordini.push(order);
+  });
+  return gruppi;
+}
+
+function cassetteDellOrdine(order) {
+  if (order.cassette?.length) return order.cassette;
+  return String(order.box || "Media").split(" + ").map((box, indice) => ({
+    box,
+    items: indice === 0 && order.items?.length ? order.items : [],
+    senzaElenco: !(indice === 0 && order.items?.length)
+  }));
+}
+
+function conserveDellOrdine(order) {
+  if (Array.isArray(order.conserve)) return order.conserve.map(item => ({ id: item.id, nome: item.nome, quantita: Number(item.quantita) || 0 }));
+  // ordini registrati prima: le conserve sono solo nelle note ("Conserve: 2× Salsa; 1× Pesto · Olio: …")
+  const testo = (String(order.notes || "").match(/Conserve: ([^·]+)/) || [])[1] || "";
+  return testo.split(";").map(pezzo => pezzo.trim().match(/^(\d+)× (.+)$/)).filter(Boolean)
+    .map(([, quantita, nome]) => ({ id: CONSERVE.find(conserva => conserva.nome === nome.trim())?.id || nome.trim(), nome: nome.trim(), quantita: Number(quantita) }));
+}
+
+// "500 g" preso 7 volte -> "7 × 500 g = 3,5 kg"; "1 mazzo" 3 volte -> "3 mazzi"
+function quantitaRaccolta(peso, volte) {
+  const parti = String(peso).trim().toLowerCase().match(/^(\d+(?:[.,]\d+)?)\s*(g|kg|pz|mazz[oi]|cesp[oi])$/);
+  if (!parti) return `${volte} × ${peso}`;
+  const valore = parseFloat(parti[1].replace(",", ".")) * volte;
+  const numero = v => String(Math.round(v * 100) / 100).replace(".", ",");
+  if (parti[2] === "g" || parti[2] === "kg") {
+    const grammi = parti[2] === "kg" ? valore * 1000 : valore;
+    const totale = grammi >= 1000 ? `${numero(grammi / 1000)} kg` : `${numero(grammi)} g`;
+    return volte === 1 ? totale : `${volte} × ${peso} = ${totale}`;
+  }
+  if (parti[2] === "pz") return volte === 1 || parti[1] === "1" ? `${numero(valore)} pz` : `${volte} × ${peso} = ${numero(valore)} pz`;
+  const singolare = parti[2].startsWith("mazz") ? "mazzo" : "cespo";
+  return `${numero(valore)} ${valore === 1 ? singolare : `${singolare.slice(0, -1)}i`}`;
+}
+
+function aggiornataAlle(quando) {
+  const giorno = new Date(quando).toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+  const ora = new Date(quando).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+  return `Aggiornata ${giorno} alle ${ora}`;
+}
+
+function documentoConsegne(gruppi, kmPerGiorno) {
+  const blocchi = [];
+  if (!gruppi.length) blocchi.push({ tipo: "vuoto", testo: "Nessun ordine da consegnare: quando registri un ordine dal link WhatsApp compare qui." });
+  gruppi.forEach((gruppo, indiceGiorno) => {
+    const km = kmPerGiorno?.[indiceGiorno];
+    const conKm = km && km.metodo !== "offline" && gruppo.ordini.length > 1;
+    const totale = conKm ? km.km.reduce((somma, valore) => somma + (valore || 0), 0) : 0;
+    const quante = gruppo.ordini.length;
+    blocchi.push({ tipo: "giorno", testo: formatDate(gruppo.data), destra: `${quante} ${quante === 1 ? "consegna" : "consegne"}${conKm ? ` · ${kmTesto(totale)} km` : ""}` });
+    gruppo.ordini.forEach((order, indice) => {
+      const conserve = conserveDellOrdine(order);
+      let destra = "1ª tappa";
+      if (indice > 0) {
+        const tratto = km?.km[indice];
+        destra = !km ? "km…" : tratto == null ? "km ?" : `${km.approssimate[indice] ? "~" : "+"} ${kmTesto(tratto)} km`;
+      }
+      blocchi.push({
+        tipo: "fermata",
+        numero: indice + 1,
+        titolo: `${order.deliveryWindow || order.time || "—"} · ${order.name}`,
+        destra,
+        righe: [
+          `Tel. ${customerDisplayPhone(order.phone)}`,
+          `${order.address}, ${order.area}${km?.mancanti?.[indice] ? " (indirizzo non trovato sulla mappa)" : ""}`,
+          ...cassetteDellOrdine(order).map(cassetta => `Cassetta ${cassetta.box.toLowerCase()}: ${cassetta.items.length
+            ? cassetta.items.map(item => `${item.quantity > 1 ? `${item.quantity}× ` : ""}${item.name}`).join(", ")
+            : "le verdure sono nel messaggio WhatsApp"}`),
+          conserve.length ? `Conserve: ${conserve.map(item => `${item.quantita}× ${item.nome}`).join(", ")}` : "",
+          order.olio ? `Olio: ${latte(order.olio)}` : "",
+          order.notes && !/^(Conserve|Olio):/.test(order.notes) ? `Note: ${order.notes}` : "",
+          `Totale ${money(order.total)} · ordine #${order.id}`
+        ].filter(Boolean)
+      });
+    });
+  });
+  const metodi = new Set((kmPerGiorno || []).map(km => km.metodo));
+  let nota = "I km tra una consegna e la successiva si stanno calcolando.";
+  if (kmPerGiorno) {
+    nota = metodi.has("offline")
+      ? "Km non disponibili: per calcolarli serve internet. Riapri la lista quando sei connesso."
+      : metodi.has("aria")
+        ? "Km in linea d'aria: il servizio delle strade non ha risposto. ~ = indirizzo non trovato, conto dal centro della località."
+        : "Km su strada tra una consegna e la successiva (mappe OpenStreetMap). ~ = indirizzo non trovato, conto dal centro della località.";
+  }
+  if (gruppi.length) blocchi.push({ tipo: "nota", testo: `In ordine di fascia oraria. ${nota}` });
+  return { titolo: "LISTA CONSEGNE", sottotitolo: aggiornataAlle(liste.alle), piede: "Sole Terra Acqua · lista consegne", nome: "lista-consegne", blocchi };
+}
+
+function documentoRaccolta(gruppi) {
+  const blocchi = [];
+  if (!gruppi.length) blocchi.push({ tipo: "vuoto", testo: "Nessun ordine da consegnare: quando registri un ordine dal link WhatsApp compare qui." });
+  gruppi.forEach(gruppo => {
+    const cassette = gruppo.ordini.flatMap(cassetteDellOrdine);
+    blocchi.push({ tipo: "giorno", testo: formatDate(gruppo.data), destra: `${gruppo.ordini.length} ${gruppo.ordini.length === 1 ? "ordine" : "ordini"} · ${cassette.length} ${cassette.length === 1 ? "cassetta" : "cassette"}` });
+
+    blocchi.push({ tipo: "sezione", testo: "CASSETTE DA PREPARARE" });
+    ["Piccola", "Media", "Grande"].forEach(box => {
+      const quante = cassette.filter(cassetta => cassetta.box === box).length;
+      if (quante) blocchi.push({ tipo: "voce", testo: `Cassetta ${box.toLowerCase()}`, destra: `${quante}` });
+    });
+
+    const verdure = new Map();
+    cassette.forEach(cassetta => cassetta.items.forEach(item => verdure.set(item.id, (verdure.get(item.id) || 0) + item.quantity)));
+    blocchi.push({ tipo: "sezione", testo: "VERDURE DA RACCOGLIERE" });
+    [...verdure.entries()]
+      .map(([id, volte]) => ({ product: PRODUCTS.find(item => item.id === id), volte }))
+      .filter(voce => voce.product)
+      .sort((a, b) => a.product.name.localeCompare(b.product.name, "it"))
+      .forEach(({ product, volte }) => blocchi.push({ tipo: "voce", testo: product.name, destra: quantitaRaccolta(product.weight, volte) }));
+    if (!verdure.size) blocchi.push({ tipo: "nota", testo: "Nessuna verdura con l'elenco registrato per questo giorno." });
+    const senzaElenco = gruppo.ordini.filter(order => cassetteDellOrdine(order).some(cassetta => cassetta.senzaElenco));
+    if (senzaElenco.length) {
+      blocchi.push({ tipo: "nota", testo: `Da aggiungere a mano: ${senzaElenco.length === 1 ? "l'ordine" : "gli ordini"} ${senzaElenco.map(order => `#${order.id} (${order.name})`).join(", ")} ${senzaElenco.length === 1 ? "è stato registrato" : "sono stati registrati"} prima di questo aggiornamento: le verdure le trovi nel messaggio WhatsApp.` });
+    }
+
+    const conserve = new Map();
+    gruppo.ordini.flatMap(conserveDellOrdine).forEach(item => {
+      const voce = conserve.get(item.id) || { nome: item.nome, quantita: 0 };
+      voce.quantita += item.quantita;
+      conserve.set(item.id, voce);
+    });
+    if (conserve.size) {
+      blocchi.push({ tipo: "sezione", testo: "CONSERVE" });
+      conserve.forEach(voce => blocchi.push({ tipo: "voce", testo: voce.nome, destra: `${voce.quantita} ${voce.quantita === 1 ? "vasetto" : "vasetti"}` }));
+    }
+
+    const olio = gruppo.ordini.reduce((somma, order) => somma + (Number(order.olio) || 0), 0);
+    if (olio) {
+      blocchi.push({ tipo: "sezione", testo: "OLIO" });
+      blocchi.push({ tipo: "voce", testo: `Latte d'olio da ${OLIO.litri} L`, destra: `${olio} (${olio * OLIO.litri} litri)` });
+    }
+  });
+  return { titolo: "LISTA RACCOLTA", sottotitolo: aggiornataAlle(liste.alle), piede: "Sole Terra Acqua · lista raccolta", nome: "lista-raccolta", blocchi };
+}
+
+function mostraStatoListe(testo) {
+  const stato = $("#listeStato");
+  if (stato) stato.textContent = testo;
+}
+
+async function aggiornaListe({ forza = false } = {}) {
+  const gruppi = ordiniPerGiorno();
+  const firma = JSON.stringify(gruppi.map(gruppo => [gruppo.data, gruppo.ordini.map(order => [order.id, order.address, order.area, order.deliveryWindow, order.status])]));
+  if (!forza && firma === liste.firma && Date.now() - liste.alle < ORA_IN_MS) return;
+  const giro = ++liste.giro;
+  liste.firma = firma;
+  liste.alle = Date.now();
+  liste.raccolta = documentoRaccolta(gruppi);
+  liste.consegne = documentoConsegne(gruppi, null);
+  const ora = new Date(liste.alle).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+  const daCalcolare = gruppi.some(gruppo => gruppo.ordini.length > 1);
+  mostraStatoListe(`Aggiornate alle ${ora}${daCalcolare ? " · calcolo i km…" : ""}`);
+  if (liste.aperta) mostraLista(liste.aperta);
+  if (!daCalcolare) return;
+  try {
+    const modulo = await caricaModuloListe();
+    const kmPerGiorno = [];
+    for (const gruppo of gruppi) kmPerGiorno.push(await modulo.calcolaKm(gruppo.ordini.map(order => ({ indirizzo: order.address, zona: order.area }))));
+    if (giro !== liste.giro) return;   // nel frattempo e' arrivato un ordine: ci pensa il giro nuovo
+    liste.consegne = documentoConsegne(gruppi, kmPerGiorno);
+    const offline = kmPerGiorno.some(km => km.metodo === "offline");
+    mostraStatoListe(`Aggiornate alle ${ora}${offline ? " · km non disponibili senza internet" : " · km calcolati"}`);
+    if (liste.aperta === "consegne") mostraLista("consegne");
+  } catch (_) {
+    if (giro === liste.giro) mostraStatoListe(`Aggiornate alle ${ora} · km non disponibili`);
+  }
+}
+
+let listeOrarie = null;
+function avviaListeOrarie() {
+  if (listeOrarie) return;
+  listeOrarie = setInterval(() => {
+    if (state.view === "dashboard" && isDashboardUnlocked()) aggiornaListe({ forza: true });
+  }, ORA_IN_MS);
+}
+
+// anteprima a tutto schermo con "Scarica PDF" (e "Condividi" dove il telefono lo permette)
+async function mostraLista(quale) {
+  if (!liste[quale]) await aggiornaListe({ forza: true });
+  const documento = liste[quale];
+  const modulo = await caricaModuloListe();
+  liste.aperta = quale;
+  $("#visoreTitolo").textContent = documento.titolo;
+  $("#visoreFoglio").innerHTML = modulo.documentoHtml(documento);
+  const quando = new Date(liste.alle);
+  const nome = `${documento.nome}-${oggiLocale()}-${String(quando.getHours()).padStart(2, "0")}${String(quando.getMinutes()).padStart(2, "0")}.pdf`;
+  liste.file = new File([modulo.creaPdf(documento)], nome, { type: "application/pdf" });
+  if (liste.urlPdf) URL.revokeObjectURL(liste.urlPdf);
+  liste.urlPdf = URL.createObjectURL(liste.file);
+  $("#visoreScarica").href = liste.urlPdf;
+  $("#visoreScarica").download = nome;
+  $("#visoreCondividi").hidden = !(navigator.canShare && navigator.canShare({ files: [liste.file] }));
+  if ($("#visoreLista").hidden) {
+    $("#visoreLista").hidden = false;
+    $("#visoreFoglio").scrollTop = 0;
+    document.body.style.overflow = "hidden";
+  }
+}
+
+function chiudiLista() {
+  liste.aperta = "";
+  $("#visoreLista").hidden = true;
+  document.body.style.overflow = "";
 }
 
 function optimizeRoutes() {
@@ -2373,6 +2645,14 @@ function setupEvents() {
   });
   $("#confirmOrder").addEventListener("click", confirmOrder);
   $("#optimizeRoutes").addEventListener("click", optimizeRoutes);
+  $$("[data-lista]").forEach(bottone => bottone.addEventListener("click", () => mostraLista(bottone.dataset.lista)));
+  $$("[data-chiudi-visore]").forEach(bottone => bottone.addEventListener("click", chiudiLista));
+  $("#visoreCondividi").addEventListener("click", () => {
+    if (liste.file) navigator.share({ files: [liste.file], title: liste.file.name }).catch(() => {});
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !$("#visoreLista").hidden) chiudiLista();
+  });
   $("#ordersTable").addEventListener("click", event => {
     const button = event.target.closest("[data-deliver-order]");
     if (button) markOrderDelivered(button.dataset.deliverOrder);
