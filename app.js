@@ -16,7 +16,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 47;
+const VERSIONE_SITO = 48;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -1092,6 +1092,8 @@ function updateSummary() {
   $("#summaryConserveRiga").hidden = !pezzi;
   $("#summaryConserve").textContent = `${pezzi} · ${money(costoConserve())}`;
   $("#summaryOlioRiga").hidden = !state.olio;
+  const pieno = due || prodottiTotali() + pezzi + state.olio > 0;
+  $$("[data-svuota-carrello]").forEach(pulsante => { pulsante.hidden = !pieno; });
   $("#summaryOlio").textContent = `${latte(state.olio).toUpperCase()} · ${money(costoOlio())}`;
   $("#quotaStatus").textContent = `${count} PRODOTTI SCELTI`;
   $("#quotaHint").textContent = missing
@@ -1164,6 +1166,23 @@ function svuotaCarrello() {
   renderConserveCarrello();
   renderOlio();
   updateSummary();
+}
+
+// il cliente puo' ricominciare da capo quando vuole: prima il carrello si svuotava solo dopo l'ordine
+function chiediSvuotaCarrello() {
+  const due = cassetteOrdine().length > 1;
+  const cose = [
+    due ? "la 2ª cassetta" : "",
+    prodottiTotali() ? "le verdure" : "",
+    pezziConserve() ? "le conserve" : "",
+    state.olio ? "l'olio" : ""
+  ].filter(Boolean);
+  if (!cose.length) return;
+  const elenco = cose.length > 1 ? `${cose.slice(0, -1).join(", ")} e ${cose[cose.length - 1]}` : cose[0];
+  if (!window.confirm(`Vuoi svuotare il carrello? Tolgo ${elenco} che hai scelto.`)) return;
+  svuotaCarrello();
+  if (state.step > 2) goToStep(1);
+  showToast("Carrello svuotato: puoi ricominciare da capo.");
 }
 
 function conserveOrdinate() {
@@ -2611,6 +2630,7 @@ function setupEvents() {
   }));
   $$(".box-option").forEach(button => button.addEventListener("click", () => selectBox(button.dataset.box)));
   $$("[data-seconda]").forEach(button => button.addEventListener("click", () => aggiungiSecondaCassetta(button.dataset.seconda)));
+  $$("[data-svuota-carrello]").forEach(button => button.addEventListener("click", chiediSvuotaCarrello));
   $("#cassetteSchede").addEventListener("click", event => {
     if (event.target.closest("[data-togli-seconda]")) togliSecondaCassetta();
     const scheda = event.target.closest("[data-cassetta]");

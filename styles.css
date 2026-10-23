@@ -812,6 +812,10 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .basket-total span { font-size: .82rem; letter-spacing: .12em; font-weight: 900; }
 .basket-total strong { font-size: 1.66rem; }
 .basket-footnote { display: block; color: var(--muted); font-size: .73rem; margin-top: 12px; }
+.svuota-carrello { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px; padding: 6px 0; border: 0; background: none; color: var(--terracotta); font: inherit; font-size: .72rem; font-weight: 900; letter-spacing: .1em; cursor: pointer; }
+.svuota-carrello:hover { text-decoration: underline; }
+.svuota-carrello svg, .svuota-barra svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.svuota-carrello[hidden], .svuota-barra[hidden] { display: none; }
 .mobile-basket-bar { display: none; }
 
 .quota-banner { background: var(--green); color: var(--cream); padding: 18px 22px; display: grid; grid-template-columns: 160px 1fr auto; align-items: center; gap: 20px; margin-bottom: 25px; border-radius: var(--soft-radius); }
@@ -1365,6 +1369,10 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .mobile-basket-bar small, .mobile-basket-bar strong { display: block; }
   .mobile-basket-bar small { color: #b8cabd; font-size: .68rem; letter-spacing: .1em; }
   .mobile-basket-bar strong { font-size: .88rem; margin-top: 3px; }
+  .mobile-basket-bar { align-items: center; gap: 12px; }
+  .mobile-basket-bar > div:nth-child(2) { margin-left: auto; text-align: right; min-width: 0; }
+  .svuota-barra { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: none; margin: -4px -6px -4px 0; padding: 4px 6px 4px 12px; border: 0; border-left: 1px solid rgba(255,255,255,.22); background: none; color: white; cursor: pointer; }
+  .mobile-basket-bar .svuota-barra small { font-size: .58rem; letter-spacing: .1em; }
   .dashboard-grid { grid-template-columns: 1fr; }
   .dashboard-stats { grid-template-columns: repeat(2, 1fr); }
   .week-manager-grid { grid-template-columns: 1fr; }
