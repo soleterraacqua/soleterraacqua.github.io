@@ -16,7 +16,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 48;
+const VERSIONE_SITO = 49;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -241,6 +241,7 @@ const state = {
   cassette: [{ box: "media", selectionOrder: [] }],
   attiva: 0,
   deliveryDays: [],
+  ordiniChiusi: false,
   deliveryFee: 0,
   selectedDate: "",
   selectedTime: "",
@@ -812,6 +813,12 @@ function aggiornaCassettaFluttuante() {
 }
 
 function goToStep(step) {
+  // a ordini chiusi il sito resta tutto visibile: si guarda e si compone, ma non si va alla consegna
+  if (step > 2 && state.ordiniChiusi) {
+    showToast("Ordini chiusi per ora: potrai ordinare appena pubblico i giorni della prossima settimana.", 4500);
+    if (state.step <= 2) return;
+    step = 2;
+  }
   if (step > 2) {
     // con due cassette devono essere pronte tutte e due: se manca qualcosa riapro quella giusta
     const cassette = cassetteOrdine();
@@ -914,7 +921,7 @@ function renderProducts() {
         <div class="product-card-body">
           <small>1 PRODOTTO · ${product.weight.toUpperCase()}</small>
           <h3>${product.name.toUpperCase()}</h3>
-          <p>Disponibile questa settimana</p>
+          <p>${state.ordiniChiusi ? "Verdura di stagione" : "Disponibile questa settimana"}</p>
           <div class="counter">
             <button data-product-minus="${product.id}" ${quantity === 0 ? "disabled" : ""} aria-label="Togli ${product.name}">−</button>
             <b>${quantity}</b>
@@ -1102,7 +1109,7 @@ function updateSummary() {
       ? `${extraItems} ${extraItems === 1 ? "prodotto extra" : "prodotti extra"} · ${money(extraCost())}`
       : `Nel prezzo sono inclusi da ${box.min} a ${box.included} prodotti`;
   $("#liveCrateLabel").textContent = due ? `${state.attiva + 1}ª CASSETTA · ${box.label}` : `CASSETTA ${box.label}`;
-  $("#toDelivery").disabled = count < box.min;
+  aggiornaPulsanteConsegna();
   $("#invitoConserve").hidden = count < box.min || !conserveInVendita().length;
   renderSecondaCassetta();
 
@@ -1337,12 +1344,23 @@ function giorniPrenotabili() {
   return state.deliveryDays.filter(giorno => giorno > oggi);
 }
 
+// prima a ordini chiusi il compositore spariva; ora resta visibile e si blocca solo il passaggio alla consegna
 function aggiornaOrdiniAperti() {
   const aperti = giorniPrenotabili().length > 0 || !state.settimanaArrivata;
+  const cambiato = state.ordiniChiusi === aperti;
+  state.ordiniChiusi = !aperti;
   $("#builderView").classList.toggle("chiuso", !aperti);
   $("#ordiniChiusi").hidden = aperti;
+  aggiornaPulsanteConsegna();
+  if (cambiato) renderProducts();
   aggiornaPostoAiuto();
   return aperti;
+}
+
+function aggiornaPulsanteConsegna() {
+  const pulsante = $("#toDelivery");
+  pulsante.disabled = state.ordiniChiusi || quotaCount() < boxData().min;
+  pulsante.innerHTML = state.ordiniChiusi ? "ORDINI CHIUSI PER ORA" : "SCELGO LA CONSEGNA <span>→</span>";
 }
 
 function minutiFascia(da, a) {
@@ -2625,7 +2643,7 @@ function setupEvents() {
   $$("[data-prev-step]").forEach(button => button.addEventListener("click", () => goToStep(state.step - 1)));
   $$("[data-step-jump]").forEach(button => button.addEventListener("click", () => {
     const target = Number(button.dataset.stepJump);
-    if (target <= state.step || target <= 2) goToStep(target);
+    if (target <= state.step || target <= 2 || state.ordiniChiusi) goToStep(target);
     else showToast("Completa questo passaggio prima di continuare.");
   }));
   $$(".box-option").forEach(button => button.addEventListener("click", () => selectBox(button.dataset.box)));

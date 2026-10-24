@@ -1213,15 +1213,17 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
   border-radius: var(--soft-radius);
 }
 .week-manager-head > div > p:last-child { margin: 8px 0 0; color: var(--muted); font-size: .83rem; }
-/* Ordini chiusi: finita la settimana, il compositore resta chiuso finche' non pubblico la nuova */
-#builderView.chiuso .stepper,
-#builderView.chiuso .builder-layout,
-#builderView.chiuso .mobile-basket-bar { display: none !important; }
+/* Ordini chiusi: finita la settimana il sito resta tutto visibile; sopra il compositore un avviso
+   e il passaggio alla consegna bloccato finche' non pubblico la nuova */
 .ordini-chiusi[hidden] { display: none; }
-.ordini-chiusi { padding-bottom: 90px; }
-.ordini-chiusi-card { max-width: 640px; background: var(--sage-light); padding: clamp(26px, 5vw, 46px); border-radius: var(--soft-radius); }
-.ordini-chiusi-card h2 { margin: 6px 0 16px; }
-.ordini-chiusi-card > p:not(.eyebrow) { color: var(--muted); line-height: 1.65; margin: 0 0 26px; max-width: 520px; }
+.ordini-chiusi { padding-bottom: 34px; }
+.ordini-chiusi-card { display: flex; align-items: center; justify-content: space-between; gap: 18px 34px; background: var(--sage-light); padding: clamp(22px, 4vw, 34px); border-radius: var(--soft-radius); border-left: 6px solid var(--terracotta); }
+.ordini-chiusi-card h2 { margin: 6px 0 10px; font-size: clamp(1.45rem, 3.2vw, 2.1rem); }
+.ordini-chiusi-card p:not(.eyebrow) { color: var(--muted); line-height: 1.6; margin: 0; max-width: 620px; }
+.ordini-chiusi-card .primary-button { flex: none; }
+@media (max-width: 760px) {
+  .ordini-chiusi-card { flex-direction: column; align-items: flex-start; }
+}
 .dashboard-vuoto { margin: 6px 0 0; color: var(--muted); font-size: .86rem; }
 .week-manager-azioni { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .week-manager-azioni [hidden], .week-manager-fondo [hidden], .settimana-riepilogo[hidden], .week-manager-grid[hidden] { display: none; }
