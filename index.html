@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=50">
+  <link rel="stylesheet" href="styles.css?v=51">
 </head>
 <body>
   <div class="app-shell">
@@ -376,9 +376,9 @@
         <div class="ordini-chiusi section-wrap" id="ordiniChiusi" hidden>
           <div class="ordini-chiusi-card">
             <div>
-              <p class="eyebrow">ORDINI CHIUSI FINO A MEZZANOTTE</p>
-              <h2>LE CASSETTE DI DOMANI <em>SONO IN PREPARAZIONE.</em></h2>
-              <p>Si ordina fino alle 21:00 del giorno prima. Da mezzanotte puoi ordinare la cassetta per <strong id="ordiniChiusiProssimo">venerdì</strong>: intanto puoi guardare le cassette, le verdure, le conserve e l'olio.</p>
+              <p class="eyebrow" id="ordiniChiusiOcchiello">ORDINI CHIUSI FINO A MEZZANOTTE</p>
+              <h2 id="ordiniChiusiTitolo">LE CASSETTE DI DOMANI <em>SONO IN PREPARAZIONE.</em></h2>
+              <p id="ordiniChiusiTesto">Si ordina fino alle 21:00 del giorno prima.</p>
             </div>
             <a class="primary-button" id="ordiniChiusiWhatsapp" href="#" target="_blank" rel="noopener">SCRIVIMI SU WHATSAPP <span>→</span></a>
           </div>
@@ -733,10 +733,30 @@
                   <small>CALENDARIO</small>
                   <h3>GIORNI DI CONSEGNA</h3>
                 </div>
+              </div>
+              <label class="giorno-fisso">
+                <span>OGNI SETTIMANA CONSEGNO IL</span>
+                <select id="giornoFisso">
+                  <option value="1">Lunedì</option>
+                  <option value="2">Martedì</option>
+                  <option value="3">Mercoledì</option>
+                  <option value="4">Giovedì</option>
+                  <option value="5">Venerdì</option>
+                  <option value="6">Sabato</option>
+                  <option value="0">Domenica</option>
+                  <option value="-1">Nessun giorno fisso</option>
+                </select>
+              </label>
+              <div class="prossimi-fissi" id="prossimiFissi"></div>
+              <div class="editor-title giorni-in-piu">
+                <div>
+                  <small>SOLO QUANDO SERVE</small>
+                  <h3>GIORNI IN PIÙ</h3>
+                </div>
                 <button id="addDeliveryDay">+ AGGIUNGI GIORNO</button>
               </div>
               <div class="delivery-days-editor" id="deliveryDaysEditor"></div>
-              <p class="editor-note">Il venerdì è sempre in calendario da solo: qui aggiungi solo eventuali giorni in più. I clienti possono ordinare fino alle 21:00 del giorno prima; da mezzanotte si apre il venerdì successivo. Viterbo (gratis): fasce dalle 14:30 alle 19:00. Zone vicine, Vitorchiano compreso (+2,50 €): dalle 19:00 alle 20:00.</p>
+              <p class="editor-note">Il giorno fisso è in calendario da solo ogni settimana: togli la spunta a una data per saltarla. I giorni in più servono per le consegne straordinarie. I clienti possono ordinare fino alle 21:00 del giorno prima; da mezzanotte si apre la consegna successiva. Viterbo (gratis): fasce dalle 14:30 alle 19:00. Zone vicine, Vitorchiano compreso (+2,50 €): dalle 19:00 alle 20:00.</p>
             </div>
 
             <div class="products-editor">
@@ -970,6 +990,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=50"></script>
+  <script src="app.js?v=51"></script>
 </body>
 </html>

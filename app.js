@@ -16,7 +16,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 50;
+const VERSIONE_SITO = 51;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -27,9 +27,11 @@ const FASCE_ORARIE = [
   ["17:10", "17:50"], ["17:50", "18:30"], ["18:30", "19:00"]
 ];
 const FASCIA_ZONE_VICINE = [["19:00", "20:00"]];
-// consegno ogni venerdi', anche senza pubblicare la settimana; si ordina fino alle 21:00 del giorno prima
-const GIORNO_CONSEGNA_FISSO = 5;
+// il giorno fisso di consegna (0 domenica … 6 sabato, -1 nessuno) e' in calendario ogni settimana anche
+// senza pubblicare la settimana; dalla dashboard si cambia o si salta una data. Si ordina fino alle 21:00 del giorno prima
+const GIORNO_FISSO_INIZIALE = 5;
 const ORA_CHIUSURA_ORDINI = 21;
+const NOMI_GIORNI = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
 const LOCALITA = [
   { nome: "Viterbo", costo: 0 },
   { nome: "Vitorchiano", costo: 2.5 },
@@ -244,6 +246,8 @@ const state = {
   cassette: [{ box: "media", selectionOrder: [] }],
   attiva: 0,
   deliveryDays: [],
+  giornoFisso: GIORNO_FISSO_INIZIALE,
+  saltati: [],
   ordiniChiusi: false,
   deliveryFee: 0,
   selectedDate: "",
@@ -818,7 +822,8 @@ function aggiornaCassettaFluttuante() {
 function goToStep(step) {
   // a ordini chiusi (giovedi' dalle 21 a mezzanotte) il sito resta tutto visibile, ma non si va alla consegna
   if (step > 2 && state.ordiniChiusi) {
-    showToast(`Ordini chiusi fino a mezzanotte: poi puoi ordinare per ${prossimaRiapertura()}.`, 4500);
+    const riapre = prossimaRiapertura();
+    showToast(riapre ? `Ordini chiusi fino a mezzanotte: poi puoi ordinare per ${riapre}.` : "Ordini chiusi per ora: riapro appena fisso le prossime consegne.", 4500);
     if (state.step <= 2) return;
     step = 2;
   }
@@ -1347,27 +1352,38 @@ function spostaGiorno(giorno, quanti) {
   return data.toISOString().slice(0, 10);
 }
 
-// il primo venerdi' dopo il giorno dato
-function venerdiDopo(giorno) {
-  const giornoSettimana = new Date(`${giorno}T12:00:00Z`).getUTCDay();
-  return spostaGiorno(giorno, ((GIORNO_CONSEGNA_FISSO - giornoSettimana + 6) % 7) + 1);
+// il primo giorno della settimana dato (0 domenica … 6 sabato) dopo il giorno dato
+function giornoSettimanaDopo(giorno, giornoSettimana) {
+  const oggiSettimana = new Date(`${giorno}T12:00:00Z`).getUTCDay();
+  return spostaGiorno(giorno, ((giornoSettimana - oggiSettimana + 6) % 7) + 1);
 }
 
-// si ordina fino alle 21:00 del giorno prima della consegna; il venerdi' c'e' sempre, anche senza
-// pubblicare la settimana (i giorni pubblicati dalla dashboard si aggiungono): giovedi' dalle 21
-// a mezzanotte non si ordina, da mezzanotte si apre il venerdi' dopo
-function giorniPrenotabili() {
-  const oggi = oggiLocale();
+// il primo giorno fisso dopo il giorno dato, saltando le date che ho tolto dalla dashboard
+function prossimoGiornoFisso(giorno) {
+  if (!(state.giornoFisso >= 0)) return "";
+  let candidato = giornoSettimanaDopo(giorno, state.giornoFisso);
+  for (let volte = 0; volte < 12 && state.saltati.includes(candidato); volte++) candidato = spostaGiorno(candidato, 7);
+  return state.saltati.includes(candidato) ? "" : candidato;
+}
+
+// si ordina fino alle 21:00 del giorno prima della consegna; il giorno fisso c'e' sempre, anche senza
+// pubblicare la settimana, e i giorni in piu' pubblicati dalla dashboard si aggiungono: la sera prima
+// dalle 21 a mezzanotte non si ordina, da mezzanotte si apre la consegna dopo
+function giorniPrenotabiliDa(oggi, tardi) {
   const domani = spostaGiorno(oggi, 1);
-  const tardi = new Date().getHours() >= ORA_CHIUSURA_ORDINI;
-  return [...new Set([...state.deliveryDays, venerdiDopo(oggi)])]
-    .filter(giorno => giorno > oggi && !(giorno === domani && tardi))
+  return [...new Set([...state.deliveryDays, prossimoGiornoFisso(oggi)])]
+    .filter(giorno => giorno && giorno > oggi && !(giorno === domani && tardi))
     .sort();
 }
 
-// a ordini chiusi: il giorno che si apre a mezzanotte
+function giorniPrenotabili() {
+  return giorniPrenotabiliDa(oggiLocale(), new Date().getHours() >= ORA_CHIUSURA_ORDINI);
+}
+
+// a ordini chiusi: il giorno che si apre a mezzanotte ("" se non si apre niente)
 function prossimaRiapertura() {
-  return formatDate(venerdiDopo(spostaGiorno(oggiLocale(), 1))).toLowerCase();
+  const giorno = giorniPrenotabiliDa(spostaGiorno(oggiLocale(), 1), false)[0];
+  return giorno ? formatDate(giorno).toLowerCase() : "";
 }
 
 // prima a ordini chiusi il compositore spariva; ora resta visibile e si blocca solo il passaggio alla consegna
@@ -1377,7 +1393,15 @@ function aggiornaOrdiniAperti() {
   state.ordiniChiusi = !aperti;
   $("#builderView").classList.toggle("chiuso", !aperti);
   $("#ordiniChiusi").hidden = aperti;
-  $("#ordiniChiusiProssimo").textContent = prossimaRiapertura();
+  if (!aperti) {
+    // chiusi la sera prima dalle 21: si riapre a mezzanotte; senza consegne in calendario: finche' non le fisso
+    const riapre = prossimaRiapertura();
+    $("#ordiniChiusiOcchiello").textContent = riapre ? "ORDINI CHIUSI FINO A MEZZANOTTE" : "ORDINI CHIUSI PER ORA";
+    $("#ordiniChiusiTitolo").innerHTML = riapre ? "LE CASSETTE DI DOMANI <em>SONO IN PREPARAZIONE.</em>" : "LA PROSSIMA CONSEGNA <em>STA CRESCENDO.</em>";
+    $("#ordiniChiusiTesto").innerHTML = riapre
+      ? `Si ordina fino alle 21:00 del giorno prima. Da mezzanotte puoi ordinare la cassetta per <strong>${riapre}</strong>: intanto puoi guardare le cassette, le verdure, le conserve e l'olio.`
+      : "Intanto puoi guardare le cassette, le verdure, le conserve e l'olio. Potrai ordinare appena fisso le prossime consegne.";
+  }
   aggiornaPulsanteConsegna();
   // chiusi alle 21 mentre il cliente sceglieva la consegna: torna alle verdure, con l'avviso sopra
   if (cambiato && !aperti && state.step > 2 && !$("#orderSuccess").classList.contains("active")) goToStep(2);
@@ -1388,7 +1412,7 @@ function aggiornaOrdiniAperti() {
 function aggiornaPulsanteConsegna() {
   const pulsante = $("#toDelivery");
   pulsante.disabled = state.ordiniChiusi || quotaCount() < boxData().min;
-  pulsante.innerHTML = state.ordiniChiusi ? "SI ORDINA DA MEZZANOTTE" : "SCELGO LA CONSEGNA <span>→</span>";
+  pulsante.innerHTML = !state.ordiniChiusi ? "SCELGO LA CONSEGNA <span>→</span>" : prossimaRiapertura() ? "SI ORDINA DA MEZZANOTTE" : "ORDINI CHIUSI PER ORA";
 }
 
 function minutiFascia(da, a) {
@@ -1708,6 +1732,8 @@ function applicaSettimana(dati) {
   if (Array.isArray(dati.giorni)) {
     state.deliveryDays = [...new Set(dati.giorni.filter(giorno => /^\d{4}-\d{2}-\d{2}$/.test(giorno)))].sort();
   }
+  if (Number.isInteger(dati.giornoFisso) && dati.giornoFisso >= -1 && dati.giornoFisso <= 6) state.giornoFisso = dati.giornoFisso;
+  if (Array.isArray(dati.saltati)) state.saltati = dati.saltati.filter(giorno => /^\d{4}-\d{2}-\d{2}$/.test(giorno));
   if (Array.isArray(dati.prodotti)) {
     dati.prodotti.forEach(voce => {
       const product = PRODUCTS.find(item => item.id === voce?.id);
@@ -1811,7 +1837,11 @@ function renderRiepilogoSettimana() {
   box.innerHTML = `
     <div class="riepilogo-testa ${giorni.length ? "aperta" : "chiusa"}">
       <small>${giorni.length ? "ORDINI APERTI PER" : "ORDINI CHIUSI"}</small>
-      <strong>${giorni.length ? giorni.map(giorno => formatDate(giorno)).join(" · ") : "Fino a mezzanotte: si ordina fino alle 21:00 del giorno prima"}</strong>
+      <strong>${giorni.length ? giorni.map(giorno => formatDate(giorno)).join(" · ") : prossimaRiapertura() ? `Fino a mezzanotte, poi si apre ${prossimaRiapertura()}` : "Nessuna consegna in calendario: premi MODIFICA"}</strong>
+    </div>
+    <div class="riepilogo-blocco">
+      <small>CONSEGNE</small>
+      <p><span>${state.giornoFisso >= 0 ? `Ogni ${NOMI_GIORNI[state.giornoFisso]}` : "Nessun giorno fisso"}</span>${state.saltati.filter(giorno => giorno > oggiLocale()).map(giorno => `<span>Salto <em>${formatDate(giorno).toLowerCase()}</em></span>`).join("")}${state.deliveryDays.filter(giorno => giorno > oggiLocale()).map(giorno => `<span>In più <em>${formatDate(giorno).toLowerCase()}</em></span>`).join("")}</p>
     </div>
     <div class="riepilogo-blocco">
       <small>VERDURE DISPONIBILI · ${verdure.length}</small>
@@ -1835,7 +1865,29 @@ function renderGiorniEditor(giorni) {
       <input type="date" value="${day}" min="${oggiLocale()}" data-delivery-day="${index}" aria-label="Giorno di consegna ${index + 1}">
       <button type="button" data-remove-delivery-day="${index}" aria-label="Rimuovi giorno ${index + 1}">×</button>
     </div>
-  `).join("") : `<p class="editor-note">Nessun giorno in più: consegno ogni venerdì, che è già in calendario da solo.</p>`;
+  `).join("") : `<p class="editor-note">Nessun giorno in più.</p>`;
+}
+
+// le prossime 6 date del giorno fisso, ognuna con la sua spunta: senza spunta quella data la salto
+function renderGiorniFissi(giornoFisso, saltati) {
+  const box = $("#prossimiFissi");
+  if (!(giornoFisso >= 0)) {
+    box.innerHTML = `<p class="editor-note">Nessun giorno fisso: i clienti possono ordinare solo per i giorni in più qui sotto.</p>`;
+    return;
+  }
+  let giorno = oggiLocale();
+  const date = [];
+  for (let volte = 0; volte < 6; volte++) date.push(giorno = giornoSettimanaDopo(giorno, giornoFisso));
+  box.innerHTML = date.map(data => `
+    <label class="fisso-riga">
+      <input type="checkbox" data-giorno-fisso="${data}" ${saltati.includes(data) ? "" : "checked"}>
+      <span>${formatDate(data)}</span>
+      <b aria-hidden="true"></b>
+    </label>`).join("");
+}
+
+function saltatiNellEditor() {
+  return $$("[data-giorno-fisso]").filter(input => !input.checked).map(input => input.dataset.giornoFisso);
 }
 
 // i giorni come sono scritti adesso nell'editor (anche se non ancora pubblicati)
@@ -1864,6 +1916,8 @@ function renderWeekEditor({ forza = false } = {}) {
   state.editorAperto = true;
 
   renderGiorniEditor(state.deliveryDays.filter(giorno => giorno >= oggiLocale()));
+  $("#giornoFisso").value = String(state.giornoFisso >= 0 ? state.giornoFisso : -1);
+  renderGiorniFissi(state.giornoFisso, state.saltati);
 
   $("#weeklyProductsEditor").innerHTML = PRODUCTS.map(product => `
     <div class="admin-product-row" data-admin-product="${product.id}">
@@ -1949,7 +2003,9 @@ function aggiornaStatoPubblicazione() {
     : "Settimana non ancora pubblicata.";
   const stato = giorni.length
     ? `Ordini APERTI per ${giorni.map(giorno => new Date(`${giorno}T12:00:00`).toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })).join(", ")}.`
-    : `Ordini CHIUSI fino a mezzanotte (si ordina fino alle 21:00 del giorno prima): poi si apre ${prossimaRiapertura()}.`;
+    : prossimaRiapertura()
+      ? `Ordini CHIUSI fino a mezzanotte (si ordina fino alle 21:00 del giorno prima): poi si apre ${prossimaRiapertura()}.`
+      : "Ordini CHIUSI: nessuna consegna in calendario. Premi MODIFICA e scegli il giorno fisso o un giorno in più.";
   info.textContent = `${stato} ${ultima}`;
   const chiave = leggiChiave();
   $("#pubblicaChiave").hidden = Boolean(chiave);
@@ -1998,6 +2054,10 @@ async function saveWeekSettings() {
   if (!state.modificaSettimana) return;
   // i giorni gia' passati non servono piu': non li ripubblico
   const deliveryDays = [...new Set(giorniNellEditor().filter(giorno => giorno >= oggiLocale()))].sort();
+  const giornoFisso = Number($("#giornoFisso").value);
+  const saltati = giornoFisso >= 0 ? saltatiNellEditor() : [];
+  if (giornoFisso < 0 && !deliveryDays.length
+    && !window.confirm("Senza giorno fisso e senza giorni in più i clienti non possono ordinare. Pubblico lo stesso?")) return;
   const campoChiave = $("#chiavePubblicazione");
   if (campoChiave.value.trim()) {
     try { localStorage.setItem(CHIAVE_GITHUB_KEY, campoChiave.value.trim()); } catch (_) {}
@@ -2050,6 +2110,8 @@ async function saveWeekSettings() {
     const dati = {
       aggiornato: new Date().toISOString(),
       giorni: deliveryDays,
+      giornoFisso,
+      saltati,
       prodotti: verdure.map(voce => ({ ...voce, foto: PRODUCTS.find(product => product.id === voce.id).customImage || "" })),
       conserve: conserveVendita,
       olio
@@ -2797,6 +2859,8 @@ function setupEvents() {
     $("#chiavePubblicazione").focus();
   });
   $("#addDeliveryDay").addEventListener("click", addDeliveryDay);
+  // cambiando il giorno fisso le date saltate di prima non valgono piu'
+  $("#giornoFisso").addEventListener("change", event => renderGiorniFissi(Number(event.target.value), []));
   $("#deliveryDaysEditor").addEventListener("click", event => {
     const button = event.target.closest("[data-remove-delivery-day]");
     if (button) removeDeliveryDay(Number(button.dataset.removeDeliveryDay));

@@ -1264,6 +1264,20 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 .delivery-day-row input { min-height: 42px; padding: 9px 11px; }
 .delivery-day-row button { width: 32px; height: 32px; border: 0; border-radius: 50%; background: #f1dfd8; color: var(--terracotta); cursor: pointer; }
 .editor-note { color: var(--muted); font-size: .75rem; line-height: 1.55; margin: 17px 0 0; }
+.giorno-fisso { display: grid; gap: 7px; margin-bottom: 12px; }
+.giorno-fisso span { font-size: .68rem; font-weight: 900; letter-spacing: .12em; color: var(--muted); }
+.giorno-fisso select { min-height: 44px; padding: 9px 11px; font: inherit; font-weight: 700; }
+.prossimi-fissi { display: grid; gap: 7px; }
+.prossimi-fissi .editor-note { margin: 0; }
+.fisso-riga { display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--small-radius); background: white; cursor: pointer; font-size: .8rem; font-weight: 800; letter-spacing: .05em; }
+.fisso-riga input { width: 20px; height: 20px; margin: 0; accent-color: var(--green); }
+.fisso-riga b { font-size: .64rem; letter-spacing: .12em; padding: 4px 8px; border-radius: 999px; background: var(--sage-light); color: var(--green-deep); }
+.fisso-riga b::after { content: "CONSEGNO"; }
+.fisso-riga:has(input:not(:checked)) { background: #f7ece7; border-color: #e3c3b6; }
+.fisso-riga:has(input:not(:checked)) span { text-decoration: line-through; color: var(--muted); }
+.fisso-riga:has(input:not(:checked)) b { background: var(--terracotta); color: white; }
+.fisso-riga:has(input:not(:checked)) b::after { content: "SALTO"; }
+.editor-title.giorni-in-piu { margin-top: 22px; }
 .conserve-editor { grid-column: 1 / -1; border: 1px solid var(--line); padding: 20px; border-radius: var(--soft-radius); }
 .admin-conserva-row { display: grid; grid-template-columns: 70px 1fr 120px 70px; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
 .admin-conserva-row img { width: 70px; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 9px; background: #f5f0dd; }
