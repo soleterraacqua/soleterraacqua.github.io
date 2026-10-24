@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=49">
+  <link rel="stylesheet" href="styles.css?v=50">
 </head>
 <body>
   <div class="app-shell">
@@ -376,9 +376,9 @@
         <div class="ordini-chiusi section-wrap" id="ordiniChiusi" hidden>
           <div class="ordini-chiusi-card">
             <div>
-              <p class="eyebrow">ORDINI CHIUSI PER ORA</p>
-              <h2>LA PROSSIMA SETTIMANA <em>STA CRESCENDO.</em></h2>
-              <p>Intanto puoi guardare le cassette, le verdure, le conserve e l'olio. Potrai ordinare appena pubblico i giorni di consegna della prossima settimana.</p>
+              <p class="eyebrow">ORDINI CHIUSI FINO A MEZZANOTTE</p>
+              <h2>LE CASSETTE DI DOMANI <em>SONO IN PREPARAZIONE.</em></h2>
+              <p>Si ordina fino alle 21:00 del giorno prima. Da mezzanotte puoi ordinare la cassetta per <strong id="ordiniChiusiProssimo">venerdì</strong>: intanto puoi guardare le cassette, le verdure, le conserve e l'olio.</p>
             </div>
             <a class="primary-button" id="ordiniChiusiWhatsapp" href="#" target="_blank" rel="noopener">SCRIVIMI SU WHATSAPP <span>→</span></a>
           </div>
@@ -523,7 +523,7 @@
                   <div class="choice-row area-choices" id="areaChoices"></div>
                 </fieldset>
                 <fieldset>
-                  <legend>GIORNO DI CONSEGNA</legend>
+                  <legend>GIORNO DI CONSEGNA <span>· ORDINI ENTRO LE 21:00 DEL GIORNO PRIMA</span></legend>
                   <div class="choice-row date-choices" id="dateChoices"></div>
                 </fieldset>
                 <fieldset>
@@ -736,7 +736,7 @@
                 <button id="addDeliveryDay">+ AGGIUNGI GIORNO</button>
               </div>
               <div class="delivery-days-editor" id="deliveryDaysEditor"></div>
-              <p class="editor-note">I clienti vedono solo i giorni futuri e possono ordinare fino al giorno prima. Viterbo (gratis): fasce dalle 14:30 alle 19:00. Zone vicine, Vitorchiano compreso (+2,50 €): dalle 19:00 alle 20:00.</p>
+              <p class="editor-note">Il venerdì è sempre in calendario da solo: qui aggiungi solo eventuali giorni in più. I clienti possono ordinare fino alle 21:00 del giorno prima; da mezzanotte si apre il venerdì successivo. Viterbo (gratis): fasce dalle 14:30 alle 19:00. Zone vicine, Vitorchiano compreso (+2,50 €): dalle 19:00 alle 20:00.</p>
             </div>
 
             <div class="products-editor">
@@ -970,6 +970,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=49"></script>
+  <script src="app.js?v=50"></script>
 </body>
 </html>

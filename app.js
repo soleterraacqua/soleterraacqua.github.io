@@ -16,7 +16,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 49;
+const VERSIONE_SITO = 50;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -27,6 +27,9 @@ const FASCE_ORARIE = [
   ["17:10", "17:50"], ["17:50", "18:30"], ["18:30", "19:00"]
 ];
 const FASCIA_ZONE_VICINE = [["19:00", "20:00"]];
+// consegno ogni venerdi', anche senza pubblicare la settimana; si ordina fino alle 21:00 del giorno prima
+const GIORNO_CONSEGNA_FISSO = 5;
+const ORA_CHIUSURA_ORDINI = 21;
 const LOCALITA = [
   { nome: "Viterbo", costo: 0 },
   { nome: "Vitorchiano", costo: 2.5 },
@@ -813,9 +816,9 @@ function aggiornaCassettaFluttuante() {
 }
 
 function goToStep(step) {
-  // a ordini chiusi il sito resta tutto visibile: si guarda e si compone, ma non si va alla consegna
+  // a ordini chiusi (giovedi' dalle 21 a mezzanotte) il sito resta tutto visibile, ma non si va alla consegna
   if (step > 2 && state.ordiniChiusi) {
-    showToast("Ordini chiusi per ora: potrai ordinare appena pubblico i giorni della prossima settimana.", 4500);
+    showToast(`Ordini chiusi fino a mezzanotte: poi puoi ordinare per ${prossimaRiapertura()}.`, 4500);
     if (state.step <= 2) return;
     step = 2;
   }
@@ -921,7 +924,7 @@ function renderProducts() {
         <div class="product-card-body">
           <small>1 PRODOTTO · ${product.weight.toUpperCase()}</small>
           <h3>${product.name.toUpperCase()}</h3>
-          <p>${state.ordiniChiusi ? "Verdura di stagione" : "Disponibile questa settimana"}</p>
+          <p>Disponibile questa settimana</p>
           <div class="counter">
             <button data-product-minus="${product.id}" ${quantity === 0 ? "disabled" : ""} aria-label="Togli ${product.name}">−</button>
             <b>${quantity}</b>
@@ -1338,10 +1341,33 @@ function oggiLocale() {
   return new Date(adesso.getTime() - adesso.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
-// si ordina fino al giorno prima della consegna
+function spostaGiorno(giorno, quanti) {
+  const data = new Date(`${giorno}T12:00:00Z`);
+  data.setUTCDate(data.getUTCDate() + quanti);
+  return data.toISOString().slice(0, 10);
+}
+
+// il primo venerdi' dopo il giorno dato
+function venerdiDopo(giorno) {
+  const giornoSettimana = new Date(`${giorno}T12:00:00Z`).getUTCDay();
+  return spostaGiorno(giorno, ((GIORNO_CONSEGNA_FISSO - giornoSettimana + 6) % 7) + 1);
+}
+
+// si ordina fino alle 21:00 del giorno prima della consegna; il venerdi' c'e' sempre, anche senza
+// pubblicare la settimana (i giorni pubblicati dalla dashboard si aggiungono): giovedi' dalle 21
+// a mezzanotte non si ordina, da mezzanotte si apre il venerdi' dopo
 function giorniPrenotabili() {
   const oggi = oggiLocale();
-  return state.deliveryDays.filter(giorno => giorno > oggi);
+  const domani = spostaGiorno(oggi, 1);
+  const tardi = new Date().getHours() >= ORA_CHIUSURA_ORDINI;
+  return [...new Set([...state.deliveryDays, venerdiDopo(oggi)])]
+    .filter(giorno => giorno > oggi && !(giorno === domani && tardi))
+    .sort();
+}
+
+// a ordini chiusi: il giorno che si apre a mezzanotte
+function prossimaRiapertura() {
+  return formatDate(venerdiDopo(spostaGiorno(oggiLocale(), 1))).toLowerCase();
 }
 
 // prima a ordini chiusi il compositore spariva; ora resta visibile e si blocca solo il passaggio alla consegna
@@ -1351,8 +1377,10 @@ function aggiornaOrdiniAperti() {
   state.ordiniChiusi = !aperti;
   $("#builderView").classList.toggle("chiuso", !aperti);
   $("#ordiniChiusi").hidden = aperti;
+  $("#ordiniChiusiProssimo").textContent = prossimaRiapertura();
   aggiornaPulsanteConsegna();
-  if (cambiato) renderProducts();
+  // chiusi alle 21 mentre il cliente sceglieva la consegna: torna alle verdure, con l'avviso sopra
+  if (cambiato && !aperti && state.step > 2 && !$("#orderSuccess").classList.contains("active")) goToStep(2);
   aggiornaPostoAiuto();
   return aperti;
 }
@@ -1360,7 +1388,7 @@ function aggiornaOrdiniAperti() {
 function aggiornaPulsanteConsegna() {
   const pulsante = $("#toDelivery");
   pulsante.disabled = state.ordiniChiusi || quotaCount() < boxData().min;
-  pulsante.innerHTML = state.ordiniChiusi ? "ORDINI CHIUSI PER ORA" : "SCELGO LA CONSEGNA <span>→</span>";
+  pulsante.innerHTML = state.ordiniChiusi ? "SI ORDINA DA MEZZANOTTE" : "SCELGO LA CONSEGNA <span>→</span>";
 }
 
 function minutiFascia(da, a) {
@@ -1370,6 +1398,7 @@ function minutiFascia(da, a) {
 
 function setupDatesAndTimes() {
   const giorni = giorniPrenotabili();
+  state.firmaGiorni = giorni.join();
   aggiornaOrdiniAperti();
   if (!giorni.includes(state.selectedDate)) state.selectedDate = giorni[0] || "";
   $("#dateChoices").innerHTML = giorni.length
@@ -1782,7 +1811,7 @@ function renderRiepilogoSettimana() {
   box.innerHTML = `
     <div class="riepilogo-testa ${giorni.length ? "aperta" : "chiusa"}">
       <small>${giorni.length ? "ORDINI APERTI PER" : "ORDINI CHIUSI"}</small>
-      <strong>${giorni.length ? giorni.map(giorno => formatDate(giorno)).join(" · ") : "Nessuna consegna in calendario: premi MODIFICA e aggiungi i giorni"}</strong>
+      <strong>${giorni.length ? giorni.map(giorno => formatDate(giorno)).join(" · ") : "Fino a mezzanotte: si ordina fino alle 21:00 del giorno prima"}</strong>
     </div>
     <div class="riepilogo-blocco">
       <small>VERDURE DISPONIBILI · ${verdure.length}</small>
@@ -1806,7 +1835,7 @@ function renderGiorniEditor(giorni) {
       <input type="date" value="${day}" min="${oggiLocale()}" data-delivery-day="${index}" aria-label="Giorno di consegna ${index + 1}">
       <button type="button" data-remove-delivery-day="${index}" aria-label="Rimuovi giorno ${index + 1}">×</button>
     </div>
-  `).join("") : `<p class="editor-note">Nessun giorno in calendario: aggiungi i giorni della prossima settimana.</p>`;
+  `).join("") : `<p class="editor-note">Nessun giorno in più: consegno ogni venerdì, che è già in calendario da solo.</p>`;
 }
 
 // i giorni come sono scritti adesso nell'editor (anche se non ancora pubblicati)
@@ -1920,7 +1949,7 @@ function aggiornaStatoPubblicazione() {
     : "Settimana non ancora pubblicata.";
   const stato = giorni.length
     ? `Ordini APERTI per ${giorni.map(giorno => new Date(`${giorno}T12:00:00`).toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })).join(", ")}.`
-    : "Ordini CHIUSI: pubblica i giorni e le verdure della prossima settimana per riaprirli.";
+    : `Ordini CHIUSI fino a mezzanotte (si ordina fino alle 21:00 del giorno prima): poi si apre ${prossimaRiapertura()}.`;
   info.textContent = `${stato} ${ultima}`;
   const chiave = leggiChiave();
   $("#pubblicaChiave").hidden = Boolean(chiave);
@@ -1969,10 +1998,6 @@ async function saveWeekSettings() {
   if (!state.modificaSettimana) return;
   // i giorni gia' passati non servono piu': non li ripubblico
   const deliveryDays = [...new Set(giorniNellEditor().filter(giorno => giorno >= oggiLocale()))].sort();
-  if (!deliveryDays.length) {
-    showToast("Inserisci almeno un giorno di consegna da oggi in avanti.");
-    return;
-  }
   const campoChiave = $("#chiavePubblicazione");
   if (campoChiave.value.trim()) {
     try { localStorage.setItem(CHIAVE_GITHUB_KEY, campoChiave.value.trim()); } catch (_) {}
@@ -2649,6 +2674,8 @@ function setupEvents() {
   $$(".box-option").forEach(button => button.addEventListener("click", () => selectBox(button.dataset.box)));
   $$("[data-seconda]").forEach(button => button.addEventListener("click", () => aggiungiSecondaCassetta(button.dataset.seconda)));
   $$("[data-svuota-carrello]").forEach(button => button.addEventListener("click", chiediSvuotaCarrello));
+  // alle 21:00 e a mezzanotte i giorni prenotabili cambiano anche a pagina aperta
+  setInterval(() => { if (giorniPrenotabili().join() !== state.firmaGiorni) setupDatesAndTimes(); }, 60000);
   $("#cassetteSchede").addEventListener("click", event => {
     if (event.target.closest("[data-togli-seconda]")) togliSecondaCassetta();
     const scheda = event.target.closest("[data-cassetta]");
