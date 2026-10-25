@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=51">
+  <link rel="stylesheet" href="styles.css?v=52">
 </head>
 <body>
   <div class="app-shell">
@@ -37,7 +37,7 @@
         <span></span><span></span><span></span>
       </button>
 
-      <a class="brand" href="#home" data-view-link="home" aria-label="Agricola Sole Terra Acqua, torna alla home">
+      <a class="brand" href="#home" data-view-link="home" data-traccia="Logo in alto" aria-label="Agricola Sole Terra Acqua, torna alla home">
         <img class="brand-logo" src="assets/logo-completo.webp" alt="Agricola Sole Terra Acqua" width="1200" height="606">
       </a>
 
@@ -798,6 +798,41 @@
           </div>
         </section>
 
+        <section class="statistiche-panel" id="statistiche">
+          <div class="panel-head statistiche-testa">
+            <div>
+              <p class="eyebrow">TRAFFICO DEL SITO</p>
+              <h2>STATISTICHE DEI CLICK</h2>
+              <p>Visite e click dei clienti, contati in forma anonima: nessun nome, telefono o indirizzo. Una visita è un'apertura del sito; un ordine preparato è un cliente che ha premuto CONFERMA (l'ordine vero arriva se poi preme INVIA su WhatsApp).</p>
+            </div>
+            <div class="statistiche-periodi" role="group" aria-label="Periodo delle statistiche">
+              <button type="button" data-periodo="1">OGGI</button>
+              <button type="button" data-periodo="7">7 GIORNI</button>
+              <button type="button" data-periodo="30">30 GIORNI</button>
+              <button type="button" data-periodo="90">90 GIORNI</button>
+              <button type="button" data-periodo="365">12 MESI</button>
+            </div>
+          </div>
+          <div class="statistiche-accesso" id="statisticheAccesso" hidden>
+            <label for="parolaStatistiche">PAROLA SEGRETA DELLE STATISTICHE</label>
+            <div>
+              <input id="parolaStatistiche" type="password" autocomplete="off" spellcheck="false" placeholder="La parola scritta nello script del Foglio Google">
+              <button class="primary-button" id="entraStatistiche" type="button">ENTRA <span>→</span></button>
+            </div>
+            <small class="field-error" id="statisticheParolaErrore"></small>
+            <small>Resta salvata solo su questo dispositivo, come la chiave per pubblicare.</small>
+          </div>
+          <p class="statistiche-stato" id="statisticheStato">—</p>
+          <div class="statistiche-corpo" id="statisticheCorpo" hidden></div>
+          <div class="statistiche-fondo">
+            <label class="statistiche-conta"><input type="checkbox" id="contaQuestoDispositivo"><span>Conta anche i miei click su questo dispositivo</span></label>
+            <div>
+              <button type="button" class="pubblica-cambia" id="cambiaParolaStatistiche" hidden>CAMBIA PAROLA</button>
+              <button type="button" class="pubblica-cambia" id="aggiornaStatistiche">AGGIORNA</button>
+            </div>
+          </div>
+        </section>
+
         <div class="dashboard-grid">
           <section class="route-panel">
             <div class="panel-head">
@@ -953,14 +988,15 @@
         <p>Il sito non ha un archivio online: quando confermi, i dati mi arrivano solo nel messaggio WhatsApp che mi invii tu. Io registro l'ordine nella mia area riservata, che conserva i dati solo sul mio telefono.</p>
         <p>Una copia del carrello e degli ordini che fai resta nella memoria del browser del tuo dispositivo: puoi cancellarla quando vuoi cancellando i dati del sito dal browser.</p>
         <h3>CHI ALTRO LI VEDE</h3>
-        <p>WhatsApp (WhatsApp Ireland Ltd., gruppo Meta), che trasporta il messaggio con l'ordine secondo la propria informativa privacy. GitHub Pages (GitHub Inc.), che ospita il sito e per motivi tecnici e di sicurezza può registrare l'indirizzo IP di chi lo visita. Per calcolare i chilometri del giro di consegne, dalla mia area riservata mando ai servizi di mappe di OpenStreetMap (Nominatim e OSRM) solo l'indirizzo e la località di consegna, mai nome o telefono. Questi servizi possono trattare dati anche fuori dall'Unione europea, con le garanzie previste dalla legge.</p>
+        <p>WhatsApp (WhatsApp Ireland Ltd., gruppo Meta), che trasporta il messaggio con l'ordine secondo la propria informativa privacy. GitHub Pages (GitHub Inc.), che ospita il sito e per motivi tecnici e di sicurezza può registrare l'indirizzo IP di chi lo visita. Google (Google Ireland Ltd.), che ospita il foglio di calcolo con i conteggi anonimi delle visite: per motivi tecnici riceve l'indirizzo IP di chi visita il sito, che a me non arriva. Per calcolare i chilometri del giro di consegne, dalla mia area riservata mando ai servizi di mappe di OpenStreetMap (Nominatim e OSRM) solo l'indirizzo e la località di consegna, mai nome o telefono. Questi servizi possono trattare dati anche fuori dall'Unione europea, con le garanzie previste dalla legge.</p>
         <h3>PER QUANTO TEMPO</h3>
         <p>Tengo i dati degli ordini per il tempo necessario a consegnarli e a gestire il regalo della decima cassetta; se non ordini più, li cancello entro 24 mesi dall'ultimo ordine. I dati che la legge mi obbliga a conservare per motivi fiscali restano per il tempo previsto dalla legge.</p>
-        <h3>COOKIE</h3>
-        <p>Il sito non usa cookie di profilazione né strumenti di statistica. Usa solo la memoria del browser per ricordare il carrello: è uno strumento tecnico e non richiede consenso.</p>
+        <h3>COOKIE E STATISTICHE</h3>
+        <p>Il sito non usa cookie. Per capire quali parti del sito funzionano meglio conto in forma anonima le visite e i click sui pulsanti: per esempio quante persone aprono «Componi la cassetta», quali verdure vengono aggiunte più spesso, da dove arrivano (un link, Instagram, Google…) e se usano un telefono o un computer. Non registro nome, telefono, indirizzo o indirizzo IP, non salvo niente sul tuo dispositivo e dai conteggi non posso risalire a chi ha fatto un click. I conteggi finiscono in un mio foglio di calcolo Google e li tengo al massimo 13 mesi.</p>
+        <p>La memoria del browser serve solo a ricordare il carrello: è uno strumento tecnico e non richiede consenso.</p>
         <h3>I TUOI DIRITTI</h3>
         <p>Puoi chiedermi in ogni momento di vedere, correggere o cancellare i tuoi dati, di limitarne l'uso o di opporti, e di averne una copia: scrivimi su WhatsApp o per email. Se pensi che i tuoi dati non siano trattati correttamente puoi rivolgerti al Garante per la protezione dei dati personali (garanteprivacy.it).</p>
-        <p class="privacy-data">Ultimo aggiornamento: 22 ottobre 2026.</p>
+        <p class="privacy-data">Ultimo aggiornamento: 25 ottobre 2026.</p>
       </div>
       <div class="popup-conserve-azioni">
         <button type="button" class="primary-button" data-chiudi-privacy>HO LETTO <span>✓</span></button>
@@ -990,6 +1026,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=51"></script>
+  <script src="app.js?v=52"></script>
 </body>
 </html>

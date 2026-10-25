@@ -16,11 +16,17 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 51;
+const VERSIONE_SITO = 52;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
 const CHIAVE_GITHUB_KEY = "sole-terra-acqua-chiave-pubblicazione";
+// Statistiche anonime dei click: il sito le manda al mio Foglio Google (script e guida in SITO/statistiche)
+// e la dashboard le legge con la parola segreta scelta nello script. Vuoto = statistiche spente.
+const STATISTICHE_URL = "";
+const NON_CONTARE_KEY = "sole-terra-acqua-non-contare";
+const PAROLA_STATISTICHE_KEY = "sole-terra-acqua-parola-statistiche";
+const PERIODO_STATISTICHE_KEY = "sole-terra-acqua-periodo-statistiche";
 // Viterbo: fasce da 40 minuti fino alle 19:00 (l'ultima e' di mezz'ora). Zone vicine (+2,50 €): dalle 19:00 alle 20:00.
 const FASCE_ORARIE = [
   ["14:30", "15:10"], ["15:10", "15:50"], ["15:50", "16:30"], ["16:30", "17:10"],
@@ -700,8 +706,11 @@ function unlockDashboard() {
   try { sessionStorage.setItem(ADMIN_SESSION_KEY, "true"); } catch (_) {}
   if (error) error.textContent = "";
   input.value = "";
+  // da qui in poi i click di questo dispositivo non finiscono nelle statistiche (si cambia dalla dashboard)
+  try { if (localStorage.getItem(NON_CONTARE_KEY) === null) localStorage.setItem(NON_CONTARE_KEY, "1"); } catch (_) {}
   showDashboardGate();
   renderDashboard();
+  caricaStatistiche({ forza: true });
   showToast("Area azienda sbloccata.");
 }
 
@@ -738,6 +747,7 @@ function navigate(view, anchor) {
     anchor = null;
     showToast("Area azienda riservata.");
   }
+  if (view !== state.view && view !== "dashboard") traccia("pagina", view === "builder" ? "componi" : view);
   state.view = view;
   $$(".view").forEach(el => el.classList.toggle("active", el.dataset.view === view));
   $$(".desktop-nav a").forEach(el => el.classList.toggle("active", el.dataset.viewLink === view));
@@ -748,7 +758,10 @@ function navigate(view, anchor) {
     if (anchor && $(`#${anchor}`)) $(`#${anchor}`).scrollIntoView({ behavior: "smooth" });
     else window.scrollTo({ top: 0, behavior: "smooth" });
   });
-  if (view === "dashboard" && showDashboardGate()) renderDashboard();
+  if (view === "dashboard" && showDashboardGate()) {
+    renderDashboard();
+    caricaStatistiche();
+  }
   aggiornaCassettaFluttuante();
   controllaVersione();
   if (view === "builder") {
@@ -840,6 +853,7 @@ function goToStep(step) {
       step = 2;
     }
   }
+  if (step !== state.step) traccia("passo", String(step));
   state.step = step;
   $$(".order-step").forEach(el => el.classList.toggle("active", Number(el.dataset.step) === step));
   $$(".stepper button").forEach((el, index) => {
@@ -1674,6 +1688,8 @@ function confirmOrder() {
   saveBusinessData();
   const whatsappUrl = buildWhatsAppUrl(order, origine);
   window.open(whatsappUrl, "_blank", "noopener");
+  traccia("ordine", cassette.map(cassetta => cassetta.box).join(" + "), "", Math.round(order.total * 100) / 100);
+  inviaStatistiche();
 
   $$(".order-step").forEach(el => el.classList.remove("active"));
   $("#orderSuccess").classList.add("active");
@@ -2701,6 +2717,406 @@ function optimizeRoutes() {
   }, 1200);
 }
 
+// ---------- Statistiche anonime: visite e click dei clienti ----------
+// Niente cookie e niente dati del cliente: ogni apertura del sito ha un codice a caso che vive solo
+// in memoria (chiudendo la pagina sparisce) e serve a contare i percorsi, non a riconoscere le persone.
+// Non contano i miei dispositivi (chi ha aperto la dashboard), le prove in locale e i robot.
+const visitaStatistiche = Math.random().toString(36).slice(2, 10).padEnd(8, "0") + Date.now().toString(36).slice(-4);
+const codaStatistiche = [];
+const sezioniViste = new Set();
+let eventiStatistiche = 0;
+let invioStatistiche = 0;
+let ultimaEtichettaContata = { elemento: null, quando: 0 };
+
+function indirizzoStatistiche() {
+  return STATISTICHE_URL;
+}
+
+function sitoPubblicato() {
+  return location.hostname === "soleterraacqua.github.io";
+}
+
+function devoContare() {
+  if (!indirizzoStatistiche() || !sitoPubblicato() || navigator.webdriver || isOwnerRoute()) return false;
+  try { return localStorage.getItem(NON_CONTARE_KEY) !== "1"; } catch (_) { return true; }
+}
+
+function traccia(tipo, cosa = "", dove = "", valore) {
+  if (eventiStatistiche >= 400 || !devoContare()) return;
+  eventiStatistiche++;
+  codaStatistiche.push({ e: tipo, n: String(cosa).slice(0, 80), s: String(dove).slice(0, 60), x: valore, t: Date.now() });
+  if (codaStatistiche.length >= 25) inviaStatistiche();
+  else if (!invioStatistiche) invioStatistiche = setTimeout(inviaStatistiche, 10000);
+}
+
+// a pacchetti: ogni 10 secondi, o subito quando il cliente lascia la pagina (anche per andare su WhatsApp)
+function inviaStatistiche() {
+  clearTimeout(invioStatistiche);
+  invioStatistiche = 0;
+  if (!codaStatistiche.length || !indirizzoStatistiche()) return;
+  const adesso = Date.now();
+  const corpo = JSON.stringify({ eventi: codaStatistiche.splice(0).map(({ t, ...evento }) => ({ ...evento, v: visitaStatistiche, d: adesso - t })) });
+  try { if (navigator.sendBeacon && navigator.sendBeacon(indirizzoStatistiche(), corpo)) return; } catch (_) {}
+  fetch(indirizzoStatistiche(), { method: "POST", mode: "no-cors", keepalive: true, body: corpo }).catch(() => {});
+}
+
+// da dove arriva: ?da=whatsapp nei link che condivido, altrimenti app di Instagram/Facebook o sito di provenienza
+const NOMI_PROVENIENZA = { whatsapp: "WhatsApp", wa: "WhatsApp", instagram: "Instagram", ig: "Instagram", facebook: "Facebook", fb: "Facebook", google: "Google", tiktok: "TikTok" };
+function provenienzaVisita() {
+  const parametri = new URLSearchParams(location.search);
+  const dichiarata = (parametri.get("da") || parametri.get("utm_source") || "").trim().toLowerCase().slice(0, 30);
+  if (dichiarata) return NOMI_PROVENIENZA[dichiarata] || dichiarata.charAt(0).toUpperCase() + dichiarata.slice(1);
+  const agente = navigator.userAgent;
+  if (/Instagram/i.test(agente)) return "Instagram";
+  if (/FBAN|FBAV|FB_IAB/i.test(agente)) return "Facebook";
+  let dominio = "";
+  try { dominio = document.referrer ? new URL(document.referrer).hostname.replace(/^(www|l|lm|m)\./, "") : ""; } catch (_) {}
+  if (!dominio || dominio === location.hostname) return "Diretto";
+  if (/(^|\.)google\./.test(dominio)) return "Google";
+  if (/instagram\./.test(dominio)) return "Instagram";
+  if (/facebook\.|(^|\.)fb\./.test(dominio)) return "Facebook";
+  if (/whatsapp\./.test(dominio)) return "WhatsApp";
+  if (/bing\.|duckduckgo\.|yahoo\.|ecosia\./.test(dominio)) return "Altri motori di ricerca";
+  return dominio.slice(0, 40);
+}
+
+function dispositivoVisita() {
+  const agente = navigator.userAgent;
+  if (/iPad|Tablet/i.test(agente) || (/Android/i.test(agente) && !/Mobile/i.test(agente)) || (/Macintosh/.test(agente) && navigator.maxTouchPoints > 1)) return "tablet";
+  return /Mobi|iPhone|Android/i.test(agente) ? "telefono" : "computer";
+}
+
+// in quale parte del sito sta il pulsante: la prima che lo contiene, dalla piu' piccola alla piu' grande
+const ZONE_CLICK = [
+  ["#sideMenu", "Menu"], [".site-header", "Testata"], [".site-footer", "Fondo pagina"],
+  ["#popupPrivacy", "Informativa privacy"], ["#popupConserve", "Proposta conserve"], ["#aiutoWhatsapp", "Problemi? Scrivimi"],
+  ["#mobileBasketBar", "Barra del carrello"], ["#basketSummary", "Riepilogo cassetta"], ["#orderSuccess", "Ordine pronto"],
+  ["#ordiniChiusi", "Avviso ordini chiusi"], ["[data-step='1']", "Componi · dimensione"], ["[data-step='2']", "Componi · verdure"],
+  ["[data-step='3']", "Componi · consegna"], ["[data-step='4']", "Componi · riepilogo"], [".hero", "Apertura"],
+  [".trust-strip", "I miei valori"], ["#storia", "Chi sono"], [".weekly", "Verdure di stagione"], ["#conserve", "Conserve"],
+  ["#olio", "Olio"], [".field-gallery", "Foto del campo"], [".home-cta", "Invito a comporre"], ["#contatti", "Contatti"],
+  ["#builderView", "Componi la cassetta"], ["#homeView", "Home"]
+];
+const zonaDelClick = elemento => (ZONE_CLICK.find(([selettore]) => elemento.closest(selettore)) || [null, "Altro"])[1];
+
+// il nome del pulsante come lo legge il cliente; i + e − di verdure, conserve e olio contano insieme
+// (quale verdura si vede a parte, in "verdure piu' aggiunte") e i giorni di consegna pure (cambiano ogni settimana)
+function etichettaClick(elemento, contatto) {
+  if (contatto) return contatto;
+  const raggruppati = [["[data-product-plus]", "+ verdura"], ["[data-product-minus]", "− verdura"], ["[data-conserva-piu], [data-popup-conserva]", "+ conserva"],
+    ["[data-conserva-meno]", "− conserva"], ["[data-olio-piu]", "+ olio"], ["[data-olio-meno]", "− olio"], ["#dateChoices *", "Giorno di consegna"]];
+  const gruppo = raggruppati.find(([selettore]) => elemento.matches(selettore));
+  if (gruppo) return gruppo[1];
+  if (elemento.matches(".box-option")) return `Cassetta ${BOXES[elemento.dataset.box]?.label || elemento.dataset.box}`;
+  let testo = elemento.dataset.traccia || elemento.getAttribute("aria-label") || "";
+  const pezzi = [];
+  if (!testo) {
+    // un pezzo di testo per volta, con lo spazio in mezzo ("VITERBO" + "CONSEGNA GRATUITA")
+    const copia = elemento.cloneNode(true);
+    copia.querySelectorAll("input, select, textarea, svg, img").forEach(nodo => nodo.remove());
+    const giro = document.createTreeWalker(copia, NodeFilter.SHOW_TEXT);
+    while (giro.nextNode()) if (giro.currentNode.nodeValue.trim()) pezzi.push(giro.currentNode.nodeValue.trim());
+    testo = pezzi.join(" ").replace(/(\w)' (\w)/g, "$1'$2");
+  }
+  if (elemento.closest("#areaChoices") && pezzi[0]) testo = `Zona ${pezzi[0]}`;
+  else if (elemento.closest("#timeGrid") && pezzi[0]) testo = `Fascia ${pezzi[0]}`;
+  testo = testo.replace(/[→←↓↑✓✎✦×●✕+]/g, " ").replace(/\s+/g, " ").trim();
+  return testo.slice(0, 60) || elemento.id || elemento.tagName.toLowerCase();
+}
+
+function registraClick(event) {
+  if (state.view === "dashboard" || !devoContare()) return;
+  // nei campi da compilare non guardo niente: li' ci sono i dati del cliente
+  if (event.target.matches?.("input:not([type=checkbox]):not([type=radio]), select, textarea")) return;
+  const elemento = event.target.closest?.("a, button, label, summary, [role='button']");
+  if (!elemento || elemento.closest("#dashboardView, #visoreLista")) return;
+  // la crocetta: il click sull'etichetta ne fa partire un secondo sulla casella, lo conto una volta
+  if (elemento.tagName === "LABEL") {
+    const adesso = performance.now();
+    if (ultimaEtichettaContata.elemento === elemento && adesso - ultimaEtichettaContata.quando < 400) return;
+    ultimaEtichettaContata = { elemento, quando: adesso };
+  }
+  const indirizzo = elemento.getAttribute("href") || "";
+  const contatto = /^tel:/.test(indirizzo) ? "Telefono" : /^mailto:/.test(indirizzo) ? "Email"
+    : /instagram\.com/.test(indirizzo) ? "Instagram"
+    : /wa\.me|whatsapp\.com/.test(indirizzo) && !elemento.closest("#orderSuccess") ? "WhatsApp" : "";
+  const dove = zonaDelClick(elemento);
+  traccia("click", etichettaClick(elemento, contatto), dove);
+  if (contatto) traccia("contatto", contatto, dove);
+  const verdura = elemento.dataset.productPlus;
+  const conserva = elemento.dataset.conservaPiu || elemento.dataset.popupConserva;
+  if (verdura) traccia("verdura", PRODUCTS.find(prodotto => prodotto.id === verdura)?.name || verdura, dove);
+  else if (conserva) traccia("conserva", CONSERVE.find(vasetto => vasetto.id === conserva)?.nome || conserva, dove);
+  else if (elemento.matches("[data-olio-piu]")) traccia("olio", "Latta di olio", dove);
+  else if (elemento.matches(".box-option")) traccia("cassetta", BOXES[elemento.dataset.box]?.label || elemento.dataset.box, dove);
+}
+
+// quali parti della home vengono guardate davvero: almeno un secondo al centro dello schermo
+const SEZIONI_HOME = [[".trust-strip", "I miei valori"], ["#storia", "Chi sono"], [".weekly", "Verdure di stagione"], ["#conserve", "Conserve"],
+  ["#olio", "Olio"], [".field-gallery", "Foto del campo"], [".home-cta", "Invito a comporre"], ["#contatti", "Contatti"]];
+function osservaSezioni() {
+  if (!("IntersectionObserver" in window)) return;
+  const attese = new Map();
+  const osservatore = new IntersectionObserver(voci => voci.forEach(voce => {
+    const nome = voce.target.dataset.sezioneStatistiche;
+    clearTimeout(attese.get(nome));
+    if (!voce.isIntersecting || sezioniViste.has(nome)) return;
+    attese.set(nome, setTimeout(() => {
+      sezioniViste.add(nome);
+      osservatore.unobserve(voce.target);
+      traccia("sezione", nome, "Home");
+    }, 1000));
+  }), { rootMargin: "-35% 0px -35% 0px" });
+  SEZIONI_HOME.forEach(([selettore, nome]) => {
+    const sezione = $(selettore);
+    if (!sezione) return;
+    sezione.dataset.sezioneStatistiche = nome;
+    osservatore.observe(sezione);
+  });
+}
+
+function iniziaVisita() {
+  if (!devoContare()) return;
+  traccia("visita", provenienzaVisita(), dispositivoVisita());
+  traccia("pagina", state.view === "builder" ? "componi" : state.view);
+  osservaSezioni();
+}
+
+function setupStatistiche() {
+  document.addEventListener("click", registraClick, true);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) inviaStatistiche(); });
+  window.addEventListener("pagehide", inviaStatistiche);
+  iniziaVisita();
+}
+
+// ---------- Dashboard: il riquadro STATISTICHE ----------
+let statisticheInCorso = false;
+let statisticheLetteAlle = 0;
+let ultimeStatistiche = null;
+
+const leggiDaMemoria = chiave => { try { return localStorage.getItem(chiave) || ""; } catch (_) { return ""; } };
+const scriviInMemoria = (chiave, valore) => { try { valore === null ? localStorage.removeItem(chiave) : localStorage.setItem(chiave, valore); } catch (_) {} };
+const periodoStatistiche = () => [1, 7, 30, 90, 365].includes(Number(leggiDaMemoria(PERIODO_STATISTICHE_KEY))) ? Number(leggiDaMemoria(PERIODO_STATISTICHE_KEY)) : 7;
+const numero = valore => new Intl.NumberFormat("it-IT").format(valore);
+const percentuale = (parte, tutto) => tutto ? `${Math.round(parte / tutto * 100)}%` : "—";
+
+function mostraAccessoStatistiche(mostra, errore = "") {
+  $("#statisticheAccesso").hidden = !mostra;
+  $("#statisticheParolaErrore").textContent = errore;
+  $("#parolaStatistiche").classList.toggle("invalid", Boolean(errore));
+  $("#cambiaParolaStatistiche").hidden = mostra || !leggiDaMemoria(PAROLA_STATISTICHE_KEY);
+  if (mostra) $("#statisticheCorpo").hidden = true;
+}
+
+function aggiornaPulsantiStatistiche() {
+  const giorni = periodoStatistiche();
+  $$("[data-periodo]").forEach(bottone => bottone.classList.toggle("active", Number(bottone.dataset.periodo) === giorni));
+  $("#contaQuestoDispositivo").checked = leggiDaMemoria(NON_CONTARE_KEY) !== "1";
+}
+
+async function caricaStatistiche({ forza = false } = {}) {
+  if (!isDashboardUnlocked() || statisticheInCorso) return;
+  if (!forza && Date.now() - statisticheLetteAlle < 60000) return;
+  aggiornaPulsantiStatistiche();
+  const stato = $("#statisticheStato");
+  if (!indirizzoStatistiche()) {
+    mostraAccessoStatistiche(false);
+    $("#statisticheCorpo").hidden = true;
+    stato.textContent = "Statistiche non ancora collegate al sito: segui la GUIDA nella cartella SITO › statistiche del computer.";
+    return;
+  }
+  const parola = leggiDaMemoria(PAROLA_STATISTICHE_KEY);
+  if (!parola) {
+    mostraAccessoStatistiche(true);
+    stato.textContent = "";
+    return;
+  }
+  mostraAccessoStatistiche(false);
+  const giorni = periodoStatistiche();
+  statisticheInCorso = true;
+  stato.textContent = ultimeStatistiche ? "Aggiorno le statistiche…" : "Carico le statistiche…";
+  try {
+    const risposta = await fetch(indirizzoStatistiche(), { method: "POST", body: JSON.stringify({ parola, giorni }), cache: "no-store" });
+    if (!risposta.ok) throw new Error(risposta.status);
+    const dati = await risposta.json();
+    if (dati.errore === "parola") {
+      scriviInMemoria(PAROLA_STATISTICHE_KEY, null);
+      mostraAccessoStatistiche(true, "Parola segreta non giusta: riscrivila.");
+      stato.textContent = "";
+      return;
+    }
+    if (dati.errore === "parola-da-impostare") {
+      stato.textContent = "Nel Foglio Google manca la parola segreta: scrivila nello script e rifai il deployment (GUIDA, punto 4).";
+      return;
+    }
+    if (dati.errore) throw new Error(dati.errore);
+    statisticheLetteAlle = Date.now();
+    ultimeStatistiche = dati;
+    renderStatistiche(dati);
+    stato.textContent = `Aggiornate alle ${dati.aggiornato}: mentre la dashboard resta aperta si aggiornano da sole ogni 2 minuti.`;
+  } catch (_) {
+    stato.textContent = "Non riesco a leggere le statistiche (manca la rete o il Foglio Google non risponde): riprova con AGGIORNA.";
+  } finally {
+    statisticheInCorso = false;
+  }
+  // il periodo e' cambiato mentre leggevo: rileggo quello giusto
+  if (periodoStatistiche() !== giorni) caricaStatistiche({ forza: true });
+}
+
+const NOMI_PASSI = {
+  visite: "Entrano nel sito", componi: "Aprono «Componi la cassetta»", verdure: "Vedono le verdure", sceglie: "Mettono almeno una verdura",
+  consegna: "Scelgono la consegna", riepilogo: "Arrivano al riepilogo", ordine: "Preparano l'ordine su WhatsApp"
+};
+const NOMI_EVENTI = {
+  visita: "Nuova visita", pagina: "Apre", passo: "Va al passo", click: "Tocca", verdura: "Aggiunge", conserva: "Aggiunge", olio: "Aggiunge",
+  cassetta: "Sceglie la cassetta", ordine: "Prepara l'ordine", contatto: "Ti contatta con", sezione: "Guarda"
+};
+const NOMI_PAGINE = { home: "la home", componi: "Componi la cassetta" };
+const NOMI_PROVENIENZE = { Diretto: "Link diretto (anche WhatsApp)" };
+
+function dataDaNumero(giorno, opzioni) {
+  const data = new Date(Date.UTC(Math.floor(giorno / 10000), Math.floor(giorno / 100) % 100 - 1, giorno % 100, 12));
+  return data.toLocaleDateString("it-IT", { timeZone: "UTC", ...opzioni });
+}
+
+function confrontoPeriodo(adesso, prima, giorni) {
+  const quando = giorni === 1 ? "ieri" : `i ${giorni} giorni prima`;
+  if (!prima) return adesso ? `${quando}: nessuna` : "";
+  const differenza = Math.round((adesso - prima) / prima * 100);
+  return `${differenza > 0 ? "▲ +" : differenza < 0 ? "▼ " : "= "}${differenza}% rispetto a ${quando}`;
+}
+
+// colonne: per ora (oggi), per giorno (fino a 90 giorni) o per mese (12 mesi)
+function colonneVisite(dati) {
+  if (dati.giorni === 1) {
+    return dati.ore.map((visite, ora) => ({ valore: visite, nome: `dalle ${ora}:00 alle ${ora + 1}:00`, asse: ora % 6 === 0 ? `${ora}:00` : "" }));
+  }
+  if (dati.giorni > 90) {
+    const mesi = [];
+    dati.perGiorno.forEach(giorno => {
+      const mese = Math.floor(giorno.giorno / 100);
+      if (!mesi.length || mesi[mesi.length - 1].mese !== mese) mesi.push({ mese, valore: 0, primo: giorno.giorno });
+      mesi[mesi.length - 1].valore += giorno.visite;
+    });
+    return mesi.map(mese => ({ valore: mese.valore, nome: dataDaNumero(mese.primo, { month: "long", year: "numeric" }), asse: dataDaNumero(mese.primo, { month: "short" }) }));
+  }
+  const ogni = dati.giorni <= 7 ? 1 : dati.giorni <= 30 ? 5 : 15;
+  return dati.perGiorno.map((giorno, indice) => ({
+    valore: giorno.visite,
+    nome: dataDaNumero(giorno.giorno, { weekday: "long", day: "numeric", month: "long" }),
+    asse: (dati.perGiorno.length - 1 - indice) % ogni === 0 ? dataDaNumero(giorno.giorno, dati.giorni <= 7 ? { weekday: "short", day: "numeric" } : { day: "numeric", month: "short" }) : ""
+  }));
+}
+
+function graficoColonne(colonne, unita) {
+  const massimo = Math.max(...colonne.map(colonna => colonna.valore), 1);
+  return `
+    <div class="grafico-colonne" style="--quante:${colonne.length}">
+      <p class="grafico-info" aria-live="polite">Tocca una colonna per vedere il numero.</p>
+      <div class="grafico-area">
+        <span class="grafico-massimo">${numero(massimo)}</span>
+        ${colonne.map(colonna => `<button type="button" class="grafico-colonna" data-info="${escapeHtml(`${colonna.nome.charAt(0).toUpperCase()}${colonna.nome.slice(1)}: ${numero(colonna.valore)} ${colonna.valore === 1 ? unita[0] : unita[1]}`)}" aria-label="${escapeHtml(`${colonna.nome}: ${colonna.valore}`)}"><i style="height:${colonna.valore ? Math.max(2, colonna.valore / massimo * 100) : 0}%"></i></button>`).join("")}
+      </div>
+      <div class="grafico-asse">${colonne.map(colonna => `<span>${escapeHtml(colonna.asse)}</span>`).join("")}</div>
+    </div>`;
+}
+
+function elencoBarre(voci, { vuoto = "Ancora niente in questo periodo.", nome = voce => voce.cosa, sotto = () => "", valore = voce => voce.volte, scrivi = voce => numero(valore(voce)), massimo } = {}) {
+  if (!voci.length) return `<p class="stat-vuoto">${vuoto}</p>`;
+  const piu = massimo || Math.max(...voci.map(valore), 1);
+  return `<ol class="stat-elenco">${voci.map(voce => `
+    <li>
+      <span class="stat-nome">${escapeHtml(nome(voce))}${sotto(voce) ? `<small>${escapeHtml(sotto(voce))}</small>` : ""}</span>
+      <b>${scrivi(voce)}</b>
+      <i style="--larga:${valore(voce) / piu * 100}%"></i>
+    </li>`).join("")}</ol>`;
+}
+
+function schedaStatistica(titolo, contenuto, classe = "") {
+  return `<article class="stat-scheda ${classe}"><h3>${titolo}</h3>${contenuto}</article>`;
+}
+
+function renderStatistiche(dati) {
+  const corpo = $("#statisticheCorpo");
+  const visite = dati.visite;
+  const percorso = dati.percorso.map(passo => ({ cosa: NOMI_PASSI[passo.passo] || passo.passo, volte: passo.visite }));
+  const pulsanti = dati.pulsanti.slice(0, 12);
+  const altriPulsanti = dati.pulsanti.slice(12);
+  const conserveEOlio = [...dati.conserve, ...(dati.olio ? [{ cosa: "Olio · latta da 5 litri", volte: dati.olio }] : [])].sort((a, b) => b.volte - a.volte);
+  const descriviEvento = evento => {
+    const cosa = evento.tipo === "pagina" ? NOMI_PAGINE[evento.cosa] || evento.cosa : evento.tipo === "visita" ? `da ${NOMI_PROVENIENZE[evento.cosa] || evento.cosa}` : evento.cosa;
+    return `${NOMI_EVENTI[evento.tipo] || evento.tipo} ${cosa}`.trim();
+  };
+  corpo.innerHTML = `
+    <div class="stat-numeri">
+      <article><span>VISITE</span><strong>${numero(visite)}</strong><small>${escapeHtml(confrontoPeriodo(visite, dati.prima.visite, dati.giorni))}</small></article>
+      <article><span>CLICK</span><strong>${numero(dati.click)}</strong><small>${visite ? `${(dati.click / visite).toLocaleString("it-IT", { maximumFractionDigits: 1 })} per visita` : "—"}</small></article>
+      <article><span>ORDINI PREPARATI</span><strong>${numero(dati.ordini)}</strong><small>${dati.ordini ? `${money(dati.valoreOrdini)} in tutto` : escapeHtml(confrontoPeriodo(0, dati.prima.ordini, dati.giorni)) || "nessuno per ora"}</small></article>
+      <article class="mint"><span>DALLA VISITA ALL'ORDINE</span><strong>${percentuale(dati.ordini, visite)}</strong><small>delle visite prepara un ordine</small></article>
+    </div>
+    <div class="stat-griglia">
+      ${schedaStatistica(dati.giorni === 1 ? "VISITE DI OGGI, ORA PER ORA" : dati.giorni > 90 ? "VISITE MESE PER MESE" : "VISITE GIORNO PER GIORNO", graficoColonne(colonneVisite(dati), ["visita", "visite"]), "larga")}
+      ${schedaStatistica("DALLA VISITA ALL'ORDINE", elencoBarre(percorso, { massimo: Math.max(visite, 1), scrivi: voce => `${numero(voce.volte)} <small>${percentuale(voce.volte, visite)}</small>`, vuoto: "Ancora nessuna visita in questo periodo." }), "larga")}
+      ${schedaStatistica("I PULSANTI PIÙ TOCCATI", elencoBarre(pulsanti, { sotto: voce => `${voce.dove} · ${voce.visite === 1 ? "1 visita" : `${numero(voce.visite)} visite`}` })
+        + (altriPulsanti.length ? `<details class="stat-altri"><summary>VEDI ALTRI ${altriPulsanti.length}</summary>${elencoBarre(altriPulsanti, { sotto: voce => voce.dove, massimo: pulsanti[0].volte })}</details>` : ""), "larga")}
+      ${schedaStatistica("VERDURE PIÙ AGGIUNTE", elencoBarre(dati.verdure.slice(0, 12)))}
+      ${schedaStatistica("CONSERVE E OLIO AGGIUNTI", elencoBarre(conserveEOlio))}
+      ${schedaStatistica("CASSETTE SCELTE", elencoBarre(dati.cassette, { nome: voce => `Cassetta ${voce.cosa.toLowerCase()}` }))}
+      ${schedaStatistica("DA DOVE ARRIVANO", elencoBarre(dati.provenienza, { nome: voce => NOMI_PROVENIENZE[voce.cosa] || voce.cosa }))}
+      ${schedaStatistica("CON COSA NAVIGANO", elencoBarre(dati.dispositivi, { nome: voce => voce.cosa.charAt(0).toUpperCase() + voce.cosa.slice(1), massimo: Math.max(visite, 1), scrivi: voce => `${numero(voce.volte)} <small>${percentuale(voce.volte, visite)}</small>` }))}
+      ${schedaStatistica("TI CONTATTANO CON", elencoBarre(dati.contatti, { vuoto: "Nessun tocco su telefono, WhatsApp, email o Instagram." }))}
+      ${schedaStatistica("COSA GUARDANO IN HOME", elencoBarre(dati.sezioni, { valore: voce => voce.visite, massimo: Math.max(visite, 1), scrivi: voce => `${numero(voce.visite)} <small>${percentuale(voce.visite, visite)}</small>` }))}
+      ${dati.giorni === 1 ? "" : schedaStatistica("A CHE ORA ARRIVANO", graficoColonne(dati.ore.map((visite, ora) => ({ valore: visite, nome: `dalle ${ora}:00 alle ${ora + 1}:00`, asse: ora % 6 === 0 ? `${ora}` : "" })), ["visita", "visite"]))}
+      ${schedaStatistica("ULTIMI MOVIMENTI", dati.ultimi.length ? `<ol class="stat-ultimi">${dati.ultimi.map(evento => `
+        <li><time>${escapeHtml(evento.quando)}</time><span>${escapeHtml(descriviEvento(evento))}${evento.dove && evento.tipo !== "pagina" && evento.tipo !== "passo" ? `<small>${escapeHtml(evento.dove)}</small>` : ""}</span></li>`).join("")}</ol>` : `<p class="stat-vuoto">Ancora nessun movimento.</p>`, "ultimi")}
+    </div>`;
+  corpo.hidden = false;
+}
+
+function setupStatisticheDashboard() {
+  $$("[data-periodo]").forEach(bottone => bottone.addEventListener("click", () => {
+    scriviInMemoria(PERIODO_STATISTICHE_KEY, bottone.dataset.periodo);
+    aggiornaPulsantiStatistiche();
+    caricaStatistiche({ forza: true });
+  }));
+  $("#aggiornaStatistiche").addEventListener("click", () => caricaStatistiche({ forza: true }));
+  $("#entraStatistiche").addEventListener("click", () => {
+    const parola = $("#parolaStatistiche").value.trim();
+    if (parola.length < 8) {
+      mostraAccessoStatistiche(true, "La parola segreta ha almeno 8 caratteri: è quella scritta nello script del Foglio Google.");
+      return;
+    }
+    scriviInMemoria(PAROLA_STATISTICHE_KEY, parola);
+    $("#parolaStatistiche").value = "";
+    caricaStatistiche({ forza: true });
+  });
+  $("#parolaStatistiche").addEventListener("keydown", event => { if (event.key === "Enter") $("#entraStatistiche").click(); });
+  $("#cambiaParolaStatistiche").addEventListener("click", () => {
+    scriviInMemoria(PAROLA_STATISTICHE_KEY, null);
+    mostraAccessoStatistiche(true);
+    $("#parolaStatistiche").focus();
+  });
+  $("#contaQuestoDispositivo").addEventListener("change", event => {
+    scriviInMemoria(NON_CONTARE_KEY, event.target.checked ? "0" : "1");
+    showToast(event.target.checked
+      ? "Ora contano anche i tuoi click, ma solo fuori dalla dashboard (apri il sito senza ?a=1)."
+      : "I click di questo dispositivo non contano più.", 4500);
+  });
+  // colonne del grafico: passandoci sopra o toccandole si legge il numero
+  const mostraColonna = event => {
+    const colonna = event.target.closest(".grafico-colonna");
+    if (!colonna) return;
+    const grafico = colonna.closest(".grafico-colonne");
+    $$(".grafico-colonna.scelta", grafico).forEach(altra => altra.classList.remove("scelta"));
+    colonna.classList.add("scelta");
+    $(".grafico-info", grafico).textContent = colonna.dataset.info;
+  };
+  $("#statisticheCorpo").addEventListener("pointerover", mostraColonna);
+  $("#statisticheCorpo").addEventListener("click", mostraColonna);
+  setInterval(() => { if (state.view === "dashboard" && !document.hidden) caricaStatistiche({ forza: true }); }, 120000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && state.view === "dashboard") caricaStatistiche(); });
+}
+
 function setupEvents() {
   let fluttuaInCoda = false;
   window.addEventListener("scroll", () => {
@@ -3166,6 +3582,7 @@ function init() {
   renderProducts();
   setupDatesAndTimes();
   setupEvents();
+  setupStatisticheDashboard();
   setupReveal();
   setupInclinazione3D();
   setupGalleria3D();
@@ -3175,6 +3592,7 @@ function init() {
   renderDashboard();
   if (!importOrderFromHash()) openInitialRoute();
   showDashboardGate();
+  setupStatistiche();
   registerServiceWorker();
   aggiornaSettimanaDalSito();
 }
