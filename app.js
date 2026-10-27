@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 59;
+const VERSIONE_SITO = 60;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -44,6 +44,7 @@ const MAX_ORDINI_FASCIA = 4;
 // senza pubblicare la settimana; dalla dashboard si cambia o si salta una data. Si ordina fino alle 21:00 del giorno prima
 const GIORNO_FISSO_INIZIALE = 5;
 const ORA_CHIUSURA_ORDINI = 21;
+const ORA_RIAPERTURA_ORDINI = 13;   // il giorno di consegna gli ordini riaprono alle 13, per la consegna dopo
 const NOMI_GIORNI = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
 const LOCALITA = [
   { nome: "Viterbo", costo: 0 },
@@ -148,48 +149,50 @@ CONSERVE.forEach(conserva => { conserva.prezzo = 0; conserva.disponibile = true;
 
 const DEFAULT_PRESERVES = CONSERVE.map(conserva => ({ id: conserva.id, name: conserva.nome, enabled: true }));
 
+// cm = quanto e' grande dal vero quello che si vede nella foto (il lato piu' lungo): le cassette lo usano
+// per disegnare ogni verdura in proporzione con le altre e con la cassetta (la media e' larga 56 cm)
 const PRODUCTS = [
-  { id: "peperoni", name: "Peperoni", weight: "500 g", emoji: "🫑", sheet: SHEET_VERE, cols: 6, rows: 1, x: 2, y: 0, enabled: true },
-  { id: "melanzane", name: "Melanzane", weight: "500 g", emoji: "🍆", sheet: SHEET_1, cols: 5, rows: 4, x: 1, y: 0, enabled: true },
-  { id: "pomodori", name: "Pomodori", weight: "500 g", emoji: "🍅", sheet: SHEET_VERE, cols: 6, rows: 1, x: 3, y: 0, enabled: true },
-  { id: "lattuga-romana", name: "Lattuga romana", weight: "1 cespo", emoji: "🥬", sheet: SHEET_VERE, cols: 6, rows: 1, x: 0, y: 0, enabled: true },
-  { id: "lattuga-canasta", name: "Lattuga canasta", weight: "1 cespo", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 4, y: 0, enabled: true },
-  { id: "lattuga-gentilina", name: "Lattuga gentilina", weight: "1 cespo", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 0, y: 1, enabled: true },
-  { id: "lattuga-iceberg", name: "Lattuga iceberg", weight: "1 cespo", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 1, y: 1, enabled: true },
-  { id: "cicoria", name: "Cicoria", weight: "500 g", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 2, y: 1, enabled: true },
-  { id: "radicchio-treviso", name: "Radicchio di Treviso", weight: "500 g", emoji: "🥬", sheet: SHEET_NUOVE, cols: 4, rows: 1, x: 1, y: 0, enabled: true },
-  { id: "radicchio-chioggia", name: "Radicchio di Chioggia", weight: "1 cespo", emoji: "🥬", sheet: SHEET_NUOVE, cols: 4, rows: 1, x: 2, y: 0, enabled: true },
-  { id: "bieta-colorata", name: "Bieta colorata", weight: "500 g", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 3, y: 1, enabled: true },
-  { id: "bieta-verde", name: "Bieta verde", weight: "500 g", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 4, y: 1, enabled: true },
-  { id: "cocomero", name: "Cocomero", weight: "1 pz", emoji: "🍉", sheet: SHEET_1, cols: 5, rows: 4, x: 0, y: 2, enabled: true },
-  { id: "melone", name: "Melone", weight: "1 pz", emoji: "🍈", sheet: SHEET_1, cols: 5, rows: 4, x: 1, y: 2, enabled: true },
-  { id: "broccolo-romanesco", name: "Broccolo romanesco", weight: "1 pz", emoji: "🥦", sheet: SHEET_1, cols: 5, rows: 4, x: 2, y: 2, enabled: true },
-  { id: "broccolo-siciliano", name: "Broccolo siciliano", weight: "1 pz", emoji: "🥦", sheet: SHEET_1, cols: 5, rows: 4, x: 3, y: 2, enabled: true },
-  { id: "cavolfiore", name: "Cavolfiore", weight: "1 pz", emoji: "🥦", sheet: SHEET_1, cols: 5, rows: 4, x: 4, y: 2, enabled: true },
-  { id: "cavolo-cappuccio", name: "Cavolo cappuccio", weight: "1 pz", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 0, y: 3, enabled: true },
-  { id: "cavolo-cappuccio-viola", name: "Cavolo cappuccio viola", weight: "1 pz", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 1, y: 3, enabled: true },
-  { id: "verza", name: "Verza", weight: "1 pz", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 2, y: 3, enabled: true },
-  { id: "cipolle-tropea", name: "Cipolle di Tropea", weight: "500 g", emoji: "🧅", sheet: SHEET_1, cols: 5, rows: 4, x: 3, y: 3, enabled: true },
-  { id: "cipolle-bianche", name: "Cipolle bianche", weight: "500 g", emoji: "🧅", sheet: SHEET_1, cols: 5, rows: 4, x: 4, y: 3, enabled: true },
-  { id: "ravanelli", name: "Ravanelli", weight: "1 mazzo", emoji: "🌱", sheet: SHEET_NUOVE, cols: 4, rows: 1, x: 0, y: 0, enabled: true },
-  { id: "aglio", name: "Mazzo di aglio", weight: "1 mazzo", emoji: "🧄", sheet: SHEET_2, cols: 5, rows: 3, x: 0, y: 0, enabled: true },
-  { id: "odori-misti", name: "Odori misti", weight: "1 mazzo", emoji: "🌿", sheet: SHEET_2, cols: 5, rows: 3, x: 1, y: 0, enabled: true },
-  { id: "zucca", name: "Zucca butternut", weight: "1 kg", emoji: "🎃", sheet: SHEET_VERE, cols: 6, rows: 1, x: 5, y: 0, enabled: true },
-  { id: "carciofi", name: "Carciofi", weight: "3 pz", emoji: "🌿", sheet: SHEET_2, cols: 5, rows: 3, x: 3, y: 0, enabled: true },
-  { id: "asparagi", name: "Asparagi", weight: "1 mazzo", emoji: "🌿", sheet: SHEET_2, cols: 5, rows: 3, x: 4, y: 0, enabled: true },
-  { id: "patate", name: "Patate", weight: "1 kg", emoji: "🥔", sheet: SHEET_VERE, cols: 6, rows: 1, x: 1, y: 0, enabled: true },
-  { id: "zucchine-romanesche", name: "Zucchine romanesche", weight: "500 g", emoji: "🥒", sheet: SHEET_EXTRA, cols: 2, rows: 1, x: 0, y: 0, enabled: true },
-  { id: "cetrioli", name: "Cetrioli", weight: "500 g", emoji: "🥒", sheet: SHEET_2, cols: 5, rows: 3, x: 2, y: 1, enabled: true },
-  { id: "fiori-zucca", name: "Fiori di zucca", weight: "10 pz", emoji: "🌼", sheet: SHEET_2, cols: 5, rows: 3, x: 3, y: 1, enabled: true },
-  { id: "peperoncini", name: "Peperoncini", weight: "200 g", emoji: "🌶️", sheet: SHEET_2, cols: 5, rows: 3, x: 4, y: 1, enabled: true },
-  { id: "scarola-riccia", name: "Scarola riccia", weight: "1 cespo", emoji: "🥬", sheet: SHEET_2, cols: 5, rows: 3, x: 0, y: 2, enabled: true },
-  { id: "scarola-liscia", name: "Scarola liscia", weight: "1 cespo", emoji: "🥬", sheet: SHEET_2, cols: 5, rows: 3, x: 1, y: 2, enabled: true },
-  { id: "cavolo-nero", name: "Cavolo nero", weight: "1 mazzo", emoji: "🥬", sheet: SHEET_2, cols: 5, rows: 3, x: 2, y: 2, enabled: true },
-  { id: "friggitelli", name: "Peperoni friggitelli", weight: "500 g", emoji: "🫑", sheet: SHEET_EXTRA, cols: 2, rows: 1, x: 1, y: 0, enabled: true },
-  { id: "castagne", name: "Castagne", weight: "500 g", emoji: "🌰", sheet: SHEET_VERE, cols: 6, rows: 1, x: 4, y: 0, enabled: false },
-  { id: "melone-invernale", name: "Melone invernale", weight: "1 pz", emoji: "🍈", sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 1, y: 0, enabled: false },
-  { id: "cime-rapa", name: "Cime di rapa", weight: "500 g", emoji: "🥬", sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 2, y: 0, enabled: false },
-  { id: "cavolo-punta", name: "Cavolo cappuccio a punta", weight: "1 pz", emoji: "🥬", sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 3, y: 0, enabled: false }
+  { id: "peperoni", name: "Peperoni", weight: "500 g", emoji: "🫑", cm: 20, sheet: SHEET_VERE, cols: 6, rows: 1, x: 2, y: 0, enabled: true },
+  { id: "melanzane", name: "Melanzane", weight: "500 g", emoji: "🍆", cm: 18, sheet: SHEET_1, cols: 5, rows: 4, x: 1, y: 0, enabled: true },
+  { id: "pomodori", name: "Pomodori", weight: "500 g", emoji: "🍅", cm: 16, sheet: SHEET_VERE, cols: 6, rows: 1, x: 3, y: 0, enabled: true },
+  { id: "lattuga-romana", name: "Lattuga romana", weight: "1 cespo", emoji: "🥬", cm: 30, sheet: SHEET_VERE, cols: 6, rows: 1, x: 0, y: 0, enabled: true },
+  { id: "lattuga-canasta", name: "Lattuga canasta", weight: "1 cespo", emoji: "🥬", cm: 26, sheet: SHEET_1, cols: 5, rows: 4, x: 4, y: 0, enabled: true },
+  { id: "lattuga-gentilina", name: "Lattuga gentilina", weight: "1 cespo", emoji: "🥬", cm: 24, sheet: SHEET_1, cols: 5, rows: 4, x: 0, y: 1, enabled: true },
+  { id: "lattuga-iceberg", name: "Lattuga iceberg", weight: "1 cespo", emoji: "🥬", cm: 16, sheet: SHEET_1, cols: 5, rows: 4, x: 1, y: 1, enabled: true },
+  { id: "cicoria", name: "Cicoria", weight: "500 g", emoji: "🥬", cm: 25, sheet: SHEET_1, cols: 5, rows: 4, x: 2, y: 1, enabled: true },
+  { id: "radicchio-treviso", name: "Radicchio di Treviso", weight: "500 g", emoji: "🥬", cm: 18, sheet: SHEET_NUOVE, cols: 4, rows: 1, x: 1, y: 0, enabled: true },
+  { id: "radicchio-chioggia", name: "Radicchio di Chioggia", weight: "1 cespo", emoji: "🥬", cm: 13, sheet: SHEET_NUOVE, cols: 4, rows: 1, x: 2, y: 0, enabled: true },
+  { id: "bieta-colorata", name: "Bieta colorata", weight: "500 g", emoji: "🥬", cm: 30, sheet: SHEET_1, cols: 5, rows: 4, x: 3, y: 1, enabled: true },
+  { id: "bieta-verde", name: "Bieta verde", weight: "500 g", emoji: "🥬", cm: 30, sheet: SHEET_1, cols: 5, rows: 4, x: 4, y: 1, enabled: true },
+  { id: "cocomero", name: "Cocomero", weight: "1 pz", emoji: "🍉", cm: 26, sheet: SHEET_1, cols: 5, rows: 4, x: 0, y: 2, enabled: true },
+  { id: "melone", name: "Melone", weight: "1 pz", emoji: "🍈", cm: 15, sheet: SHEET_1, cols: 5, rows: 4, x: 1, y: 2, enabled: true },
+  { id: "broccolo-romanesco", name: "Broccolo romanesco", weight: "1 pz", emoji: "🥦", cm: 15, sheet: SHEET_1, cols: 5, rows: 4, x: 2, y: 2, enabled: true },
+  { id: "broccolo-siciliano", name: "Broccolo siciliano", weight: "1 pz", emoji: "🥦", cm: 17, sheet: SHEET_1, cols: 5, rows: 4, x: 3, y: 2, enabled: true },
+  { id: "cavolfiore", name: "Cavolfiore", weight: "1 pz", emoji: "🥦", cm: 18, sheet: SHEET_1, cols: 5, rows: 4, x: 4, y: 2, enabled: true },
+  { id: "cavolo-cappuccio", name: "Cavolo cappuccio", weight: "1 pz", emoji: "🥬", cm: 17, sheet: SHEET_1, cols: 5, rows: 4, x: 0, y: 3, enabled: true },
+  { id: "cavolo-cappuccio-viola", name: "Cavolo cappuccio viola", weight: "1 pz", emoji: "🥬", cm: 15, sheet: SHEET_1, cols: 5, rows: 4, x: 1, y: 3, enabled: true },
+  { id: "verza", name: "Verza", weight: "1 pz", emoji: "🥬", cm: 22, sheet: SHEET_1, cols: 5, rows: 4, x: 2, y: 3, enabled: true },
+  { id: "cipolle-tropea", name: "Cipolle di Tropea", weight: "500 g", emoji: "🧅", cm: 18, sheet: SHEET_1, cols: 5, rows: 4, x: 3, y: 3, enabled: true },
+  { id: "cipolle-bianche", name: "Cipolle bianche", weight: "500 g", emoji: "🧅", cm: 16, sheet: SHEET_1, cols: 5, rows: 4, x: 4, y: 3, enabled: true },
+  { id: "ravanelli", name: "Ravanelli", weight: "1 mazzo", emoji: "🌱", cm: 25, sheet: SHEET_NUOVE, cols: 4, rows: 1, x: 0, y: 0, enabled: true },
+  { id: "aglio", name: "Mazzo di aglio", weight: "1 mazzo", emoji: "🧄", cm: 28, sheet: SHEET_2, cols: 5, rows: 3, x: 0, y: 0, enabled: true },
+  { id: "odori-misti", name: "Odori misti", weight: "1 mazzo", emoji: "🌿", cm: 25, sheet: SHEET_2, cols: 5, rows: 3, x: 1, y: 0, enabled: true },
+  { id: "zucca", name: "Zucca butternut", weight: "1 kg", emoji: "🎃", cm: 23, sheet: SHEET_VERE, cols: 6, rows: 1, x: 5, y: 0, enabled: true },
+  { id: "carciofi", name: "Carciofi", weight: "3 pz", emoji: "🌿", cm: 21, sheet: SHEET_2, cols: 5, rows: 3, x: 3, y: 0, enabled: true },
+  { id: "asparagi", name: "Asparagi", weight: "1 mazzo", emoji: "🌿", cm: 22, sheet: SHEET_2, cols: 5, rows: 3, x: 4, y: 0, enabled: true },
+  { id: "patate", name: "Patate", weight: "1 kg", emoji: "🥔", cm: 24, sheet: SHEET_VERE, cols: 6, rows: 1, x: 1, y: 0, enabled: true },
+  { id: "zucchine-romanesche", name: "Zucchine romanesche", weight: "500 g", emoji: "🥒", cm: 20, sheet: SHEET_EXTRA, cols: 2, rows: 1, x: 0, y: 0, enabled: true },
+  { id: "cetrioli", name: "Cetrioli", weight: "500 g", emoji: "🥒", cm: 22, sheet: SHEET_2, cols: 5, rows: 3, x: 2, y: 1, enabled: true },
+  { id: "fiori-zucca", name: "Fiori di zucca", weight: "10 pz", emoji: "🌼", cm: 22, sheet: SHEET_2, cols: 5, rows: 3, x: 3, y: 1, enabled: true },
+  { id: "peperoncini", name: "Peperoncini", weight: "200 g", emoji: "🌶️", cm: 13, sheet: SHEET_2, cols: 5, rows: 3, x: 4, y: 1, enabled: true },
+  { id: "scarola-riccia", name: "Scarola riccia", weight: "1 cespo", emoji: "🥬", cm: 28, sheet: SHEET_2, cols: 5, rows: 3, x: 0, y: 2, enabled: true },
+  { id: "scarola-liscia", name: "Scarola liscia", weight: "1 cespo", emoji: "🥬", cm: 28, sheet: SHEET_2, cols: 5, rows: 3, x: 1, y: 2, enabled: true },
+  { id: "cavolo-nero", name: "Cavolo nero", weight: "1 mazzo", emoji: "🥬", cm: 32, sheet: SHEET_2, cols: 5, rows: 3, x: 2, y: 2, enabled: true },
+  { id: "friggitelli", name: "Peperoni friggitelli", weight: "500 g", emoji: "🫑", cm: 18, sheet: SHEET_EXTRA, cols: 2, rows: 1, x: 1, y: 0, enabled: true },
+  { id: "castagne", name: "Castagne", weight: "500 g", emoji: "🌰", cm: 15, sheet: SHEET_VERE, cols: 6, rows: 1, x: 4, y: 0, enabled: false },
+  { id: "melone-invernale", name: "Melone invernale", weight: "1 pz", emoji: "🍈", cm: 22, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 1, y: 0, enabled: false },
+  { id: "cime-rapa", name: "Cime di rapa", weight: "500 g", emoji: "🥬", cm: 30, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 2, y: 0, enabled: false },
+  { id: "cavolo-punta", name: "Cavolo cappuccio a punta", weight: "1 pz", emoji: "🥬", cm: 20, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 3, y: 0, enabled: false }
 ];
 
 const BOXES = {
@@ -850,10 +853,11 @@ function aggiornaCassettaFluttuante() {
 }
 
 function goToStep(step) {
-  // a ordini chiusi (giovedi' dalle 21 a mezzanotte) il sito resta tutto visibile, ma non si va alla consegna
+  // a ordini chiusi (dalle 21 della sera prima alle 13 del giorno di consegna) il sito resta tutto
+  // visibile, ma non si va alla consegna
   if (step > 2 && state.ordiniChiusi) {
     const riapre = prossimaRiapertura();
-    showToast(riapre ? `Ordini chiusi fino a mezzanotte: poi puoi ordinare per ${riapre}.` : "Ordini chiusi per ora: riapro appena fisso le prossime consegne.", 4500);
+    showToast(riapre ? `Ordini chiusi: si riapre ${riapre.alle}, ${riapre.perQuale} (${riapre.consegna}).` : "Ordini chiusi per ora: riapro appena fisso le prossime consegne.", 4500);
     if (state.step <= 2) return;
     step = 2;
   }
@@ -1076,7 +1080,9 @@ function crateItemStyle(item, index, selected) {
   const rotation = slot.r + [0, 13, -13][duplicateShift];
   const densityScale = selected.length === 1 ? 1.24 : selected.length === 2 ? 1.12 : 1;
   const boxScale = state.box === "piccola" ? .82 : state.box === "grande" ? 1.15 : 1;
-  const finalScale = (densityScale * boxScale).toFixed(2);
+  // in proporzione con le altre: una verdura "media" della foto e' grande 19 cm (senza cm resta com'era)
+  const veraScale = item.cm ? Math.min(1.5, Math.max(.7, item.cm / 19)) : 1;
+  const finalScale = (densityScale * boxScale * veraScale).toFixed(2);
   return `${vectorCustomProperties(item)};--left:${left}%;--top:${top}%;--w:${slot.w}%;--h:${slot.h}%;--r:${rotation}deg;--z:${10 + index};--s:${finalScale}`;
 }
 
@@ -1437,9 +1443,17 @@ function prossimoGiornoFisso(giorno, giornoSettimana = state.giornoFisso) {
   return state.saltati.includes(candidato) ? "" : candidato;
 }
 
+// si consegna nel giorno dato? (un giorno fisso non saltato o un giorno in piu' pubblicato dalla dashboard)
+const giornoDiConsegna = giorno => state.deliveryDays.includes(giorno)
+  || giorniFissi().some(fisso => prossimoGiornoFisso(spostaGiorno(giorno, -1), fisso) === giorno);
+
+// il giorno delle consegne, da mezzanotte alle 13, non si ordina niente: preparo e porto le cassette
+// e metto le verdure nuove
+const mattinaDiConsegna = adesso => adesso.getHours() < ORA_RIAPERTURA_ORDINI && giornoDiConsegna(oggiLocale());
+
 // si ordina fino alle 21:00 del giorno prima della consegna; il giorno fisso c'e' sempre, anche senza
-// pubblicare la settimana, e i giorni in piu' pubblicati dalla dashboard si aggiungono: la sera prima
-// dalle 21 a mezzanotte non si ordina, da mezzanotte si apre la consegna dopo
+// pubblicare la settimana, e i giorni in piu' pubblicati dalla dashboard si aggiungono: dalle 21 della
+// sera prima alle 13 del giorno di consegna non si ordina, poi si apre la consegna dopo
 function giorniPrenotabiliDa(oggi, tardi) {
   const domani = spostaGiorno(oggi, 1);
   return [...new Set([...state.deliveryDays, ...giorniFissi().map(fisso => prossimoGiornoFisso(oggi, fisso))])]
@@ -1448,13 +1462,37 @@ function giorniPrenotabiliDa(oggi, tardi) {
 }
 
 function giorniPrenotabili() {
-  return giorniPrenotabiliDa(oggiLocale(), new Date().getHours() >= ORA_CHIUSURA_ORDINI);
+  const adesso = new Date();
+  if (mattinaDiConsegna(adesso)) return [];
+  return giorniPrenotabiliDa(oggiLocale(), adesso.getHours() >= ORA_CHIUSURA_ORDINI);
 }
 
-// a ordini chiusi: il giorno che si apre a mezzanotte ("" se non si apre niente)
+// a ordini chiusi: quando si riapre (alle 13 del giorno di consegna, oggi o domani) e per quale consegna;
+// null se non si riapre da solo (nessuna consegna in calendario)
 function prossimaRiapertura() {
-  const giorno = giorniPrenotabiliDa(spostaGiorno(oggiLocale(), 1), false)[0];
-  return giorno ? formatDate(giorno).toLowerCase() : "";
+  const oggi = oggiLocale();
+  const giorno = mattinaDiConsegna(new Date()) ? oggi : spostaGiorno(oggi, 1);
+  const consegna = giorniPrenotabiliDa(giorno, false)[0];
+  if (!consegna) return null;
+  const quando = new Date(`${giorno}T${String(ORA_RIAPERTURA_ORDINI).padStart(2, "0")}:00:00`);
+  const giorniDopo = Math.round((new Date(`${consegna}T12:00:00Z`) - new Date(`${giorno}T12:00:00Z`)) / 864e5);
+  return {
+    oggi: giorno === oggi,
+    quando,
+    alle: `${giorno === oggi ? "oggi" : "domani"} alle ${ORA_RIAPERTURA_ORDINI}:00`,
+    consegna: formatDate(consegna).toLowerCase(),
+    // con un solo giorno fisso la consegna dopo e' sempre la settimana dopo; con due puo' essere la stessa
+    perQuale: giorniDopo >= 5 ? "per la prossima settimana" : "per la prossima consegna"
+  };
+}
+
+// "tra 2 ore e 15 minuti"
+function traQuanto(quando) {
+  const minuti = Math.max(1, Math.ceil((quando - new Date()) / 60000));
+  const ore = Math.floor(minuti / 60), resto = minuti % 60;
+  const testoOre = ore ? `${ore} ${ore === 1 ? "ora" : "ore"}` : "";
+  const testoMinuti = resto ? `${resto} ${resto === 1 ? "minuto" : "minuti"}` : "";
+  return `tra ${[testoOre, testoMinuti].filter(Boolean).join(" e ")}`;
 }
 
 // prima a ordini chiusi il compositore spariva; ora resta visibile e si blocca solo il passaggio alla consegna
@@ -1465,13 +1503,15 @@ function aggiornaOrdiniAperti() {
   $("#builderView").classList.toggle("chiuso", !aperti);
   $("#ordiniChiusi").hidden = aperti;
   if (!aperti) {
-    // chiusi la sera prima dalle 21: si riapre a mezzanotte; senza consegne in calendario: finche' non le fisso
-    const riapre = prossimaRiapertura();
-    $("#ordiniChiusiOcchiello").textContent = riapre ? "ORDINI CHIUSI FINO A MEZZANOTTE" : "ORDINI CHIUSI PER ORA";
-    $("#ordiniChiusiTitolo").innerHTML = riapre ? "LE CASSETTE DI DOMANI <em>SONO IN PREPARAZIONE.</em>" : "LA PROSSIMA CONSEGNA <em>STA CRESCENDO.</em>";
-    $("#ordiniChiusiTesto").innerHTML = riapre
-      ? `Si ordina fino alle 21:00 del giorno prima. Da mezzanotte puoi ordinare la cassetta per <strong>${riapre}</strong>: intanto puoi guardare le cassette, le verdure e le conserve.`
-      : "Intanto puoi guardare le cassette, le verdure e le conserve. Potrai ordinare appena fisso le prossime consegne.";
+    // chiusi dalle 21 della sera prima alle 13 del giorno di consegna; senza consegne in calendario: finche' non le fisso
+    const avviso = avvisoOrdiniChiusi();
+    $("#ordiniChiusiOcchiello").textContent = avviso.occhiello;
+    $("#ordiniChiusiTitolo").innerHTML = avviso.titolo;
+    $("#ordiniChiusiTesto").innerHTML = `${avviso.testo} Intanto puoi guardare le cassette, le verdure e le conserve.`;
+    if (!$("#popupChiusi").hidden) riempiPopupChiusi();
+    proponiPopupChiusi();
+  } else {
+    chiudiPopupChiusi();
   }
   aggiornaPulsanteConsegna();
   // chiusi alle 21 mentre il cliente sceglieva la consegna: torna alle verdure, con l'avviso sopra
@@ -1480,10 +1520,75 @@ function aggiornaOrdiniAperti() {
   return aperti;
 }
 
+// i testi degli ordini chiusi, uguali nell'avviso sopra il compositore e nel popup
+function avvisoOrdiniChiusi() {
+  const riapre = prossimaRiapertura();
+  if (!riapre) {
+    return {
+      occhiello: "ORDINI CHIUSI PER ORA",
+      titolo: "LA PROSSIMA CONSEGNA <em>STA CRESCENDO.</em>",
+      testo: "Potrai ordinare appena fisso le prossime consegne."
+    };
+  }
+  const dopo = `${riapre.oggi ? "Dalle" : "Da domani alle"} ${ORA_RIAPERTURA_ORDINI}:00 puoi fare il tuo ordine ${riapre.perQuale}: la consegna è <strong>${riapre.consegna}</strong>.`;
+  return riapre.oggi
+    ? {
+      occhiello: `ORDINI CHIUSI FINO ALLE ${ORA_RIAPERTURA_ORDINI}:00`,
+      titolo: "OGGI CONSEGNO <em>LE CASSETTE.</em>",
+      testo: `Le ordinazioni per oggi sono chiuse. ${dopo}`,
+      riapre
+    }
+    : {
+      occhiello: `ORDINI CHIUSI FINO A DOMANI ALLE ${ORA_RIAPERTURA_ORDINI}:00`,
+      titolo: "LE CASSETTE DI DOMANI <em>SONO IN PREPARAZIONE.</em>",
+      testo: `Le ordinazioni per domani sono chiuse: si ordina fino alle ${ORA_CHIUSURA_ORDINI}:00 del giorno prima. ${dopo}`,
+      riapre
+    };
+}
+
 function aggiornaPulsanteConsegna() {
   const pulsante = $("#toDelivery");
   pulsante.disabled = state.ordiniChiusi || quotaCount() < boxData().min;
-  pulsante.innerHTML = !state.ordiniChiusi ? "SCELGO LA CONSEGNA <span>→</span>" : prossimaRiapertura() ? "SI ORDINA DA MEZZANOTTE" : "ORDINI CHIUSI PER ORA";
+  const riapre = state.ordiniChiusi ? prossimaRiapertura() : null;
+  pulsante.innerHTML = !state.ordiniChiusi ? "SCELGO LA CONSEGNA <span>→</span>"
+    : riapre ? `SI ORDINA ${riapre.oggi ? "" : "DOMANI "}DALLE ${ORA_RIAPERTURA_ORDINI}:00` : "ORDINI CHIUSI PER ORA";
+}
+
+// Popup degli ordini chiusi: esce quando il cliente entra nel compositore (il momento in cui vuole
+// ordinare), una volta per visita. La home resta libera: e' la vetrina, e un popup appena arrivati
+// la coprirebbe prima che si veda cosa offro.
+let popupChiusiVisto = false;
+function proponiPopupChiusi() {
+  if (popupChiusiVisto || !state.ordiniChiusi || !state.settimanaArrivata || state.view !== "builder") return;
+  popupChiusiVisto = true;
+  setTimeout(() => {
+    if (!state.ordiniChiusi || state.view !== "builder") return;
+    riempiPopupChiusi();
+    popupApertoAlle = performance.now();
+    $("#popupChiusi").hidden = false;
+    document.body.style.overflow = "hidden";
+    traccia("click", "Ordini chiusi: popup mostrato");
+  }, 700);
+}
+
+// anche a popup aperto (a mezzanotte "domani" diventa "oggi")
+function riempiPopupChiusi() {
+  const avviso = avvisoOrdiniChiusi();
+  $("#popupChiusiOcchiello").textContent = avviso.occhiello;
+  $("#popupChiusiTitolo").innerHTML = avviso.titolo;
+  $("#popupChiusiTesto").innerHTML = avviso.testo;
+  $("#popupChiusiOra").hidden = !avviso.riapre;
+  if (avviso.riapre) {
+    $("#popupChiusiOraOre").textContent = `${ORA_RIAPERTURA_ORDINI}:00`;
+    $("#popupChiusiOraQuando").textContent = `${avviso.riapre.oggi ? "oggi" : "domani"}, ${traQuanto(avviso.riapre.quando)}`;
+  }
+}
+
+function chiudiPopupChiusi() {
+  const popup = $("#popupChiusi");
+  if (!popup || popup.hidden) return;
+  popup.hidden = true;
+  document.body.style.overflow = "";
 }
 
 function minutiFascia(da, a) {
@@ -1493,7 +1598,7 @@ function minutiFascia(da, a) {
 
 function setupDatesAndTimes() {
   const giorni = giorniPrenotabili();
-  state.firmaGiorni = giorni.join();
+  state.firmaGiorni = `${oggiLocale()}|${giorni.join()}`;
   aggiornaOrdiniAperti();
   if (!giorni.includes(state.selectedDate)) state.selectedDate = giorni[0] || "";
   $("#dateChoices").innerHTML = giorni.length
@@ -2057,7 +2162,7 @@ function renderRiepilogoSettimana() {
   box.innerHTML = `
     <div class="riepilogo-testa ${giorni.length ? "aperta" : "chiusa"}">
       <small>${giorni.length ? "ORDINI APERTI PER" : "ORDINI CHIUSI"}</small>
-      <strong>${giorni.length ? giorni.map(giorno => formatDate(giorno)).join(" · ") : prossimaRiapertura() ? `Fino a mezzanotte, poi si apre ${prossimaRiapertura()}` : "Nessuna consegna in calendario: premi MODIFICA"}</strong>
+      <strong>${giorni.length ? giorni.map(giorno => formatDate(giorno)).join(" · ") : prossimaRiapertura() ? `Fino a ${prossimaRiapertura().alle}, poi si apre ${prossimaRiapertura().consegna}` : "Nessuna consegna in calendario: premi MODIFICA"}</strong>
     </div>
     <div class="riepilogo-blocco">
       <small>CONSEGNE</small>
@@ -2234,7 +2339,7 @@ function aggiornaStatoPubblicazione() {
   const stato = giorni.length
     ? `Ordini APERTI per ${giorni.map(giorno => new Date(`${giorno}T12:00:00`).toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" })).join(", ")}.`
     : prossimaRiapertura()
-      ? `Ordini CHIUSI fino a mezzanotte (si ordina fino alle 21:00 del giorno prima): poi si apre ${prossimaRiapertura()}.`
+      ? `Ordini CHIUSI fino a ${prossimaRiapertura().alle} (si ordina fino alle ${ORA_CHIUSURA_ORDINI}:00 del giorno prima e si riapre alle ${ORA_RIAPERTURA_ORDINI}:00 del giorno di consegna): poi si apre ${prossimaRiapertura().consegna}.`
       : "Ordini CHIUSI: nessuna consegna in calendario. Premi MODIFICA e scegli il giorno fisso o un giorno in più.";
   info.textContent = `${stato} ${ultima}`;
   const chiave = leggiChiave();
@@ -3048,7 +3153,7 @@ function dispositivoVisita() {
 // in quale parte del sito sta il pulsante: la prima che lo contiene, dalla piu' piccola alla piu' grande
 const ZONE_CLICK = [
   ["#sideMenu", "Menu"], [".site-header", "Testata"], [".site-footer", "Fondo pagina"],
-  ["#popupPrivacy", "Informativa privacy"], ["#popupCondizioni", "Condizioni di vendita"], ["#popupConserve", "Proposta conserve"], ["#popupInvia", "Prima di WhatsApp"], ["#aiutoWhatsapp", "Problemi? Scrivimi"],
+  ["#popupPrivacy", "Informativa privacy"], ["#popupCondizioni", "Condizioni di vendita"], ["#popupConserve", "Proposta conserve"], ["#popupInvia", "Prima di WhatsApp"], ["#popupChiusi", "Popup ordini chiusi"],["#aiutoWhatsapp", "Problemi? Scrivimi"],
   ["#mobileBasketBar", "Barra del carrello"], ["#basketSummary", "Riepilogo cassetta"], ["#orderSuccess", "Ordine pronto"],
   ["#ordiniChiusi", "Avviso ordini chiusi"], ["[data-step='1']", "Componi · dimensione"], ["[data-step='2']", "Componi · verdure"],
   ["[data-step='3']", "Componi · consegna"], ["[data-step='4']", "Componi · riepilogo"], [".hero", "Apertura"],
@@ -3529,8 +3634,9 @@ function setupEvents() {
   $$(".box-option").forEach(button => button.addEventListener("click", () => selectBox(button.dataset.box)));
   $$("[data-seconda]").forEach(button => button.addEventListener("click", () => aggiungiSecondaCassetta(button.dataset.seconda)));
   $$("[data-svuota-carrello]").forEach(button => button.addEventListener("click", chiediSvuotaCarrello));
-  // alle 21:00 e a mezzanotte i giorni prenotabili cambiano anche a pagina aperta
-  setInterval(() => { if (giorniPrenotabili().join() !== state.firmaGiorni) setupDatesAndTimes(); }, 60000);
+  // alle 21:00, a mezzanotte e alle 13:00 i giorni prenotabili (o i testi degli ordini chiusi) cambiano
+  // anche a pagina aperta
+  setInterval(() => { if (`${oggiLocale()}|${giorniPrenotabili().join()}` !== state.firmaGiorni) setupDatesAndTimes(); }, 60000);
   $("#cassetteSchede").addEventListener("click", event => {
     if (event.target.closest("[data-togli-seconda]")) togliSecondaCassetta();
     const scheda = event.target.closest("[data-cassetta]");
@@ -3630,6 +3736,10 @@ function setupEvents() {
   $("#popupInvia").addEventListener("click", event => {
     if (event.target === event.currentTarget && !popupAppenaAperto()) chiudiPopupInvia();
   });
+  $("#popupChiusi").addEventListener("click", event => {
+    if (popupAppenaAperto()) return;
+    if (event.target === event.currentTarget || event.target.closest("[data-chiudi-chiusi]")) chiudiPopupChiusi();
+  });
   $("#successSi").addEventListener("click", ordineInviatoSi);
   // tornando da WhatsApp senza aver risposto: la domanda si fa notare
   document.addEventListener("visibilitychange", () => {
@@ -3668,6 +3778,7 @@ function setupEvents() {
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && !$("#popupPrivacy").hidden) chiudiPrivacy();
     if (event.key === "Escape" && !$("#popupCondizioni").hidden) chiudiCondizioni();
+    if (event.key === "Escape") chiudiPopupChiusi();
   });
   $("#popupConserve").addEventListener("click", event => {
     if (event.target === event.currentTarget && !popupAppenaAperto()) chiudiPopupConserve();   // tocco fuori: torno al riepilogo

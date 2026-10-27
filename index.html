@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=59">
+  <link rel="stylesheet" href="styles.css?v=60">
 </head>
 <body>
   <div class="app-shell">
@@ -740,7 +740,7 @@
                 <button id="addDeliveryDay">+ AGGIUNGI GIORNO</button>
               </div>
               <div class="delivery-days-editor" id="deliveryDaysEditor"></div>
-              <p class="editor-note">I giorni fissi (uno, o due se scegli anche il secondo) sono in calendario da soli ogni settimana: togli la spunta a una data per saltarla. I giorni in più servono per le consegne straordinarie. I clienti possono ordinare fino alle 21:00 del giorno prima; da mezzanotte si apre la consegna successiva. Viterbo (gratis): fasce dalle 14:30 alle 19:00. Zone vicine, Vitorchiano compreso (+2,50 €): dalle 19:00 alle 20:40.</p>
+              <p class="editor-note">I giorni fissi (uno, o due se scegli anche il secondo) sono in calendario da soli ogni settimana: togli la spunta a una data per saltarla. I giorni in più servono per le consegne straordinarie. I clienti possono ordinare fino alle 21:00 del giorno prima; il giorno di consegna gli ordini restano chiusi fino alle 13:00, poi si apre la consegna successiva. Viterbo (gratis): fasce dalle 14:30 alle 19:00. Zone vicine, Vitorchiano compreso (+2,50 €): dalle 19:00 alle 20:40.</p>
             </div>
 
             <div class="products-editor">
@@ -1025,6 +1025,22 @@
     </div>
   </div>
 
+  <div class="popup-conserve popup-chiusi" id="popupChiusi" hidden>
+    <div class="popup-conserve-card" role="dialog" aria-modal="true" aria-labelledby="popupChiusiTitolo">
+      <p class="popup-conserve-aspetta" id="popupChiusiOcchiello">ORDINI CHIUSI FINO ALLE 13:00</p>
+      <h2 id="popupChiusiTitolo">OGGI CONSEGNO <em>LE CASSETTE.</em></h2>
+      <div class="chiusi-ora" id="popupChiusiOra">
+        <span class="chiusi-ora-icona" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6.8V12l3.6 2.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+        <span><small>SI RIAPRE ALLE</small><b id="popupChiusiOraOre">13:00</b><em id="popupChiusiOraQuando">oggi</em></span>
+      </div>
+      <p id="popupChiusiTesto">Le ordinazioni per oggi sono chiuse.</p>
+      <p class="chiusi-nota">Intanto puoi guardare le verdure e preparare la tua cassetta: resta salvata qui, anche se chiudi la pagina.</p>
+      <div class="popup-conserve-azioni">
+        <button class="primary-button" type="button" data-chiudi-chiusi>INTANTO GUARDO LE VERDURE <span>→</span></button>
+      </div>
+    </div>
+  </div>
+
   <div class="popup-conserve" id="popupCondizioni" hidden>
     <div class="popup-conserve-card privacy-card" role="dialog" aria-modal="true" aria-labelledby="condizioniTitolo">
       <button type="button" class="privacy-chiudi" data-chiudi-condizioni aria-label="Chiudi le condizioni di vendita">×</button>
@@ -1039,7 +1055,7 @@
         <h3>PREZZI</h3>
         <p>I prezzi sono in euro e sono finali. La consegna a Viterbo è gratuita; nelle zone vicine costa 2,50 €. Il totale lo vedi nel riepilogo prima di inviare l'ordine.</p>
         <h3>COME SI ORDINA</h3>
-        <p>Componi la cassetta sul sito e invia l'ordine su WhatsApp con il messaggio già pronto. L'ordine è confermato quando ti rispondo su WhatsApp con la conferma: da quel momento vale l'accordo tra noi. Si ordina fino alle 21:00 del giorno prima della consegna. Se una verdura all'ultimo momento manca, ti avviso prima della consegna: la sostituisco con un'altra solo se sei d'accordo, altrimenti la tolgo dal conto.</p>
+        <p>Componi la cassetta sul sito e invia l'ordine su WhatsApp con il messaggio già pronto. L'ordine è confermato quando ti rispondo su WhatsApp con la conferma: da quel momento vale l'accordo tra noi. Si ordina fino alle 21:00 del giorno prima della consegna; per la consegna successiva si ordina dalle 13:00 del giorno di consegna. Se una verdura all'ultimo momento manca, ti avviso prima della consegna: la sostituisco con un'altra solo se sei d'accordo, altrimenti la tolgo dal conto.</p>
         <h3>CONSEGNA</h3>
         <p>Porto io l'ordine all'indirizzo che mi indichi, nel giorno e nella fascia oraria che scegli: a Viterbo dalle 14:30 alle 19:00, nelle zone vicine dalle 19:00 alle 20:40. Ogni fascia ha un numero limitato di consegne. Se non sei in casa ti chiamo o ti scrivo per trovare insieme una soluzione.</p>
         <h3>PAGAMENTO</h3>
@@ -1051,7 +1067,7 @@
         <h3>ALLERGENI E INFORMAZIONI SUGLI ALIMENTI</h3>
         <p>Per ogni conserva trovi sul sito ingredienti (gli allergeni sono in grassetto), peso e come si conserva: sono le stesse informazioni dell'etichetta. Se hai allergie o intolleranze scrivimi prima di ordinare.</p>
         <h3>FOTO DELLE VERDURE</h3>
-        <p>Alcune foto delle verdure vengono da Wikimedia Commons e le ho scontornate per il sito: lattuga romana di Rainer Zenz (CC BY-SA 3.0), peperoni di AntanO (CC BY-SA 4.0), pomodori di Softeis (CC BY-SA 3.0), patate di Petr Kratochvil (CC0), castagne di Antonio Sabetta e zucca butternut di George Chernilevsky (pubblico dominio). Le versioni scontornate delle foto CC BY-SA restano sotto la stessa licenza (creativecommons.org/licenses/by-sa/4.0).</p>
+        <p>Alcune foto delle verdure vengono da Wikimedia Commons e le ho scontornate per il sito: lattuga romana di Rainer Zenz (CC BY-SA 3.0), peperoni di AntanO (CC BY-SA 4.0), pomodori di Softeis (CC BY-SA 3.0), zucca butternut di HaJunkiyada (CC BY-SA 4.0), patate di Petr Kratochvil (CC0) e castagne di Antonio Sabetta (pubblico dominio). Le versioni scontornate delle foto CC BY-SA restano sotto la stessa licenza (creativecommons.org/licenses/by-sa/4.0).</p>
         <h3>RECLAMI</h3>
         <p>Per qualsiasi problema scrivimi su WhatsApp o per email: ti rispondo entro 2 giorni lavorativi. Vale la legge italiana; per le controversie è competente il giudice del luogo dove abiti.</p>
         <p class="privacy-data">Ultimo aggiornamento: 27 ottobre 2026.</p>
@@ -1084,6 +1100,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=59"></script>
+  <script src="app.js?v=60"></script>
 </body>
 </html>

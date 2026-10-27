@@ -2,7 +2,8 @@
 // Una cassetta vera, costruita asse per asse col legno delle foto, che si gira col dito
 // o col mouse. Le verdure scelte ci cadono dentro con una fisica semplice: rimbalzano,
 // rotolano e vanno a occupare gli spazi liberi tra le altre. Le verdure sono le stesse foto
-// ritagliate del catalogo, sempre rivolte verso chi guarda, con un'ombra morbida sotto.
+// ritagliate del catalogo, sempre rivolte verso chi guarda, con un'ombra morbida sotto, ognuna
+// alla sua grandezza vera rispetto alle altre e alla cassetta (cm dei prodotti in app.js).
 // Piu' la cassetta e' piena, piu' le verdure si fanno un po' piu' piccole: cosi' stanno
 // una accanto all'altra sul fondo invece di impilarsi in bilico (sembravano galleggiare).
 // Se qualcosa non va (niente WebGL, errore), il sito resta con la cassetta 2D.
@@ -25,11 +26,19 @@ const STRETTE = 0.8;           // quanto si incastrano due verdure vicine (1 = s
 const RIMPICCIOLISCI_FINO = 0.66;   // con tante verdure si fanno piu' piccole, ma non oltre
 
 // il fondo su cui si appoggiano: nelle cassette media e grande, profonde, le verdure starebbero
-// sotto le assi davanti e non si vedrebbero; il fondo di doghe e' rialzato (doppio fondo)
-const fondoUtile = m => Math.max(SPESSORE, m.a - 1.6 * RAGGIO);
-// quante verdure stanno sul fondo una accanto all'altra, a grandezza piena
-const postiSulFondo = m => (m.l * m.p) / (2.2 * RAGGIO) ** 2;
-const densita = (m, quante) => Math.max(RIMPICCIOLISCI_FINO, Math.min(1, Math.sqrt(postiSulFondo(m) / Math.max(1, quante))));
+// sotto le assi davanti e non si vedrebbero; il fondo di doghe e' rialzato (doppio fondo), quasi
+// all'orlo: le verdure piccole davanti (castagne, pomodori) restano sopra l'asse alta
+const fondoUtile = m => Math.max(SPESSORE, m.a - 1.15 * RAGGIO);
+// quante verdure "medie" stanno sul fondo una accanto all'altra, a grandezza piena
+const postiSulFondo = m => (m.l * m.p) / (2.45 * RAGGIO) ** 2;
+// posti = quanti posti di verdura media occupano quelle scelte (una lattuga romana ne prende di piu')
+const densita = (m, posti) => Math.max(RIMPICCIOLISCI_FINO, Math.min(1, Math.sqrt(postiSulFondo(m) / Math.max(1, posti))));
+// grandezza vera: cm e' il lato piu' lungo di quello che si vede nella foto (in app.js); una verdura media
+// della foto e' grande 19 cm
+const CM_MEDI = 19;
+const LATO_MEDIO = RAGGIO * 2 * 1.32;   // lato dell'immagine di una verdura media
+const ALTEZZA_MEDIA = 0.16;              // metri: piu' alte vanno dietro, piu' basse davanti
+const quantoGrande = prodotto => (prodotto?.cm ? prodotto.cm / CM_MEDI : 1);
 
 // l'ombra morbida sotto ogni verdura: la appoggia, anche quando l'ombra del sole cade di lato
 const trama = (() => {
@@ -148,12 +157,12 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
   const geometria = new THREE.PlaneGeometry(1, 1);
   const tramaOmbra = new THREE.CanvasTexture(trama);
 
-  // Quanto e' larga e alta la parte colorata del ritaglio (lo sfondo trasparente non conta),
-  // misurata dal centro: frazioni della larghezza e dell'altezza del ritaglio.
+  // Quanto e' larga e alta la parte colorata del ritaglio (lo sfondo trasparente non conta):
+  // x e y misurate dal centro, l e a da un bordo all'altro, in frazioni del ritaglio.
   const ingombri = new Map();
   function parteColorata(base, prodotto) {
     if (ingombri.has(prodotto.id)) return ingombri.get(prodotto.id);
-    let esito = { x: 0.5, y: 0.5 };
+    let esito = { x: 0.5, y: 0.5, l: 0.9, a: 0.9 };
     try {
       const img = base.image;
       const cw = img.width / prodotto.cols, ch = img.height / prodotto.rows;
@@ -174,7 +183,9 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
       if (dx >= 0) {
         esito = {
           x: Math.max(0.5 - sx / W, (dx + 1) / W - 0.5),
-          y: Math.max(0.5 - alto / H, (basso + 1) / H - 0.5)
+          y: Math.max(0.5 - alto / H, (basso + 1) / H - 0.5),
+          l: (dx + 1 - sx) / W,
+          a: (basso + 1 - alto) / H
         };
       }
     } catch (_) {}
@@ -195,7 +206,12 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
     const mesh = new THREE.Mesh(geometria, mat);
     mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: t, alphaTest: 0.42 });
     mesh.castShadow = true;
-    const r = RAGGIO * (0.94 + Math.random() * 0.12);
+    // in proporzione: il lato piu' lungo della parte colorata deve misurare i cm veri (prima ogni foto
+    // aveva la stessa grandezza: le zucche di un mucchio venivano minuscole)
+    const colorata = parteColorata(base, prodotto);
+    const lungo = Math.max(colorata.l * Math.max(1, proporzione), colorata.a * Math.max(1, 1 / proporzione)) * LATO_MEDIO;
+    const vera = prodotto.cm ? Math.min(2.2, Math.max(0.5, prodotto.cm / 100 / lungo)) : 1;
+    const r = RAGGIO * vera * (0.94 + Math.random() * 0.12);
     const lato = r * 2 * 1.32;
     mesh.scale.set(lato * Math.max(1, proporzione), lato * Math.max(1, 1 / proporzione), 1);
     const scala = { x: mesh.scale.x, y: mesh.scale.y };
@@ -203,11 +219,12 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
     ombra.rotation.x = -Math.PI / 2;
     // l'immagine guarda sempre verso chi guarda: girando la cassetta la sua larghezza finisce
     // verso qualsiasi parete. Ingombro = mezza larghezza della parte colorata, anche inclinata.
-    const colorata = parteColorata(base, prodotto);
     const mezzaL = colorata.x * mesh.scale.x, mezzaA = colorata.y * mesh.scale.y;
     const ingombro = Math.max(r, mezzaL * Math.cos(GIRO_MAX) + mezzaA * Math.sin(GIRO_MAX));
     // r, ingombro e grandezza dell'immagine cambiano con quanto e' piena la cassetta (k): qui le misure piene
-    return { chiave, id, pos: new THREE.Vector3(), vel: new THREE.Vector3(), r, rPieno: r, ingombro, ingombroPieno: ingombro, scala, k: 1, kMeta: 1, fermo: 0, mesh, ombra, giro: (Math.random() - 0.5) * 0.9, entrata: 0 };
+    // quanto e' alta la parte colorata (a cassetta vuota): le alte vanno dietro, le basse davanti
+    const alta = colorata.a * mesh.scale.y;
+    return { chiave, id, alta, pos: new THREE.Vector3(), vel: new THREE.Vector3(), r, rPieno: r, ingombro, ingombroPieno: ingombro, scala, k: 1, kMeta: 1, fermo: 0, mesh, ombra, giro: (Math.random() - 0.5) * 0.9, entrata: 0 };
   }
 
   const limiteX = v => Math.max(0.004, misura.l / 2 - v.ingombro);
@@ -228,14 +245,17 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
   }
 
   // fa cadere una verdura sopra il punto piu' libero della cassetta: il piu' basso possibile e,
-  // a parita', il piu' lontano dalle altre (cosi' va a riempire i buchi invece di impilarsi)
+  // a parita', il piu' lontano dalle altre (cosi' va a riempire i buchi invece di impilarsi).
+  // Come al banco del fruttivendolo le grandi vanno dietro e le piccole davanti, se no le
+  // castagne sparirebbero dietro la lattuga. Conta l'altezza: zucca distesa e patate sono basse.
   function lancia(v, ritardo = 0) {
     const m = misura;
     let migliore = null;
     for (let i = 0; i < 24; i++) {
       const x = (Math.random() - 0.5) * 2 * limiteX(v) * 0.95;
       // un po' di preferenza verso il fondo: li' si vedono sopra l'asse davanti
-      const z = (Math.random() * 1.6 - 0.9) * limiteZ(v);
+      const z = (Math.random() * 1.7 - 0.9) * limiteZ(v);
+      const alBanco = (z / Math.max(0.01, limiteZ(v))) * (v.alta / ALTEZZA_MEDIA - 1) * 0.9;
       let colonna = fondoUtile(m), spazio = 0.12;
       for (const o of verdure) {
         if (o === v) continue;
@@ -243,7 +263,7 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
         spazio = Math.min(spazio, Math.sqrt(d2) - o.r - v.r);
         if (d2 < ((o.r + v.r) * STRETTE) ** 2) colonna = Math.max(colonna, o.pos.y + o.r * STRETTE);
       }
-      const punteggio = colonna * 10 - spazio;
+      const punteggio = colonna * 10 - spazio + alBanco;
       if (!migliore || punteggio < migliore.punteggio) migliore = { x, z, colonna, punteggio };
     }
     v.pos.set(migliore.x, Math.max(m.a, migliore.colonna) + 0.32 + Math.random() * 0.08, migliore.z);
@@ -477,7 +497,9 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
         inUscita.push({ mesh: v.mesh, t: 0 });
       }
       // piu' verdure ci sono, piu' si fanno piccole: quelle gia' dentro si stringono per fare posto
-      const k = densita(misura, selezione.length);
+      // (tutte allo stesso modo, cosi' restano in proporzione tra loro)
+      const posti = selezione.reduce((somma, s) => somma + quantoGrande(prodotti.find(p => p.id === s.id)) ** 2, 0);
+      const k = densita(misura, posti);
       verdure.forEach(v => { v.kMeta = k; });
       let nuove = 0;
       for (const s of selezione) {

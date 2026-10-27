@@ -1668,6 +1668,19 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
 @keyframes tastoInvia { 0% { box-shadow: 0 0 0 0 rgba(37,211,102,.6); } 100% { box-shadow: 0 0 0 16px rgba(37,211,102,0); } }
 .popup-invia .popup-conserve-card > p:not(.popup-conserve-aspetta) { margin-top: 26px; }
 
+/* ordini chiusi (dalle 21 della sera prima alle 13 del giorno di consegna): l'ora in grande */
+.popup-chiusi .popup-conserve-card { max-width: 440px; border-top-color: var(--green); }
+.popup-chiusi h2 em { color: var(--green); }
+.chiusi-ora { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 4px auto 16px; padding: 12px 22px; border-radius: 16px; background: linear-gradient(140deg, #f7e3a4 0%, #eccb6d 100%); color: var(--green-deep); }
+.chiusi-ora[hidden] { display: none; }
+.chiusi-ora-icona { flex: none; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #fffaf0; }
+.chiusi-ora-icona svg { width: 26px; height: 26px; }
+.chiusi-ora > span:last-child { display: grid; text-align: left; line-height: 1.1; }
+.chiusi-ora small { font-size: .66rem; font-weight: 900; letter-spacing: .16em; }
+.chiusi-ora b { font: italic 700 2.1rem/1 Georgia, serif; }
+.chiusi-ora em { margin-top: 3px; font: 700 .8rem/1.2 "Trebuchet MS", Arial, sans-serif; }
+.popup-chiusi .popup-conserve-card > p.chiusi-nota { margin-top: -8px; font-size: .8rem; }
+
 /* dopo WhatsApp: "hai premuto INVIA?" */
 .success-domanda { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
 .success-domanda[hidden] { display: none; }
