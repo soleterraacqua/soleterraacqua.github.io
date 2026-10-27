@@ -3,18 +3,21 @@
 // o col mouse. Le verdure scelte ci cadono dentro con una fisica semplice: rimbalzano,
 // rotolano e vanno a occupare gli spazi liberi tra le altre. Le verdure sono le stesse foto
 // ritagliate del catalogo, sempre rivolte verso chi guarda, con un'ombra morbida sotto, ognuna
-// alla sua grandezza vera rispetto alle altre e alla cassetta (cm dei prodotti in app.js).
-// Piu' la cassetta e' piena, piu' le verdure si fanno un po' piu' piccole: cosi' stanno
-// una accanto all'altra sul fondo invece di impilarsi in bilico (sembravano galleggiare).
+// in proporzione con le altre (cm dei prodotti in app.js). Piu' la cassetta e' piena, piu' le verdure
+// si fanno un po' piu' piccole: cosi' stanno una accanto all'altra sul fondo invece di impilarsi in
+// bilico (sembravano galleggiare). L'immagine pero' e' piu' grande del suo posto sul fondo (vista):
+// le verdure si sovrappongono un po', come in una cassetta piena, e la cassetta non sembra vuota.
 // Se qualcosa non va (niente WebGL, errore), il sito resta con la cassetta 2D.
 
 import * as THREE from "./assets/vendor/three.module.min.js";
 
-// misure interne in metri: larghezza, profondita', altezza, assi per parete e loro altezza
+// misure interne in metri: larghezza, profondita', altezza, assi per parete e loro altezza;
+// vista = quanto l'immagine di una verdura e' piu' grande del suo posto sul fondo (le cassette
+// profonde si guardano piu' dall'alto e piu' da lontano: le verdure vanno ingrandite di piu')
 const MISURE = {
-  piccola: { l: 0.50, p: 0.34, a: 0.100, assi: 2, hp: 0.042 },
-  media:   { l: 0.56, p: 0.36, a: 0.230, assi: 3, hp: 0.065 },
-  grande:  { l: 0.58, p: 0.38, a: 0.310, assi: 4, hp: 0.068 }
+  piccola: { l: 0.50, p: 0.34, a: 0.100, assi: 2, hp: 0.042, vista: 1.25 },
+  media:   { l: 0.56, p: 0.36, a: 0.230, assi: 3, hp: 0.065, vista: 1.35 },
+  grande:  { l: 0.58, p: 0.38, a: 0.310, assi: 4, hp: 0.068, vista: 1.42 }
 };
 const SPESSORE = 0.012;
 const PALO = 0.032;
@@ -224,7 +227,7 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
     // r, ingombro e grandezza dell'immagine cambiano con quanto e' piena la cassetta (k): qui le misure piene
     // quanto e' alta la parte colorata (a cassetta vuota): le alte vanno dietro, le basse davanti
     const alta = colorata.a * mesh.scale.y;
-    return { chiave, id, alta, pos: new THREE.Vector3(), vel: new THREE.Vector3(), r, rPieno: r, ingombro, ingombroPieno: ingombro, scala, k: 1, kMeta: 1, fermo: 0, mesh, ombra, giro: (Math.random() - 0.5) * 0.9, entrata: 0 };
+    return { chiave, id, alta, mezzaA, pos: new THREE.Vector3(), vel: new THREE.Vector3(), r, rPieno: r, ingombro, ingombroPieno: ingombro, scala, k: 1, kMeta: 1, fermo: 0, mesh, ombra, giro: (Math.random() - 0.5) * 0.9, entrata: 0 };
   }
 
   const limiteX = v => Math.max(0.004, misura.l / 2 - v.ingombro);
@@ -434,13 +437,15 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
     qInv.copy(qMondo).invert();
     const fondo = fondoUtile(misura);
     for (const v of verdure) {
-      v.mesh.position.copy(v.pos);
-      v.mesh.scale.set(v.scala.x * v.k, v.scala.y * v.k, 1);
+      // immagine ingrandita (vista) ma sempre appoggiata: cresce verso l'alto, non sotto il fondo
+      const vista = misura.vista || 1;
+      v.mesh.position.set(v.pos.x, v.pos.y + (vista - 1) * v.mezzaA * v.k, v.pos.z);
+      v.mesh.scale.set(v.scala.x * v.k * vista, v.scala.y * v.k * vista, 1);
       // ombra sul fondo: piena quando la verdura e' appoggiata, sparisce mentre e' ancora in aria
       const inAria = Math.max(0, v.pos.y - v.r - fondo);
       v.ombra.visible = v.mesh.visible;
       v.ombra.position.set(v.pos.x, fondo + 0.0015, v.pos.z);
-      v.ombra.scale.set(v.r * 2.7, v.r * 1.9, 1);
+      v.ombra.scale.set(v.r * 2.7 * vista, v.r * 1.9 * vista, 1);
       v.ombra.material.opacity = 0.62 * Math.max(0, 1 - inAria / 0.09);
       v.entrata = Math.min(1, v.entrata + dt * 6);
       qGiro.setFromAxisAngle(asseZ, v.giro);
@@ -536,5 +541,7 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
     if (autoGiro) sveglia();
   };
 
-  return { sincronizza, aggancia, avanza, gira, ruota: angolo => { yaw = angolo; mondo.rotation.y = angolo; ultimaMano = performance.now(); disegna(performance.now()); } };
+  // per le prove: quanto e' ingrandita ogni verdura e se e' appoggiata sul fondo
+  const verdureInCassetta = () => verdure.map(v => ({ id: v.id, k: +v.k.toFixed(3), vista: +(v.mesh.scale.y / (v.scala.y * v.k)).toFixed(3), aTerra: v.pos.y - v.r < fondoUtile(misura) + 0.03 }));
+  return { sincronizza, aggancia, avanza, gira, verdureInCassetta, ruota: angolo => { yaw = angolo; mondo.rotation.y = angolo; ultimaMano = performance.now(); disegna(performance.now()); } };
 }

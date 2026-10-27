@@ -295,27 +295,30 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 @keyframes popupEntra { from { opacity: 0; transform: translateY(24px) scale(.94); } }
 @keyframes popupEsclamativo { 0%, 100% { transform: scale(1) rotate(0deg); } 12% { transform: scale(1.12) rotate(-8deg); } 24% { transform: scale(1.12) rotate(8deg); } 36% { transform: scale(1) rotate(0deg); } }
 
-/* Riquadro nell'apertura che porta alla sezione conserve */
-.hero-extra { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 500px; margin-top: 18px; }
-.hero-conserve { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 9px 16px 9px 9px; border-radius: 999px; background: rgba(255,250,240,.96); color: var(--green-deep); text-decoration: none; box-shadow: 0 12px 30px rgba(19,35,24,.26), 0 0 0 0 rgba(237,180,154,.55); transform-origin: left center; animation: conserveRespiro 3.8s ease-in-out 1.9s infinite; }
-.hero-conserve:hover { animation-play-state: paused; background: #fffaf0; }
-/* stessa "respirazione" del pulsante principale, ma sfasata: si muovono a turno */
+/* Pulsante "Le mie conserve" nell'apertura: largo quanto quello principale e allineato a lui, ma piu'
+   leggero (scuro trasparente con bordo chiaro; niente sfocatura dietro: sui telefoni deboli pesa e, con l'etichetta
+   che pulsa, Chrome scuriva un riquadro attorno), cosi' si vede senza rubare la scena a "Componi la tua cassetta".
+   Si muove solo l'etichetta NOVITA': due pulsanti che respirano insieme si fanno concorrenza. */
+.hero-extra { max-width: 500px; margin-top: 20px; }
+.hero-conserve { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 60px; padding: 6px 24px 6px 7px; border: 1.5px solid rgba(255,250,240,.62); border-radius: 999px; background: rgba(19,35,24,.56); color: #fffaf0; text-decoration: none; box-shadow: 0 12px 28px rgba(0,0,0,.22); transition: background .25s ease, border-color .25s ease, transform .25s ease; }
+.hero-conserve:hover, .hero-conserve:focus-visible { background: rgba(255,250,240,.16); border-color: #fffaf0; transform: translateY(-2px); }
+/* la "respirazione" del pulsante principale: la usa anche l'invito alle conserve nel riepilogo */
 @keyframes conserveRespiro {
   0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 12px 30px rgba(19,35,24,.26), 0 0 0 0 rgba(237,180,154,.55); }
   50% { transform: translateY(-4px) scale(1.05); box-shadow: 0 18px 40px rgba(19,35,24,.32), 0 0 0 12px rgba(237,180,154,0); }
 }
 .hero-conserve-vasetti { display: flex; flex-shrink: 0; }
-.hero-conserve-vasetti img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid #fffaf0; object-fit: cover; background: #f5f0dd; }
-.hero-conserve-vasetti img + img { margin-left: -15px; }
-.hero-conserve-testo { display: grid; gap: 3px; line-height: 1.15; min-width: 0; }
-.hero-conserve-testo small { color: var(--terracotta); font-size: .7rem; font-weight: 900; letter-spacing: .14em; }
-.hero-conserve-testo strong { font-size: .84rem; letter-spacing: .05em; }
-.hero-conserve-freccia { margin-left: auto; color: var(--terracotta); font-size: 1.15rem; font-weight: 900; transition: transform .25s ease; }
-/* le due caselle "respirano" a turno, dopo il pulsante principale */
-.hero-conserve { animation-delay: 1.27s; }
-.hero-olio { animation-delay: 2.53s; }
-.hero-olio-latta { width: 40px; height: 52px; flex-shrink: 0; margin: -8px 0 -6px 4px; filter: drop-shadow(0 3px 4px rgba(19,35,24,.22)); }
-.hero-conserve:hover .hero-conserve-freccia { transform: translateX(3px); }
+.hero-conserve-vasetti img { width: 46px; height: 46px; border-radius: 50%; border: 2px solid #fffaf0; object-fit: cover; background: #f5f0dd; }
+.hero-conserve-vasetti img + img { margin-left: -14px; }
+.hero-conserve-testo { display: flex; align-items: center; gap: 10px; min-width: 0; line-height: 1; }
+.hero-conserve-testo small { flex-shrink: 0; padding: 5px 9px 4px; border-radius: 999px; background: #a5543b; color: #fffaf0; font-size: .62rem; font-weight: 900; letter-spacing: .14em; animation: novitaPulsa 3.8s ease-in-out 1.9s infinite; }
+.hero-conserve-testo strong { font-size: .86rem; letter-spacing: .12em; white-space: nowrap; }
+.hero-conserve-freccia { margin-left: auto; padding-left: 6px; color: #f3d48a; font-size: 1.2rem; font-weight: 900; transition: transform .25s ease; }
+.hero-conserve:hover .hero-conserve-freccia { transform: translateX(4px); }
+@keyframes novitaPulsa {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(237,180,154,.6); }
+  50% { transform: scale(1.07); box-shadow: 0 0 0 7px rgba(237,180,154,0); }
+}
 
 .hero-proof {
   position: absolute;
@@ -464,6 +467,7 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 }
 @media (max-width: 379px) {
   .hero-conserve-vasetti img + img { display: none; }
+  .hero-conserve-testo strong { font-size: .76rem; letter-spacing: .06em; }
 }
 .weekly-products { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 40px 0 44px; }
 .weekly-products article { background: var(--cream); padding-bottom: 18px; position: relative; overflow: hidden; border-radius: var(--soft-radius); transition: transform .4s ease; }
@@ -1436,14 +1440,12 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .admin-conserva-row { grid-template-columns: 40px 1fr 96px 54px; gap: 8px; }
   .admin-conserva-row img { width: 40px; }
   .hero-button { min-height: 60px; font-size: .86rem; padding-inline: 22px 24px; }
-  .hero-extra { gap: 10px; margin-top: 16px; }
-  .hero-conserve { padding: 8px 10px 8px 8px; gap: 8px; }
-  .hero-conserve-freccia { display: none; }
-  .hero-conserve-vasetti img { width: 40px; height: 40px; }
-  .hero-conserve-vasetti img + img { margin-left: -16px; }
-  .hero-olio-latta { width: 34px; height: 44px; margin: -6px 0 -4px 3px; }
-  .hero-conserve-testo small { font-size: .62rem; letter-spacing: .1em; }
-  .hero-conserve-testo strong { font-size: .76rem; letter-spacing: .03em; }
+  .hero-extra { margin-top: 17px; }
+  .hero-conserve { min-height: 56px; gap: 10px; padding: 5px 18px 5px 6px; }
+  .hero-conserve-vasetti img { width: 42px; height: 42px; }
+  .hero-conserve-testo { gap: 8px; }
+  .hero-conserve-testo small { font-size: .56rem; letter-spacing: .1em; padding: 5px 7px 4px; }
+  .hero-conserve-testo strong { font-size: .8rem; letter-spacing: .08em; }
   .conserva-liste { grid-template-columns: 1fr; }
   .conserva-chiedi { width: 100%; justify-content: center; }
   .section-wrap { width: min(100% - 30px, 600px); }
