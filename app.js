@@ -6,6 +6,8 @@ const SHEET_NUOVE = "assets/catalogo-vettoriali-nuove.webp";
 // verdure d'autunno (27 ottobre 2026), stesso stile: castagne, melone invernale, cime di rapa, cavolo a punta.
 // Nascono spente: si accendono dalla dashboard la settimana che ci sono.
 const SHEET_AUTUNNO = "assets/catalogo-vettoriali-autunno.webp";
+// foto vere (Wikimedia Commons, licenze libere: autori nelle condizioni di vendita), scontornate, 6 caselle in riga
+const SHEET_VERE = "assets/catalogo-foto-vere.webp";
 const WHATSAPP_NUMBER = "393202732892";
 const ADMIN_PIN = "2892";
 const ADMIN_SESSION_KEY = "sole-terra-acqua-admin-unlocked";
@@ -19,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 58;
+const VERSIONE_SITO = 59;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -147,10 +149,10 @@ CONSERVE.forEach(conserva => { conserva.prezzo = 0; conserva.disponibile = true;
 const DEFAULT_PRESERVES = CONSERVE.map(conserva => ({ id: conserva.id, name: conserva.nome, enabled: true }));
 
 const PRODUCTS = [
-  { id: "peperoni", name: "Peperoni", weight: "500 g", emoji: "🫑", sheet: SHEET_1, cols: 5, rows: 4, x: 0, y: 0, enabled: true },
+  { id: "peperoni", name: "Peperoni", weight: "500 g", emoji: "🫑", sheet: SHEET_VERE, cols: 6, rows: 1, x: 2, y: 0, enabled: true },
   { id: "melanzane", name: "Melanzane", weight: "500 g", emoji: "🍆", sheet: SHEET_1, cols: 5, rows: 4, x: 1, y: 0, enabled: true },
-  { id: "pomodori", name: "Pomodori", weight: "500 g", emoji: "🍅", sheet: SHEET_1, cols: 5, rows: 4, x: 2, y: 0, enabled: true },
-  { id: "lattuga-romana", name: "Lattuga romana", weight: "1 cespo", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 3, y: 0, enabled: true },
+  { id: "pomodori", name: "Pomodori", weight: "500 g", emoji: "🍅", sheet: SHEET_VERE, cols: 6, rows: 1, x: 3, y: 0, enabled: true },
+  { id: "lattuga-romana", name: "Lattuga romana", weight: "1 cespo", emoji: "🥬", sheet: SHEET_VERE, cols: 6, rows: 1, x: 0, y: 0, enabled: true },
   { id: "lattuga-canasta", name: "Lattuga canasta", weight: "1 cespo", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 4, y: 0, enabled: true },
   { id: "lattuga-gentilina", name: "Lattuga gentilina", weight: "1 cespo", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 0, y: 1, enabled: true },
   { id: "lattuga-iceberg", name: "Lattuga iceberg", weight: "1 cespo", emoji: "🥬", sheet: SHEET_1, cols: 5, rows: 4, x: 1, y: 1, enabled: true },
@@ -172,10 +174,10 @@ const PRODUCTS = [
   { id: "ravanelli", name: "Ravanelli", weight: "1 mazzo", emoji: "🌱", sheet: SHEET_NUOVE, cols: 4, rows: 1, x: 0, y: 0, enabled: true },
   { id: "aglio", name: "Mazzo di aglio", weight: "1 mazzo", emoji: "🧄", sheet: SHEET_2, cols: 5, rows: 3, x: 0, y: 0, enabled: true },
   { id: "odori-misti", name: "Odori misti", weight: "1 mazzo", emoji: "🌿", sheet: SHEET_2, cols: 5, rows: 3, x: 1, y: 0, enabled: true },
-  { id: "zucca", name: "Zucca butternut", weight: "1 kg", emoji: "🎃", sheet: SHEET_NUOVE, cols: 4, rows: 1, x: 3, y: 0, enabled: true },
+  { id: "zucca", name: "Zucca butternut", weight: "1 kg", emoji: "🎃", sheet: SHEET_VERE, cols: 6, rows: 1, x: 5, y: 0, enabled: true },
   { id: "carciofi", name: "Carciofi", weight: "3 pz", emoji: "🌿", sheet: SHEET_2, cols: 5, rows: 3, x: 3, y: 0, enabled: true },
   { id: "asparagi", name: "Asparagi", weight: "1 mazzo", emoji: "🌿", sheet: SHEET_2, cols: 5, rows: 3, x: 4, y: 0, enabled: true },
-  { id: "patate", name: "Patate", weight: "1 kg", emoji: "🥔", sheet: SHEET_2, cols: 5, rows: 3, x: 0, y: 1, enabled: true },
+  { id: "patate", name: "Patate", weight: "1 kg", emoji: "🥔", sheet: SHEET_VERE, cols: 6, rows: 1, x: 1, y: 0, enabled: true },
   { id: "zucchine-romanesche", name: "Zucchine romanesche", weight: "500 g", emoji: "🥒", sheet: SHEET_EXTRA, cols: 2, rows: 1, x: 0, y: 0, enabled: true },
   { id: "cetrioli", name: "Cetrioli", weight: "500 g", emoji: "🥒", sheet: SHEET_2, cols: 5, rows: 3, x: 2, y: 1, enabled: true },
   { id: "fiori-zucca", name: "Fiori di zucca", weight: "10 pz", emoji: "🌼", sheet: SHEET_2, cols: 5, rows: 3, x: 3, y: 1, enabled: true },
@@ -184,7 +186,7 @@ const PRODUCTS = [
   { id: "scarola-liscia", name: "Scarola liscia", weight: "1 cespo", emoji: "🥬", sheet: SHEET_2, cols: 5, rows: 3, x: 1, y: 2, enabled: true },
   { id: "cavolo-nero", name: "Cavolo nero", weight: "1 mazzo", emoji: "🥬", sheet: SHEET_2, cols: 5, rows: 3, x: 2, y: 2, enabled: true },
   { id: "friggitelli", name: "Peperoni friggitelli", weight: "500 g", emoji: "🫑", sheet: SHEET_EXTRA, cols: 2, rows: 1, x: 1, y: 0, enabled: true },
-  { id: "castagne", name: "Castagne", weight: "500 g", emoji: "🌰", sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 0, y: 0, enabled: false },
+  { id: "castagne", name: "Castagne", weight: "500 g", emoji: "🌰", sheet: SHEET_VERE, cols: 6, rows: 1, x: 4, y: 0, enabled: false },
   { id: "melone-invernale", name: "Melone invernale", weight: "1 pz", emoji: "🍈", sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 1, y: 0, enabled: false },
   { id: "cime-rapa", name: "Cime di rapa", weight: "500 g", emoji: "🥬", sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 2, y: 0, enabled: false },
   { id: "cavolo-punta", name: "Cavolo cappuccio a punta", weight: "1 pz", emoji: "🥬", sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 3, y: 0, enabled: false }
