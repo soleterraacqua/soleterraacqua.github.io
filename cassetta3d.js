@@ -1,8 +1,10 @@
 // Cassetta 3D nel compositore.
 // Una cassetta vera, costruita asse per asse col legno delle foto, che si gira col dito
 // o col mouse. Le verdure scelte ci cadono dentro con una fisica semplice: rimbalzano,
-// rotolano e si appoggiano una sull'altra. Le verdure sono le stesse foto ritagliate
-// del catalogo, sempre rivolte verso chi guarda.
+// rotolano e vanno a occupare gli spazi liberi tra le altre. Le verdure sono le stesse foto
+// ritagliate del catalogo, sempre rivolte verso chi guarda, con un'ombra morbida sotto.
+// Piu' la cassetta e' piena, piu' le verdure si fanno un po' piu' piccole: cosi' stanno
+// una accanto all'altra sul fondo invece di impilarsi in bilico (sembravano galleggiare).
 // Se qualcosa non va (niente WebGL, errore), il sito resta con la cassetta 2D.
 
 import * as THREE from "./assets/vendor/three.module.min.js";
@@ -19,6 +21,29 @@ const RAGGIO = 0.08;           // raggio di una verdura, per la fisica
 const GIRO_MAX = 0.5;          // quanto puo' inclinarsi l'immagine di una verdura (radianti)
 const GRAVITA = -5.2;          // un po' meno della vera, per vedere bene la caduta
 const PROPORZIONE_MARCHIO = 1702 / 151;
+const STRETTE = 0.8;           // quanto si incastrano due verdure vicine (1 = si toccano appena)
+const RIMPICCIOLISCI_FINO = 0.66;   // con tante verdure si fanno piu' piccole, ma non oltre
+
+// il fondo su cui si appoggiano: nelle cassette media e grande, profonde, le verdure starebbero
+// sotto le assi davanti e non si vedrebbero; il fondo di doghe e' rialzato (doppio fondo)
+const fondoUtile = m => Math.max(SPESSORE, m.a - 1.6 * RAGGIO);
+// quante verdure stanno sul fondo una accanto all'altra, a grandezza piena
+const postiSulFondo = m => (m.l * m.p) / (2.2 * RAGGIO) ** 2;
+const densita = (m, quante) => Math.max(RIMPICCIOLISCI_FINO, Math.min(1, Math.sqrt(postiSulFondo(m) / Math.max(1, quante))));
+
+// l'ombra morbida sotto ogni verdura: la appoggia, anche quando l'ombra del sole cade di lato
+const trama = (() => {
+  const tela = document.createElement("canvas");
+  tela.width = tela.height = 64;
+  const ctx = tela.getContext("2d");
+  const sfumatura = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  sfumatura.addColorStop(0, "rgba(40, 28, 16, 0.75)");
+  sfumatura.addColorStop(0.5, "rgba(40, 28, 16, 0.32)");
+  sfumatura.addColorStop(1, "rgba(40, 28, 16, 0)");
+  ctx.fillStyle = sfumatura;
+  ctx.fillRect(0, 0, 64, 64);
+  return tela;
+})();
 
 const caricatore = new THREE.TextureLoader();
 const carica = url => new Promise((ok, ko) => caricatore.load(url, ok, undefined, ko));
@@ -92,7 +117,8 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
       return pezzo;
     };
     const nDoghe = 5, fessura = 0.012, larghDoga = (m.p - fessura * (nDoghe - 1)) / nDoghe;
-    for (let i = 0; i < nDoghe; i++) asse(m.l, S, larghDoga, 0, S / 2, -m.p / 2 + larghDoga / 2 + i * (larghDoga + fessura), legno(i));
+    const yFondo = fondoUtile(m) - S / 2;
+    for (let i = 0; i < nDoghe; i++) asse(m.l, S, larghDoga, 0, yFondo, -m.p / 2 + larghDoga / 2 + i * (larghDoga + fessura), legno(i));
     const vuoto = m.assi > 1 ? (m.a - m.assi * m.hp) / (m.assi - 1) : 0;
     for (let k = 0; k < m.assi; k++) {
       const y = m.a - m.hp / 2 - k * (m.hp + vuoto);
@@ -117,9 +143,10 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
   }
 
   // ---------------------------------------------------------------- verdure
-  const verdure = [];               // { chiave, id, pos, vel, r, mesh, giro, entrata }
+  const verdure = [];               // { chiave, id, pos, vel, r, mesh, ombra, giro, entrata }
   const inUscita = [];
   const geometria = new THREE.PlaneGeometry(1, 1);
+  const tramaOmbra = new THREE.CanvasTexture(trama);
 
   // Quanto e' larga e alta la parte colorata del ritaglio (lo sfondo trasparente non conta),
   // misurata dal centro: frazioni della larghezza e dell'altezza del ritaglio.
@@ -171,12 +198,16 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
     const r = RAGGIO * (0.94 + Math.random() * 0.12);
     const lato = r * 2 * 1.32;
     mesh.scale.set(lato * Math.max(1, proporzione), lato * Math.max(1, 1 / proporzione), 1);
+    const scala = { x: mesh.scale.x, y: mesh.scale.y };
+    const ombra = new THREE.Mesh(geometria, new THREE.MeshBasicMaterial({ map: tramaOmbra, transparent: true, depthWrite: false, opacity: 0 }));
+    ombra.rotation.x = -Math.PI / 2;
     // l'immagine guarda sempre verso chi guarda: girando la cassetta la sua larghezza finisce
     // verso qualsiasi parete. Ingombro = mezza larghezza della parte colorata, anche inclinata.
     const colorata = parteColorata(base, prodotto);
     const mezzaL = colorata.x * mesh.scale.x, mezzaA = colorata.y * mesh.scale.y;
     const ingombro = Math.max(r, mezzaL * Math.cos(GIRO_MAX) + mezzaA * Math.sin(GIRO_MAX));
-    return { chiave, id, pos: new THREE.Vector3(), vel: new THREE.Vector3(), r, ingombro, mesh, giro: (Math.random() - 0.5) * 0.9, entrata: 0 };
+    // r, ingombro e grandezza dell'immagine cambiano con quanto e' piena la cassetta (k): qui le misure piene
+    return { chiave, id, pos: new THREE.Vector3(), vel: new THREE.Vector3(), r, rPieno: r, ingombro, ingombroPieno: ingombro, scala, k: 1, kMeta: 1, fermo: 0, mesh, ombra, giro: (Math.random() - 0.5) * 0.9, entrata: 0 };
   }
 
   const limiteX = v => Math.max(0.004, misura.l / 2 - v.ingombro);
@@ -189,23 +220,34 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
     if (v.pos.z > mz) { v.pos.z = mz; v.vel.z = -Math.abs(v.vel.z) * 0.3; }
   }
 
-  // fa cadere una verdura sopra il punto piu' libero della cassetta
+  // misure della verdura per quanto e' piena la cassetta
+  function adatta(v, k) {
+    v.k = k;
+    v.r = v.rPieno * k;
+    v.ingombro = v.ingombroPieno * k;
+  }
+
+  // fa cadere una verdura sopra il punto piu' libero della cassetta: il piu' basso possibile e,
+  // a parita', il piu' lontano dalle altre (cosi' va a riempire i buchi invece di impilarsi)
   function lancia(v, ritardo = 0) {
     const m = misura;
     let migliore = null;
-    for (let i = 0; i < 10; i++) {
-      const x = (Math.random() - 0.5) * 2 * limiteX(v) * 0.9;
-      // di preferenza verso il fondo: li' si vedono sopra l'asse davanti
-      const z = (Math.random() * 1.15 - 0.85) * limiteZ(v);
-      let colonna = SPESSORE;
+    for (let i = 0; i < 24; i++) {
+      const x = (Math.random() - 0.5) * 2 * limiteX(v) * 0.95;
+      // un po' di preferenza verso il fondo: li' si vedono sopra l'asse davanti
+      const z = (Math.random() * 1.6 - 0.9) * limiteZ(v);
+      let colonna = fondoUtile(m), spazio = 0.12;
       for (const o of verdure) {
         if (o === v) continue;
-        const dx = o.pos.x - x, dz = o.pos.z - z;
-        if (dx * dx + dz * dz < (o.r + v.r) ** 2) colonna = Math.max(colonna, o.pos.y + o.r);
+        const dx = o.pos.x - x, dz = o.pos.z - z, d2 = dx * dx + dz * dz;
+        spazio = Math.min(spazio, Math.sqrt(d2) - o.r - v.r);
+        if (d2 < ((o.r + v.r) * STRETTE) ** 2) colonna = Math.max(colonna, o.pos.y + o.r * STRETTE);
       }
-      if (!migliore || colonna < migliore.colonna) migliore = { x, z, colonna };
+      const punteggio = colonna * 10 - spazio;
+      if (!migliore || punteggio < migliore.punteggio) migliore = { x, z, colonna, punteggio };
     }
     v.pos.set(migliore.x, Math.max(m.a, migliore.colonna) + 0.32 + Math.random() * 0.08, migliore.z);
+    v.fermo = 0;
     v.vel.set((Math.random() - 0.5) * 0.25, -0.15, (Math.random() - 0.5) * 0.15);
     v.attesa = ritardo;
     v.mesh.visible = ritardo <= 0;
@@ -214,9 +256,11 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
   // ---------------------------------------------------------------- fisica
   let ultimoMovimento = 0;
   function passoFisica(dt) {
-    const m = misura, fondo = SPESSORE;
+    const m = misura, fondo = fondoUtile(m);
     let moto = 0;
     for (const v of verdure) {
+      // la grandezza cambia piano, mentre le altre fanno spazio
+      if (Math.abs(v.kMeta - v.k) > 0.0005) adatta(v, v.k + (v.kMeta - v.k) * Math.min(1, dt * 5));
       if (v.attesa > 0) { v.attesa -= dt; if (v.attesa <= 0) v.mesh.visible = true; else continue; }
       v.vel.y += GRAVITA * dt;
       v.pos.addScaledVector(v.vel, dt);
@@ -236,7 +280,7 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
           const b = verdure[j];
           if (b.attesa > 0) continue;
           n.subVectors(a.pos, b.pos);
-          const d = n.length(), min = (a.r + b.r) * 0.9;   // un po' si incastrano, come le verdure vere
+          const d = n.length(), min = (a.r + b.r) * STRETTE;   // un po' si incastrano, come le verdure vere
           if (d >= min || d < 1e-6) continue;
           n.divideScalar(d);
           const spinta = (min - d) / 2;
@@ -256,7 +300,20 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
       if (v.attesa > 0) { moto = 1; continue; }
       dentroLePareti(v);   // gli urti possono averla spinta fuori: la rimetto dentro prima di disegnare
       v.vel.multiplyScalar(0.997);
-      if (v.vel.lengthSq() < 0.0016 && v.pos.y - v.r < m.a + 0.2) v.vel.multiplyScalar(0.6);
+      // si ferma subito solo se tocca il fondo; se e' rimasta in bilico sopra un'altra, per un attimo
+      // la spingo di lato verso lo spazio libero piu' vicino, cosi' scivola giu' invece di galleggiare
+      const aTerra = v.pos.y - v.r < fondo + 0.012;
+      v.fermo = v.vel.lengthSq() < 0.01 ? v.fermo + dt : 0;
+      if (!aTerra && v.fermo > 0.15 && v.fermo < 1.4) {
+        let sx = 0, sz = 0;
+        for (const o of verdure) {
+          if (o === v || o.attesa > 0 || o.pos.y > v.pos.y) continue;
+          const dx = v.pos.x - o.pos.x, dz = v.pos.z - o.pos.z, d = Math.hypot(dx, dz) || 1e-3;
+          if (d < (o.r + v.r)) { sx += dx / d; sz += dz / d; }
+        }
+        if (sx || sz) { const l = Math.hypot(sx, sz); v.vel.x += (sx / l) * 0.9 * dt; v.vel.z += (sz / l) * 0.9 * dt; }
+      }
+      if (v.vel.lengthSq() < 0.0016 && (aTerra || v.fermo > 1.4)) v.vel.multiplyScalar(0.6);
       v.giro += (v.vel.x * Math.cos(yaw) - v.vel.z * Math.sin(yaw)) * dt / v.r * -0.6;
       v.giro = Math.max(-GIRO_MAX, Math.min(GIRO_MAX, v.giro));
       moto = Math.max(moto, v.vel.lengthSq());
@@ -355,8 +412,16 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
     mondo.updateMatrixWorld();
     qMondo.setFromRotationMatrix(mondo.matrixWorld);
     qInv.copy(qMondo).invert();
+    const fondo = fondoUtile(misura);
     for (const v of verdure) {
       v.mesh.position.copy(v.pos);
+      v.mesh.scale.set(v.scala.x * v.k, v.scala.y * v.k, 1);
+      // ombra sul fondo: piena quando la verdura e' appoggiata, sparisce mentre e' ancora in aria
+      const inAria = Math.max(0, v.pos.y - v.r - fondo);
+      v.ombra.visible = v.mesh.visible;
+      v.ombra.position.set(v.pos.x, fondo + 0.0015, v.pos.z);
+      v.ombra.scale.set(v.r * 2.7, v.r * 1.9, 1);
+      v.ombra.material.opacity = 0.62 * Math.max(0, 1 - inAria / 0.09);
       v.entrata = Math.min(1, v.entrata + dt * 6);
       qGiro.setFromAxisAngle(asseZ, v.giro);
       v.mesh.quaternion.copy(qInv).multiply(camera.quaternion).multiply(qGiro);
@@ -407,15 +472,23 @@ export async function avviaCassetta3D({ contenitori, prodotti }) {
       for (let i = verdure.length - 1; i >= 0; i--) {
         if (chiavi.has(verdure[i].chiave)) continue;
         const v = verdure.splice(i, 1)[0];
+        mondo.remove(v.ombra);
+        v.ombra.material.dispose();
         inUscita.push({ mesh: v.mesh, t: 0 });
       }
+      // piu' verdure ci sono, piu' si fanno piccole: quelle gia' dentro si stringono per fare posto
+      const k = densita(misura, selezione.length);
+      verdure.forEach(v => { v.kMeta = k; });
       let nuove = 0;
       for (const s of selezione) {
         if (verdure.some(v => v.chiave === s.chiave)) continue;
         const v = await creaVerdura(s.chiave, s.id);
         if (!v) continue;
+        adatta(v, k);
+        v.kMeta = k;
         verdure.push(v);
         mondo.add(v.mesh);
+        mondo.add(v.ombra);
         lancia(v, nuove * 0.11);
         nuove += 1;
       }

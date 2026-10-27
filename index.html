@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=52">
+  <link rel="stylesheet" href="styles.css?v=53">
 </head>
 <body>
   <div class="app-shell">
@@ -45,7 +45,6 @@
         <a href="#home" data-view-link="home">HOME</a>
         <a href="#storia" data-home-anchor="storia">CHI SONO</a>
         <a href="#conserve" data-home-anchor="conserve">CONSERVE</a>
-        <a href="#olio" data-home-anchor="olio">OLIO</a>
         <a href="#componi" data-view-link="builder">COMPONI LA CASSETTA</a>
         <a href="#contatti" data-home-anchor="contatti">CONTATTI</a>
       </nav>
@@ -67,9 +66,8 @@
         <a href="#home" data-view-link="home"><span>01</span> Home</a>
         <a href="#storia" data-home-anchor="storia"><span>02</span> Chi sono</a>
         <a href="#conserve" data-home-anchor="conserve"><span>03</span> Le mie conserve</a>
-        <a href="#olio" data-home-anchor="olio"><span>04</span> Olio</a>
-        <a href="#componi" data-view-link="builder"><span>05</span> Componi la cassetta</a>
-        <a href="#contatti" data-home-anchor="contatti"><span>06</span> Contatti</a>
+        <a href="#componi" data-view-link="builder"><span>04</span> Componi la cassetta</a>
+        <a href="#contatti" data-home-anchor="contatti"><span>05</span> Contatti</a>
       </nav>
       <div class="menu-note">
         <span class="status-dot"></span>
@@ -214,11 +212,6 @@
                 <span class="hero-conserve-testo"><small>NOVITÀ</small><strong>LE MIE CONSERVE</strong></span>
                 <span class="hero-conserve-freccia" aria-hidden="true">→</span>
               </a>
-              <a class="hero-conserve hero-olio" href="#olio" data-home-anchor="olio">
-                <img class="hero-olio-latta" src="assets/olio-latta.svg" alt="" width="40" height="52">
-                <span class="hero-conserve-testo"><small>LATTA DA 5 L</small><strong>OLIO</strong></span>
-                <span class="hero-conserve-freccia" aria-hidden="true">→</span>
-              </a>
             </div>
           </div>
           <div class="hero-proof">
@@ -296,21 +289,6 @@
           <div class="conserve-scelta" id="conserveScelta" role="tablist" aria-label="Scegli una conserva"></div>
           <article class="conserva-scheda" id="conservaScheda" role="tabpanel" aria-live="polite"></article>
           <p class="conserve-omaggio"><strong>ALLA DECIMA CASSETTA</strong> una conserva te la regalo io: scegli tu quale.</p>
-        </section>
-
-        <section class="olio section-wrap" id="olio">
-          <div class="olio-scheda reveal">
-            <div class="olio-figura">
-              <img src="assets/olio-latta.svg" alt="Latta d'olio da 5 litri" width="320" height="420" loading="lazy">
-            </div>
-            <div class="olio-testo">
-              <p class="eyebrow">NOVITÀ · LATTA DA 5 LITRI</p>
-              <h2><em>OLIO.</em></h2>
-              <p>Un olio dal sapore delicato e mai troppo invadente: accompagna i piatti senza coprirne il gusto ed è ottimo anche a crudo, sulle verdure della cassetta. Proviene dalle zone di Soriano nel Cimino. Lo trovi nella latta da 5 litri e te lo porto io, insieme alla cassetta.</p>
-              <div class="olio-prezzi" id="olioPrezzi"></div>
-              <div class="olio-azioni" id="olioAzioni"></div>
-            </div>
-          </div>
         </section>
 
         <section class="field-gallery section-wrap">
@@ -482,16 +460,6 @@
                 </div>
                 <div class="conserve-carrello-griglia" id="conserveCarrelloGriglia"></div>
               </div>
-              <div class="olio-carrello" id="olioCarrello" hidden>
-                <img src="assets/olio-latta.svg" alt="" width="64" height="84" loading="lazy">
-                <div class="olio-carrello-testo">
-                  <small>NOVITÀ · LATTA DA 5 L</small>
-                  <h3>OLIO</h3>
-                  <p>Sapore delicato, mai troppo invadente.</p>
-                  <p class="olio-carrello-prezzo" id="olioCarrelloPrezzo"></p>
-                </div>
-                <div class="olio-carrello-contatore" id="olioCarrelloContatore"></div>
-              </div>
               <div class="seconda-cassetta" id="secondaCassetta" hidden>
                 <div class="seconda-cassetta-testo">
                   <small>PER CHI NE HA BISOGNO</small>
@@ -514,7 +482,7 @@
                 <span>03</span>
                 <div>
                   <h2>DOVE E QUANDO?</h2>
-                  <p>Prima dimmi dove consegno. A Viterbo la consegna è gratuita e scegli una fascia fino alle 19:00; nelle zone vicine passo dalle 19:00 alle 20:00, con 2,50 € di consegna.</p>
+                  <p>Prima dimmi dove consegno. A Viterbo la consegna è gratuita e scegli una fascia fino alle 19:00; nelle zone vicine passo dalle 19:00 alle 20:40, con 2,50 € di consegna.</p>
                 </div>
               </div>
               <form id="deliveryForm" novalidate>
@@ -747,6 +715,19 @@
                   <option value="-1">Nessun giorno fisso</option>
                 </select>
               </label>
+              <label class="giorno-fisso">
+                <span>E SE SERVE ANCHE IL</span>
+                <select id="giornoFisso2">
+                  <option value="-1">Nessun secondo giorno</option>
+                  <option value="1">Lunedì</option>
+                  <option value="2">Martedì</option>
+                  <option value="3">Mercoledì</option>
+                  <option value="4">Giovedì</option>
+                  <option value="5">Venerdì</option>
+                  <option value="6">Sabato</option>
+                  <option value="0">Domenica</option>
+                </select>
+              </label>
               <div class="prossimi-fissi" id="prossimiFissi"></div>
               <div class="editor-title giorni-in-piu">
                 <div>
@@ -756,7 +737,7 @@
                 <button id="addDeliveryDay">+ AGGIUNGI GIORNO</button>
               </div>
               <div class="delivery-days-editor" id="deliveryDaysEditor"></div>
-              <p class="editor-note">Il giorno fisso è in calendario da solo ogni settimana: togli la spunta a una data per saltarla. I giorni in più servono per le consegne straordinarie. I clienti possono ordinare fino alle 21:00 del giorno prima; da mezzanotte si apre la consegna successiva. Viterbo (gratis): fasce dalle 14:30 alle 19:00. Zone vicine, Vitorchiano compreso (+2,50 €): dalle 19:00 alle 20:00.</p>
+              <p class="editor-note">I giorni fissi (uno, o due se scegli anche il secondo) sono in calendario da soli ogni settimana: togli la spunta a una data per saltarla. I giorni in più servono per le consegne straordinarie. I clienti possono ordinare fino alle 21:00 del giorno prima; da mezzanotte si apre la consegna successiva. Viterbo (gratis): fasce dalle 14:30 alle 19:00. Zone vicine, Vitorchiano compreso (+2,50 €): dalle 19:00 alle 20:40.</p>
             </div>
 
             <div class="products-editor">
@@ -816,11 +797,11 @@
           <div class="statistiche-accesso" id="statisticheAccesso" hidden>
             <label for="parolaStatistiche">PAROLA SEGRETA DELLE STATISTICHE</label>
             <div>
-              <input id="parolaStatistiche" type="password" autocomplete="off" spellcheck="false" placeholder="La parola scritta nello script del Foglio Google">
+              <input id="parolaStatistiche" type="password" autocomplete="off" spellcheck="false" placeholder="Almeno 8 caratteri, scelta da te">
               <button class="primary-button" id="entraStatistiche" type="button">ENTRA <span>→</span></button>
             </div>
             <small class="field-error" id="statisticheParolaErrore"></small>
-            <small>Resta salvata solo su questo dispositivo, come la chiave per pubblicare.</small>
+            <small>La prima volta la scegli tu e da quel momento è quella delle statistiche: sugli altri dispositivi scrivi la stessa. Resta salvata solo sul dispositivo dove la scrivi.</small>
           </div>
           <p class="statistiche-stato" id="statisticheStato">—</p>
           <div class="statistiche-corpo" id="statisticheCorpo" hidden></div>
@@ -1026,6 +1007,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=52"></script>
+  <script src="app.js?v=53"></script>
 </body>
 </html>

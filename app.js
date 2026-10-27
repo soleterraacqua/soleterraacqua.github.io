@@ -16,23 +16,23 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 52;
+const VERSIONE_SITO = 53;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
 const CHIAVE_GITHUB_KEY = "sole-terra-acqua-chiave-pubblicazione";
 // Statistiche anonime dei click: il sito le manda al mio Foglio Google (script e guida in SITO/statistiche)
-// e la dashboard le legge con la parola segreta scelta nello script. Vuoto = statistiche spente.
-const STATISTICHE_URL = "";
+// e la dashboard le legge con la parola segreta scelta la prima volta in dashboard. Vuoto = statistiche spente.
+const STATISTICHE_URL = "https://script.google.com/macros/s/AKfycbwcCvqGJ6j35nKpCoyNpnOr0aBELSlewzfRc9xq3uS6nuCjGnwy5PzSvilsAR6Mhhs/exec";
 const NON_CONTARE_KEY = "sole-terra-acqua-non-contare";
 const PAROLA_STATISTICHE_KEY = "sole-terra-acqua-parola-statistiche";
 const PERIODO_STATISTICHE_KEY = "sole-terra-acqua-periodo-statistiche";
-// Viterbo: fasce da 40 minuti fino alle 19:00 (l'ultima e' di mezz'ora). Zone vicine (+2,50 €): dalle 19:00 alle 20:00.
+// Viterbo: fasce da 40 minuti fino alle 19:00 (l'ultima e' di mezz'ora). Zone vicine (+2,50 €): dalle 19:00 alle 20:40.
 const FASCE_ORARIE = [
   ["14:30", "15:10"], ["15:10", "15:50"], ["15:50", "16:30"], ["16:30", "17:10"],
   ["17:10", "17:50"], ["17:50", "18:30"], ["18:30", "19:00"]
 ];
-const FASCIA_ZONE_VICINE = [["19:00", "20:00"]];
+const FASCIA_ZONE_VICINE = [["19:00", "20:40"]];
 // il giorno fisso di consegna (0 domenica … 6 sabato, -1 nessuno) e' in calendario ogni settimana anche
 // senza pubblicare la settimana; dalla dashboard si cambia o si salta una data. Si ordina fino alle 21:00 del giorno prima
 const GIORNO_FISSO_INIZIALE = 5;
@@ -54,7 +54,7 @@ const CARRELLO_KEY = "sole-terra-acqua-carrello";
 const CONSERVE = [
   {
     id: "salsa-ciliegino", nome: "Salsa di pomodoro ciliegino", peso: "680 g", tinta: "#a3302a",
-    foto: "assets/conserva-salsa-ciliegino.webp",
+    foto: "assets/conserve/salsa-ciliegino-fronte-piccola.webp",
     ingredienti: "Pomodoro ciliegino 100%. Pomodoro italiano.",
     usi: [
       "Sugo in dieci minuti: aglio e olio in padella, la salsa, un pizzico di sale e una foglia di basilico.",
@@ -69,7 +69,7 @@ const CONSERVE = [
   },
   {
     id: "pesto-zucchine", nome: "Pesto di zucchine e basilico con nocciole", peso: "170 g", tinta: "#2e6f37",
-    foto: "assets/conserva-pesto-zucchine.webp",
+    foto: "assets/conserve/pesto-zucchine-fronte-piccola.webp",
     ingredienti: "Zucchine 68%, basilico 11,3%, olio extravergine di oliva, <b>nocciole</b> tostate 6%, succo di limone, sale, aglio.",
     usi: [
       "Sulla pasta, sciolto con un cucchiaio dell'acqua di cottura: si condisce a fuoco spento.",
@@ -84,7 +84,7 @@ const CONSERVE = [
   },
   {
     id: "crema-zucchine-semi", nome: "Crema di zucchine ai semi", peso: "170 g", tinta: "#5a8f3c",
-    foto: "assets/conserva-crema-zucchine-semi.webp",
+    foto: "assets/conserve/crema-zucchine-semi-fronte-piccola.webp",
     ingredienti: "Zucchine 81%, olio extravergine di oliva, succo di limone, semi di girasole 1,6%, semi di zucca 1,6%, semi di <b>sesamo</b> 0,8%, semi di cumino dei prati 0,3%, sale, aglio.",
     usi: [
       "Su crostini caldi come antipasto, con un filo d'olio a crudo.",
@@ -99,7 +99,7 @@ const CONSERVE = [
   },
   {
     id: "zucchine-capperi-olive", nome: "Zucchine sott'olio con capperi e olive", peso: "270 g · sgocciolato 170 g", tinta: "#6b7d32",
-    foto: "assets/conserva-zucchine-capperi-olive.webp",
+    foto: "assets/conserve/zucchine-capperi-olive-fronte-piccola.webp",
     ingredienti: "Zucchine romanesche 63%, aceto di vino bianco (contiene <b>solfiti</b>), vino bianco (contiene <b>solfiti</b>), olio extravergine di oliva, capperi sotto sale 2%, olive 3%, origano secco, sale.",
     usi: [
       "Antipasto pronto, sul tagliere con salumi e formaggi.",
@@ -114,7 +114,7 @@ const CONSERVE = [
   },
   {
     id: "zucchine-aglio-prezzemolo", nome: "Zucchine sott'olio con aglio e prezzemolo", peso: "270 g · sgocciolato 170 g", tinta: "#3a7a45",
-    foto: "assets/conserva-zucchine-aglio-prezzemolo.webp",
+    foto: "assets/conserve/zucchine-aglio-prezzemolo-fronte-piccola.webp",
     ingredienti: "Zucchine romanesche 63%, aceto di vino bianco (contiene <b>solfiti</b>), vino bianco (contiene <b>solfiti</b>), olio extravergine di oliva, prezzemolo 2%, aglio 2%, sale.",
     usi: [
       "Contorno pronto per carne o pesce alla griglia.",
@@ -129,7 +129,7 @@ const CONSERVE = [
   },
   {
     id: "crema-zucca", nome: "Crema di zucca, cipolla e nocciole", peso: "180 g", tinta: "#c2622a",
-    foto: "assets/conserva-crema-zucca.webp",
+    foto: "assets/conserve/crema-zucca-fronte-piccola.webp",
     ingredienti: "Zucca butternut 58%, cipolla 19%, <b>nocciole</b> tostate 9%, olio extravergine di oliva, succo di limone, sale, pepe.",
     usi: [
       "Sulla pasta, allungata con un mestolo d'acqua di cottura.",
@@ -144,7 +144,7 @@ const CONSERVE = [
   },
   {
     id: "composta-zucca-zenzero", nome: "Composta di zucca e zenzero", peso: "190 g", tinta: "#b98222",
-    foto: "assets/conserva-composta-zucca-zenzero.webp",
+    foto: "assets/conserve/composta-zucca-zenzero-fronte-piccola.webp",
     ingredienti: "Zucca butternut 59%, zucchero di canna grezzo, succo di limone, scorza di limone 0,1%, zenzero fresco 1,9%.",
     usi: [
       "Con formaggi stagionati o erborinati, come una mostarda gentile.",
@@ -162,6 +162,11 @@ const CONSERVE = [
 // l'olio in latta da 5 litri: nei nomi e sulla latta solo "Olio", la provenienza (Soriano nel Cimino)
 // sta nella descrizione. Prezzo al litro e disponibilita' si cambiano dalla dashboard (voce "olio"
 // di settimana.json); finche' non c'e', valgono questi
+// foto vere dei vasetti (ottobre 2026), scontornate su fondo trasparente: davanti, ingredienti e com'e' dentro.
+// "foto" qui sopra e' la piccola di davanti (miniature); la scheda in home mostra le tre grandi.
+const VISTE_CONSERVA = [["fronte", "DAVANTI"], ["ingredienti", "INGREDIENTI"], ["dentro", "COM'È DENTRO"]];
+const fotoConserva = (conserva, vista, piccola) => `assets/conserve/${conserva.id}-${vista}${piccola ? "-piccola" : ""}.webp`;
+const testoFotoConserva = (conserva, vista) => `${conserva.nome}: ${vista === "ingredienti" ? "l'etichetta con gli ingredienti" : vista === "dentro" ? "com'è dentro il vasetto" : "il vasetto visto davanti"}`;
 const OLIO = { nome: "Olio", litri: 5, prezzoLitro: 14, disponibile: true, foto: "assets/olio-latta.svg" };
 
 CONSERVE.forEach(conserva => { conserva.prezzo = 0; conserva.disponibile = true; });
@@ -253,6 +258,7 @@ const state = {
   attiva: 0,
   deliveryDays: [],
   giornoFisso: GIORNO_FISSO_INIZIALE,
+  giornoFisso2: -1,
   saltati: [],
   ordiniChiusi: false,
   deliveryFee: 0,
@@ -284,7 +290,11 @@ const costoCassette = () => cassetteOrdine().reduce((sum, cassetta) => sum + pre
 const extraTotale = () => cassetteOrdine().reduce((sum, cassetta) => sum + extraCassetta(cassetta), 0);
 const prodottiTotali = () => cassetteOrdine().reduce((sum, cassetta) => sum + cassetta.selectionOrder.length, 0);
 const nomeScatola = key => BOXES[key].label[0] + BOXES[key].label.slice(1).toLowerCase();
-const olioInVendita = () => OLIO.disponibile !== false && OLIO.prezzoLitro > 0;
+// l'olio non si compra piu' dal sito: lo propongo io nel messaggio WhatsApp di conferma dell'ordine
+// (prezzo e disponibilita' restano nella dashboard)
+const OLIO_SUL_SITO = false;
+const olioDaProporre = () => OLIO.disponibile !== false && OLIO.prezzoLitro > 0;
+const olioInVendita = () => OLIO_SUL_SITO && olioDaProporre();
 const prezzoLatta = () => Math.round(OLIO.litri * OLIO.prezzoLitro * 100) / 100;
 const costoOlio = () => state.olio * prezzoLatta();
 const latte = quante => `${quante} ${quante === 1 ? "latta" : "latte"} da ${OLIO.litri} L`;
@@ -625,7 +635,7 @@ function importOrderFromHash() {
   if (!exists) {
     state.orders.unshift(order);
     saveBusinessData();
-    showToast(`Ordine ${order.id} importato nella dashboard.`);
+    showToast(`Ordine ${order.id} importato: premi CONFERMA per scrivere al cliente.`, 5000);
   } else {
     showToast(`Ordine ${order.id} già presente in dashboard.`);
   }
@@ -1258,6 +1268,7 @@ function renderConserveCarrello() {
 }
 
 let conservaScelta = CONSERVE[0].id;
+let vistaConserva = "fronte";
 
 function renderConserve() {
   const scelta = $("#conserveScelta");
@@ -1288,7 +1299,12 @@ function renderConserve() {
       : `<button type="button" class="primary-button conserva-chiedi" data-conserva-piu="${conserva.id}">AGGIUNGI AL CARRELLO · ${money(conserva.prezzo)} <span>+</span></button>`;
   scheda.style.setProperty("--tinta", conserva.tinta);
   scheda.innerHTML = `
-    <div class="conserva-foto"><img src="${conserva.foto}" alt="${conserva.nome}: illustrazione dell'etichetta" loading="lazy"></div>
+    <div class="conserva-foto">
+      <img class="conserva-foto-grande" src="${fotoConserva(conserva, vistaConserva)}" alt="${testoFotoConserva(conserva, vistaConserva)}" width="800" height="1000" loading="lazy">
+      <div class="conserva-viste" role="group" aria-label="Le foto del vasetto">
+        ${VISTE_CONSERVA.map(([vista, nome]) => `<button type="button" data-vista="${vista}" aria-pressed="${vista === vistaConserva}"><img src="${fotoConserva(conserva, vista, true)}" alt="" width="320" height="400" loading="lazy"><span>${nome}</span></button>`).join("")}
+      </div>
+    </div>
     <div class="conserva-testo">
       <p class="conserva-peso">VASETTO · ${conserva.peso.toUpperCase()}${inVendita ? ` · <b>${money(conserva.prezzo)}</b>` : ""}</p>
       <h3>${conserva.nome.toUpperCase()}</h3>
@@ -1372,10 +1388,13 @@ function giornoSettimanaDopo(giorno, giornoSettimana) {
   return spostaGiorno(giorno, ((giornoSettimana - oggiSettimana + 6) % 7) + 1);
 }
 
+// i giorni fissi della settimana: il primo e, se serve, un secondo (lunedi' prima, domenica ultima)
+const giorniFissi = () => [...new Set([state.giornoFisso, state.giornoFisso2])].filter(giorno => giorno >= 0).sort((a, b) => (a + 6) % 7 - (b + 6) % 7);
+
 // il primo giorno fisso dopo il giorno dato, saltando le date che ho tolto dalla dashboard
-function prossimoGiornoFisso(giorno) {
-  if (!(state.giornoFisso >= 0)) return "";
-  let candidato = giornoSettimanaDopo(giorno, state.giornoFisso);
+function prossimoGiornoFisso(giorno, giornoSettimana = state.giornoFisso) {
+  if (!(giornoSettimana >= 0)) return "";
+  let candidato = giornoSettimanaDopo(giorno, giornoSettimana);
   for (let volte = 0; volte < 12 && state.saltati.includes(candidato); volte++) candidato = spostaGiorno(candidato, 7);
   return state.saltati.includes(candidato) ? "" : candidato;
 }
@@ -1385,7 +1404,7 @@ function prossimoGiornoFisso(giorno) {
 // dalle 21 a mezzanotte non si ordina, da mezzanotte si apre la consegna dopo
 function giorniPrenotabiliDa(oggi, tardi) {
   const domani = spostaGiorno(oggi, 1);
-  return [...new Set([...state.deliveryDays, prossimoGiornoFisso(oggi)])]
+  return [...new Set([...state.deliveryDays, ...giorniFissi().map(fisso => prossimoGiornoFisso(oggi, fisso))])]
     .filter(giorno => giorno && giorno > oggi && !(giorno === domani && tardi))
     .sort();
 }
@@ -1413,8 +1432,8 @@ function aggiornaOrdiniAperti() {
     $("#ordiniChiusiOcchiello").textContent = riapre ? "ORDINI CHIUSI FINO A MEZZANOTTE" : "ORDINI CHIUSI PER ORA";
     $("#ordiniChiusiTitolo").innerHTML = riapre ? "LE CASSETTE DI DOMANI <em>SONO IN PREPARAZIONE.</em>" : "LA PROSSIMA CONSEGNA <em>STA CRESCENDO.</em>";
     $("#ordiniChiusiTesto").innerHTML = riapre
-      ? `Si ordina fino alle 21:00 del giorno prima. Da mezzanotte puoi ordinare la cassetta per <strong>${riapre}</strong>: intanto puoi guardare le cassette, le verdure, le conserve e l'olio.`
-      : "Intanto puoi guardare le cassette, le verdure, le conserve e l'olio. Potrai ordinare appena fisso le prossime consegne.";
+      ? `Si ordina fino alle 21:00 del giorno prima. Da mezzanotte puoi ordinare la cassetta per <strong>${riapre}</strong>: intanto puoi guardare le cassette, le verdure e le conserve.`
+      : "Intanto puoi guardare le cassette, le verdure e le conserve. Potrai ordinare appena fisso le prossime consegne.";
   }
   aggiornaPulsanteConsegna();
   // chiusi alle 21 mentre il cliente sceglieva la consegna: torna alle verdure, con l'avviso sopra
@@ -1749,6 +1768,7 @@ function applicaSettimana(dati) {
     state.deliveryDays = [...new Set(dati.giorni.filter(giorno => /^\d{4}-\d{2}-\d{2}$/.test(giorno)))].sort();
   }
   if (Number.isInteger(dati.giornoFisso) && dati.giornoFisso >= -1 && dati.giornoFisso <= 6) state.giornoFisso = dati.giornoFisso;
+  state.giornoFisso2 = Number.isInteger(dati.giornoFisso2) && dati.giornoFisso2 >= -1 && dati.giornoFisso2 <= 6 ? dati.giornoFisso2 : -1;
   if (Array.isArray(dati.saltati)) state.saltati = dati.saltati.filter(giorno => /^\d{4}-\d{2}-\d{2}$/.test(giorno));
   if (Array.isArray(dati.prodotti)) {
     dati.prodotti.forEach(voce => {
@@ -1857,7 +1877,7 @@ function renderRiepilogoSettimana() {
     </div>
     <div class="riepilogo-blocco">
       <small>CONSEGNE</small>
-      <p><span>${state.giornoFisso >= 0 ? `Ogni ${NOMI_GIORNI[state.giornoFisso]}` : "Nessun giorno fisso"}</span>${state.saltati.filter(giorno => giorno > oggiLocale()).map(giorno => `<span>Salto <em>${formatDate(giorno).toLowerCase()}</em></span>`).join("")}${state.deliveryDays.filter(giorno => giorno > oggiLocale()).map(giorno => `<span>In più <em>${formatDate(giorno).toLowerCase()}</em></span>`).join("")}</p>
+      <p><span>${giorniFissi().length ? `Ogni ${giorniFissi().map(giorno => NOMI_GIORNI[giorno]).join(" e ")}` : "Nessun giorno fisso"}</span>${state.saltati.filter(giorno => giorno > oggiLocale()).map(giorno => `<span>Salto <em>${formatDate(giorno).toLowerCase()}</em></span>`).join("")}${state.deliveryDays.filter(giorno => giorno > oggiLocale()).map(giorno => `<span>In più <em>${formatDate(giorno).toLowerCase()}</em></span>`).join("")}</p>
     </div>
     <div class="riepilogo-blocco">
       <small>VERDURE DISPONIBILI · ${verdure.length}</small>
@@ -1869,7 +1889,7 @@ function renderRiepilogoSettimana() {
     </div>
     <div class="riepilogo-blocco">
       <small>OLIO · LATTA ${OLIO.litri} L</small>
-      <p>${olioInVendita() ? `<span>${money(OLIO.prezzoLitro)} al litro <em>${money(prezzoLatta())} la latta</em></span>` : "<span>Non in vendita</span>"}</p>
+      <p>${olioDaProporre() ? `<span>${money(OLIO.prezzoLitro)} al litro <em>${money(prezzoLatta())} la latta · lo propongo nella conferma</em></span>` : "<span>Non lo propongo</span>"}</p>
     </div>
   `;
 }
@@ -1885,15 +1905,20 @@ function renderGiorniEditor(giorni) {
 }
 
 // le prossime 6 date del giorno fisso, ognuna con la sua spunta: senza spunta quella data la salto
-function renderGiorniFissi(giornoFisso, saltati) {
+// le prossime date dei giorni fissi (6, o 8 con due giorni a settimana), ognuna con la sua spunta
+function renderGiorniFissi(fissi, saltati) {
   const box = $("#prossimiFissi");
-  if (!(giornoFisso >= 0)) {
+  const attivi = [...new Set(fissi)].filter(giorno => giorno >= 0);
+  if (!attivi.length) {
     box.innerHTML = `<p class="editor-note">Nessun giorno fisso: i clienti possono ordinare solo per i giorni in più qui sotto.</p>`;
     return;
   }
-  let giorno = oggiLocale();
-  const date = [];
-  for (let volte = 0; volte < 6; volte++) date.push(giorno = giornoSettimanaDopo(giorno, giornoFisso));
+  const date = attivi.flatMap(fisso => {
+    const elenco = [];
+    let giorno = oggiLocale();
+    for (let volte = 0; volte < 6; volte++) elenco.push(giorno = giornoSettimanaDopo(giorno, fisso));
+    return elenco;
+  }).sort().slice(0, attivi.length > 1 ? 8 : 6);
   box.innerHTML = date.map(data => `
     <label class="fisso-riga">
       <input type="checkbox" data-giorno-fisso="${data}" ${saltati.includes(data) ? "" : "checked"}>
@@ -1933,7 +1958,8 @@ function renderWeekEditor({ forza = false } = {}) {
 
   renderGiorniEditor(state.deliveryDays.filter(giorno => giorno >= oggiLocale()));
   $("#giornoFisso").value = String(state.giornoFisso >= 0 ? state.giornoFisso : -1);
-  renderGiorniFissi(state.giornoFisso, state.saltati);
+  $("#giornoFisso2").value = String(state.giornoFisso2 >= 0 && state.giornoFisso2 !== state.giornoFisso ? state.giornoFisso2 : -1);
+  renderGiorniFissi([state.giornoFisso, state.giornoFisso2], state.saltati);
 
   $("#weeklyProductsEditor").innerHTML = PRODUCTS.map(product => `
     <div class="admin-product-row" data-admin-product="${product.id}">
@@ -1969,7 +1995,7 @@ function renderWeekEditor({ forza = false } = {}) {
   `).join("") + `
     <div class="admin-conserva-row admin-olio-row">
       <img src="${OLIO.foto}" alt="">
-      <span>${OLIO.nome}<small>latta ${OLIO.litri} L · prezzo AL LITRO</small></span>
+      <span>${OLIO.nome}<small>latta ${OLIO.litri} L · prezzo AL LITRO · solo nella conferma WhatsApp</small></span>
       <label class="prezzo-campo">
         <input type="number" min="0" step="0.10" inputmode="decimal" value="${OLIO.prezzoLitro ? OLIO.prezzoLitro.toFixed(2) : ""}" placeholder="0,00" data-olio-prezzo aria-label="Prezzo al litro dell'olio">
         <b>€/L</b>
@@ -2071,8 +2097,10 @@ async function saveWeekSettings() {
   // i giorni gia' passati non servono piu': non li ripubblico
   const deliveryDays = [...new Set(giorniNellEditor().filter(giorno => giorno >= oggiLocale()))].sort();
   const giornoFisso = Number($("#giornoFisso").value);
-  const saltati = giornoFisso >= 0 ? saltatiNellEditor() : [];
-  if (giornoFisso < 0 && !deliveryDays.length
+  const secondo = Number($("#giornoFisso2").value);
+  const giornoFisso2 = secondo >= 0 && secondo !== giornoFisso ? secondo : -1;
+  const saltati = giornoFisso >= 0 || giornoFisso2 >= 0 ? saltatiNellEditor() : [];
+  if (giornoFisso < 0 && giornoFisso2 < 0 && !deliveryDays.length
     && !window.confirm("Senza giorno fisso e senza giorni in più i clienti non possono ordinare. Pubblico lo stesso?")) return;
   const campoChiave = $("#chiavePubblicazione");
   if (campoChiave.value.trim()) {
@@ -2127,6 +2155,7 @@ async function saveWeekSettings() {
       aggiornato: new Date().toISOString(),
       giorni: deliveryDays,
       giornoFisso,
+      giornoFisso2,
       saltati,
       prodotti: verdure.map(voce => ({ ...voce, foto: PRODUCTS.find(product => product.id === voce.id).customImage || "" })),
       conserve: conserveVendita,
@@ -2273,6 +2302,40 @@ function buildCustomerNotificationUrl(order, customer) {
   }
   righe.push("", "A presto!");
   return `https://wa.me/${phone}?text=${encodeURIComponent(righe.join("\n"))}`;
+}
+
+// conferma al cliente dopo che ho registrato l'ordine: giorno, fascia e totale, e la proposta dell'olio
+// (che dal sito non si compra piu'). Il messaggio lo invio io da WhatsApp.
+function buildConfirmationUrl(order) {
+  const phone = normalizePhone(order.phone);
+  if (!phone) return "";
+  const nome = String(order.name || "").split(" ")[0];
+  const [dalle, alle] = String(order.deliveryWindow || "").split("–");
+  const righe = [
+    `Ciao ${nome}, ho ricevuto il tuo ordine #${order.id} ✅`,
+    order.date ? `📅 Te lo porto ${formatDate(order.date).toLowerCase()}${dalle && alle ? `, tra le ${dalle} e le ${alle}` : ""}.` : "📅 Ti scrivo io per il giorno di consegna.",
+    `💶 Totale ${money(order.total)}${order.area === "Viterbo" ? " (consegna gratuita)" : ` (consegna ${money(2.5)} inclusa)`}.`
+  ];
+  if (olioDaProporre() && !order.olio) {
+    righe.push("", `🫒 Ho anche l'olio nuovo, in latta da ${OLIO.litri} litri: ${money(prezzoLatta())} (${money(OLIO.prezzoLitro)} al litro). Se lo vuoi rispondimi "sì olio" e te lo porto insieme alla cassetta.`);
+  }
+  righe.push("", "A presto!", "Alessio");
+  return `https://wa.me/${phone}?text=${encodeURIComponent(righe.join("\n"))}`;
+}
+
+function inviaConfermaCliente(orderId) {
+  const order = state.orders.find(item => item.id === orderId);
+  if (!order) return;
+  const url = buildConfirmationUrl(order);
+  if (!url) {
+    showToast("Questo ordine non ha un numero di telefono valido.");
+    return;
+  }
+  order.confermaInviata = true;
+  saveBusinessData();
+  renderDashboard(state.orderFilter);
+  window.open(url, "_blank", "noopener");
+  showToast("Su WhatsApp trovi la conferma già scritta: premi INVIA.");
 }
 
 function markOrderDelivered(orderId) {
@@ -2431,7 +2494,10 @@ function renderDashboard(filter = state.orderFilter || "all") {
           <span class="area-pill">${escapeHtml(order.area.toUpperCase())}</span>
           <span>${escapeHtml(order.box)} · ${money(order.total)}</span>
           <span class="status-pill ${delivered ? "delivered" : ""}">${escapeHtml(order.status.toUpperCase())}</span>
-          <button class="delivery-action ${delivered ? "done" : ""}" data-deliver-order="${escapeHtml(order.id)}">${delivered ? "RIAVVISA CLIENTE" : "CONSEGNATO + AVVISA"}</button>
+          <div class="order-azioni">
+            <button class="conferma-action ${order.confermaInviata ? "done" : ""}" data-conferma-ordine="${escapeHtml(order.id)}">${order.confermaInviata ? "RIMANDA CONFERMA" : olioDaProporre() && !order.olio ? "CONFERMA + OLIO" : "CONFERMA AL CLIENTE"}</button>
+            <button class="delivery-action ${delivered ? "done" : ""}" data-deliver-order="${escapeHtml(order.id)}">${delivered ? "RIAVVISA CLIENTE" : "CONSEGNATO + AVVISA"}</button>
+          </div>
         </div>
       `;
     }).join("")}
@@ -2457,7 +2523,7 @@ function renderDashboard(filter = state.orderFilter || "all") {
   const localitaVicine = [...new Set(vicine.map(order => order.area))];
   $("#routeSummary").innerHTML = `
     <div><span class="route-color sage"></span><p><strong>GIRO VITERBO · 14:30–19:00</strong><small>${viterbo.length ? "Consegna gratuita in città" : "Nessun ordine a Viterbo"}</small></p><b>${viterbo.length} ${viterbo.length === 1 ? "ORDINE" : "ORDINI"}</b></div>
-    <div><span class="route-color peach"></span><p><strong>GIRO ZONE VICINE · 19:00–20:00</strong><small>${localitaVicine.length ? localitaVicine.join(" → ") : "Nessun ordine fuori Viterbo"}</small></p><b>${vicine.length} ${vicine.length === 1 ? "ORDINE" : "ORDINI"}</b></div>
+    <div><span class="route-color peach"></span><p><strong>GIRO ZONE VICINE · 19:00–20:40</strong><small>${localitaVicine.length ? localitaVicine.join(" → ") : "Nessun ordine fuori Viterbo"}</small></p><b>${vicine.length} ${vicine.length === 1 ? "ORDINE" : "ORDINI"}</b></div>
   `;
   renderCustomers();
   renderWeekEditor();
@@ -2946,7 +3012,9 @@ async function caricaStatistiche({ forza = false } = {}) {
       return;
     }
     if (dati.errore === "parola-da-impostare") {
-      stato.textContent = "Nel Foglio Google manca la parola segreta: scrivila nello script e rifai il deployment (GUIDA, punto 4).";
+      scriviInMemoria(PAROLA_STATISTICHE_KEY, null);
+      mostraAccessoStatistiche(true, "Scegli una parola segreta di almeno 8 caratteri.");
+      stato.textContent = "";
       return;
     }
     if (dati.errore) throw new Error(dati.errore);
@@ -3083,7 +3151,7 @@ function setupStatisticheDashboard() {
   $("#entraStatistiche").addEventListener("click", () => {
     const parola = $("#parolaStatistiche").value.trim();
     if (parola.length < 8) {
-      mostraAccessoStatistiche(true, "La parola segreta ha almeno 8 caratteri: è quella scritta nello script del Foglio Google.");
+      mostraAccessoStatistiche(true, "La parola segreta deve avere almeno 8 caratteri.");
       return;
     }
     scriviInMemoria(PAROLA_STATISTICHE_KEY, parola);
@@ -3199,6 +3267,8 @@ function setupEvents() {
   $("#ordersTable").addEventListener("click", event => {
     const button = event.target.closest("[data-deliver-order]");
     if (button) markOrderDelivered(button.dataset.deliverOrder);
+    const conferma = event.target.closest("[data-conferma-ordine]");
+    if (conferma) inviaConfermaCliente(conferma.dataset.confermaOrdine);
   });
   $("#customersTable").addEventListener("click", event => {
     const button = event.target.closest("[data-use-reward]");
@@ -3256,8 +3326,20 @@ function setupEvents() {
     const bottone = event.target.closest("[data-conserva]");
     if (!bottone || bottone.dataset.conserva === conservaScelta) return;
     conservaScelta = bottone.dataset.conserva;
+    vistaConserva = "fronte";
     renderConserve();
     $(`[data-conserva="${conservaScelta}"]`)?.focus({ preventScroll: true });
+  });
+  // le tre foto del vasetto: cambio solo l'immagine grande, la scheda resta ferma
+  $("#conservaScheda").addEventListener("click", event => {
+    const bottone = event.target.closest("[data-vista]");
+    if (!bottone) return;
+    vistaConserva = bottone.dataset.vista;
+    const conserva = CONSERVE.find(item => item.id === conservaScelta) || CONSERVE[0];
+    const grande = $(".conserva-foto-grande");
+    grande.src = fotoConserva(conserva, vistaConserva);
+    grande.alt = testoFotoConserva(conserva, vistaConserva);
+    $$("[data-vista]", $("#conservaScheda")).forEach(altro => altro.setAttribute("aria-pressed", String(altro === bottone)));
   });
   $$("[data-salva-settimana]").forEach(bottone => bottone.addEventListener("click", saveWeekSettings));
   $$("[data-annulla-modifica]").forEach(bottone => bottone.addEventListener("click", annullaModificaSettimana));
@@ -3275,8 +3357,10 @@ function setupEvents() {
     $("#chiavePubblicazione").focus();
   });
   $("#addDeliveryDay").addEventListener("click", addDeliveryDay);
-  // cambiando il giorno fisso le date saltate di prima non valgono piu'
-  $("#giornoFisso").addEventListener("change", event => renderGiorniFissi(Number(event.target.value), []));
+  // cambiando un giorno fisso le date saltate di prima non valgono piu'
+  ["#giornoFisso", "#giornoFisso2"].forEach(selettore => $(selettore).addEventListener("change", () => {
+    renderGiorniFissi([Number($("#giornoFisso").value), Number($("#giornoFisso2").value)], []);
+  }));
   $("#deliveryDaysEditor").addEventListener("click", event => {
     const button = event.target.closest("[data-remove-delivery-day]");
     if (button) removeDeliveryDay(Number(button.dataset.removeDeliveryDay));
