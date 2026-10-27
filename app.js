@@ -19,7 +19,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 56;
+const VERSIONE_SITO = 57;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -2951,8 +2951,9 @@ function indirizzoStatistiche() {
   return STATISTICHE_URL;
 }
 
+// il sito vero, su GitHub Pages o domani su un dominio mio: mai le prove sul computer
 function sitoPubblicato() {
-  return location.hostname === "soleterraacqua.github.io";
+  return location.protocol === "https:" && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 }
 
 function devoContare() {

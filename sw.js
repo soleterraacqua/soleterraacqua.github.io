@@ -1,4 +1,4 @@
-const CACHE_NAME = "sole-terra-acqua-v56";
+const CACHE_NAME = "sole-terra-acqua-v57";
 
 // Solo l'essenziale per far comparire il sito subito, anche senza rete.
 // Tutto il resto (foto della galleria, immagini del catalogo) viene messo in
