@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=55">
+  <link rel="stylesheet" href="styles.css?v=56">
 </head>
 <body>
   <div class="app-shell">
@@ -528,7 +528,7 @@
                 <span>04</span>
                 <div>
                   <h2>MANCA POCO</h2>
-                  <p>Controlla i dettagli e premi CONFERMA ORDINE: si apre WhatsApp con il riepilogo già scritto. <strong>L'ordine mi arriva solo quando premi INVIA.</strong></p>
+                  <p>Controlla i dettagli e premi INVIA L'ORDINE: si apre WhatsApp con il messaggio già scritto. <strong>L'ordine mi arriva solo se lì premi il tasto verde INVIA.</strong></p>
                 </div>
               </div>
               <div class="checkout-card" id="checkoutCard"></div>
@@ -552,23 +552,26 @@
 
               <label class="privacy-check">
                 <input type="checkbox" id="privacyCheck">
-                <span>Ho letto l'<button type="button" class="link-privacy" data-apri-privacy>informativa privacy</button> e accetto che i miei dati siano usati per preparare e consegnare l'ordine.</span>
+                <span>Ho letto l'<button type="button" class="link-privacy" data-apri-privacy>informativa privacy</button> e le <button type="button" class="link-privacy" data-apri-condizioni>condizioni di vendita</button> e accetto che i miei dati siano usati per preparare e consegnare l'ordine.</span>
               </label>
 
               <div class="payoff">Sostieni il sostenibile</div>
               <div class="step-actions">
                 <button class="back-button" data-prev-step>← MODIFICA</button>
-                <button class="primary-button" id="confirmOrder">CONFERMA ORDINE <span>→</span></button>
+                <button class="primary-button" id="confirmOrder">INVIA L'ORDINE <span>→</span></button>
               </div>
             </section>
 
             <section class="order-success" id="orderSuccess">
               <div class="success-mark success-whatsapp" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 4.5A11.4 11.4 0 0 0 6.1 21.6L4.6 27.4l6-1.5A11.4 11.4 0 1 0 16 4.5Z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/><path d="M12.3 10.6c.3-.6.6-.6.9-.6h.7c.3 0 .5.1.7.5l1 2.4c.1.3.1.5-.1.8l-.6.8c-.2.2-.2.4 0 .7.8 1.4 1.8 2.4 3.2 3.2.3.2.5.2.7 0l.8-.8c.3-.3.5-.3.8-.2l2.4 1.1c.3.2.5.3.5.6 0 1.1-.8 2.2-1.9 2.5-1.3.4-3.1.1-5.5-1.6-2.4-1.7-4.1-4.2-4.5-5.7-.4-1.4.1-2.8.9-3.7Z" fill="#fff"/></svg></div>
               <p class="eyebrow">ULTIMO PASSO</p>
-              <h2>PREMI INVIA<br>SU <em>WHATSAPP.</em></h2>
+              <h2 id="successTitolo">HAI PREMUTO <em>INVIA</em><br>SU WHATSAPP?</h2>
               <div class="success-testo" id="successCopy"></div>
+              <div class="success-domanda" id="successDomanda">
+                <button class="primary-button" type="button" id="successSi">SÌ, L'HO INVIATO <span>✓</span></button>
+                <a class="primary-button whatsapp-invia" id="successWhatsapp" href="#" target="_blank" rel="noopener">NO, RIAPRI WHATSAPP <span>→</span></a>
+              </div>
               <div class="success-actions">
-                <a class="primary-button whatsapp-invia" id="successWhatsapp" href="#" target="_blank" rel="noopener">APRI WHATSAPP E INVIA <span>→</span></a>
                 <button class="back-button" data-view-link="home">TORNA ALLA HOME</button>
               </div>
             </section>
@@ -661,7 +664,7 @@
             </button>
             <button type="button" class="lista-giro" data-lista="raccolta">
               <span class="lista-giro-icona"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.8h8.2L19 7.6v13.6H6Z"/><path d="M14 2.8v5h5"/><path d="M8.8 12h7.4M8.8 15.2h7.4M8.8 18.4h4.6"/></svg></span>
-              <span class="lista-giro-testo"><strong>LISTA RACCOLTA</strong><small>Quanta verdura raccogliere per ogni varietà, conserve e olio da preparare</small></span>
+              <span class="lista-giro-testo"><strong>LISTA RACCOLTA</strong><small>Quanta verdura raccogliere per ogni varietà e le conserve da preparare</small></span>
               <span class="lista-giro-freccia" aria-hidden="true">→</span>
             </button>
           </div>
@@ -764,7 +767,7 @@
               <div class="editor-title">
                 <div>
                   <small>NEGOZIO</small>
-                  <h3>CONSERVE E OLIO IN VENDITA</h3>
+                  <h3>CONSERVE IN VENDITA · OLIO SOLO NELLA CONFERMA</h3>
                 </div>
                 <span>PREZZO · IN VENDITA</span>
               </div>
@@ -861,14 +864,28 @@
             <div>
               <p class="eyebrow">TUTTI GLI ORDINI</p>
               <h2>PIANO DI CONSEGNA</h2>
+              <p class="copia-stato" id="copiaStato">—</p>
             </div>
             <div class="order-filters">
               <button class="active" data-order-filter="all">TUTTI</button>
               <button data-order-filter="Viterbo">VITERBO</button>
               <button data-order-filter="Fuori zona">FUORI ZONA</button>
+              <button type="button" id="copiaAdesso" title="Copia subito ordini e clienti nel Foglio Google">COPIA ADESSO</button>
             </div>
           </div>
           <div class="orders-table" id="ordersTable"></div>
+        </section>
+
+        <section class="orders-panel posti-panel">
+          <div class="panel-head orders-heading">
+            <div>
+              <p class="eyebrow">FASCE ORARIE · 4 POSTI L'UNA</p>
+              <h2>POSTI PRESI DAL SITO</h2>
+              <p>Un posto si prende quando il cliente arriva al riepilogo e resta suo quando invia l'ordine. Se un ordine confermato non ti è mai arrivato su WhatsApp, libera il posto: così la fascia torna disponibile.</p>
+            </div>
+            <button type="button" class="pubblica-cambia" id="aggiornaPosti">AGGIORNA</button>
+          </div>
+          <div class="posti-elenco" id="postiElenco"><p class="stat-vuoto">—</p></div>
         </section>
 
         <section class="orders-panel loyalty-panel">
@@ -934,8 +951,10 @@
         <a href="#componi" data-view-link="builder">CASSETTA</a>
         <a href="#contatti" data-home-anchor="contatti">CONTATTI</a>
         <a href="#privacy" data-apri-privacy>PRIVACY</a>
+        <a href="#condizioni" data-apri-condizioni>CONDIZIONI DI VENDITA</a>
       </nav>
       <small class="footer-legale">SOLE TERRA ACQUA DI ALESSIO FALLI<br>P.IVA 02456550561 · VITERBO<br><span id="versioneSito"></span></small>
+      <button type="button" class="versione-cambia" id="cambiaVersione">VERSIONE LEGGERA (TELEFONI LENTI)</button>
     </footer>
   </div>
 
@@ -966,21 +985,77 @@
         <p>Solo per preparare e consegnare il tuo ordine, contattarti se serve qualcosa sulla consegna e tenere il conto delle cassette per il regalo alla decima. Per questo non serve un consenso: i dati servono a eseguire l'ordine che mi chiedi (art. 6.1.b del Regolamento UE 2016/679). La risposta a "come mi hai conosciuto" è facoltativa e mi serve solo a capire dove far conoscere il mio lavoro.</p>
         <p>Non uso i tuoi dati per pubblicità, non li vendo e non li cedo a nessuno.</p>
         <h3>COME MI ARRIVANO</h3>
-        <p>Il sito non ha un archivio online: quando confermi, i dati mi arrivano solo nel messaggio WhatsApp che mi invii tu. Io registro l'ordine nella mia area riservata, che conserva i dati solo sul mio telefono.</p>
+        <p>I dati del tuo ordine mi arrivano nel messaggio WhatsApp che mi invii tu. Io registro l'ordine nella mia area riservata, sul mio telefono, e ne tengo una copia di sicurezza in un mio foglio di calcolo Google protetto da una parola segreta, per non perderla se il telefono si rompe.</p>
+        <p>Per non mettere più di 4 consegne nella stessa fascia oraria, il sito registra solo il codice dell'ordine, il giorno, la fascia e la zona di consegna: niente nome, telefono o indirizzo.</p>
         <p>Una copia del carrello e degli ordini che fai resta nella memoria del browser del tuo dispositivo: puoi cancellarla quando vuoi cancellando i dati del sito dal browser.</p>
         <h3>CHI ALTRO LI VEDE</h3>
-        <p>WhatsApp (WhatsApp Ireland Ltd., gruppo Meta), che trasporta il messaggio con l'ordine secondo la propria informativa privacy. GitHub Pages (GitHub Inc.), che ospita il sito e per motivi tecnici e di sicurezza può registrare l'indirizzo IP di chi lo visita. Google (Google Ireland Ltd.), che ospita il foglio di calcolo con i conteggi anonimi delle visite: per motivi tecnici riceve l'indirizzo IP di chi visita il sito, che a me non arriva. Per calcolare i chilometri del giro di consegne, dalla mia area riservata mando ai servizi di mappe di OpenStreetMap (Nominatim e OSRM) solo l'indirizzo e la località di consegna, mai nome o telefono. Questi servizi possono trattare dati anche fuori dall'Unione europea, con le garanzie previste dalla legge.</p>
+        <p>WhatsApp (WhatsApp Ireland Ltd., gruppo Meta), che trasporta il messaggio con l'ordine secondo la propria informativa privacy. GitHub Pages (GitHub Inc.), che ospita il sito e per motivi tecnici e di sicurezza può registrare l'indirizzo IP di chi lo visita. Google (Google Ireland Ltd.), che ospita i miei fogli di calcolo: i conteggi anonimi delle visite, i posti presi nelle fasce orarie e la copia di sicurezza degli ordini. Per motivi tecnici riceve l'indirizzo IP di chi visita il sito, che a me non arriva. Per calcolare i chilometri del giro di consegne, dalla mia area riservata mando ai servizi di mappe di OpenStreetMap (Nominatim e OSRM) solo l'indirizzo e la località di consegna, mai nome o telefono. Questi servizi possono trattare dati anche fuori dall'Unione europea, con le garanzie previste dalla legge.</p>
         <h3>PER QUANTO TEMPO</h3>
-        <p>Tengo i dati degli ordini per il tempo necessario a consegnarli e a gestire il regalo della decima cassetta; se non ordini più, li cancello entro 24 mesi dall'ultimo ordine. I dati che la legge mi obbliga a conservare per motivi fiscali restano per il tempo previsto dalla legge.</p>
+        <p>Tengo i dati degli ordini per il tempo necessario a consegnarli e a gestire il regalo della decima cassetta; se non ordini più, dopo 24 mesi dall'ultimo ordine si cancellano da soli, sul mio telefono e nella copia di sicurezza. I dati che la legge mi obbliga a conservare per motivi fiscali restano per il tempo previsto dalla legge.</p>
         <h3>COOKIE E STATISTICHE</h3>
         <p>Il sito non usa cookie. Per capire quali parti del sito funzionano meglio conto in forma anonima le visite e i click sui pulsanti: per esempio quante persone aprono «Componi la cassetta», quali verdure vengono aggiunte più spesso, da dove arrivano (un link, Instagram, Google…) e se usano un telefono o un computer. Non registro nome, telefono, indirizzo o indirizzo IP, non salvo niente sul tuo dispositivo e dai conteggi non posso risalire a chi ha fatto un click. I conteggi finiscono in un mio foglio di calcolo Google e li tengo al massimo 13 mesi.</p>
         <p>La memoria del browser serve solo a ricordare il carrello: è uno strumento tecnico e non richiede consenso.</p>
         <h3>I TUOI DIRITTI</h3>
         <p>Puoi chiedermi in ogni momento di vedere, correggere o cancellare i tuoi dati, di limitarne l'uso o di opporti, e di averne una copia: scrivimi su WhatsApp o per email. Se pensi che i tuoi dati non siano trattati correttamente puoi rivolgerti al Garante per la protezione dei dati personali (garanteprivacy.it).</p>
-        <p class="privacy-data">Ultimo aggiornamento: 25 ottobre 2026.</p>
+        <p class="privacy-data">Ultimo aggiornamento: 27 ottobre 2026.</p>
       </div>
       <div class="popup-conserve-azioni">
         <button type="button" class="primary-button" data-chiudi-privacy>HO LETTO <span>✓</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="popup-conserve popup-invia" id="popupInvia" hidden>
+    <div class="popup-conserve-card" role="dialog" aria-modal="true" aria-labelledby="popupInviaTitolo">
+      <p class="popup-conserve-aspetta">ULTIMO PASSO</p>
+      <h2 id="popupInviaTitolo">SU WHATSAPP <em>premi INVIA</em></h2>
+      <div class="invia-esempio" aria-hidden="true">
+        <div class="invia-bolla"><b>NUOVO ORDINE</b><span>🧺 La tua cassetta, il giorno e la fascia: è già tutto scritto</span></div>
+        <div class="invia-barra">
+          <span class="invia-campo">Messaggio</span>
+          <span class="invia-tasto"><svg viewBox="0 0 24 24"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2Z" fill="#fff"/></svg></span>
+        </div>
+        <span class="invia-freccia">PREMI QUI <b>↗</b></span>
+      </div>
+      <p>Ti apro WhatsApp con l'ordine già scritto. <strong>Per farmelo arrivare devi premere il tasto verde INVIA</strong> in basso a destra. Se non lo premi, l'ordine non mi arriva.</p>
+      <div class="popup-conserve-azioni">
+        <button class="primary-button whatsapp-invia" type="button" id="popupInviaApri">HO CAPITO, APRI WHATSAPP <span>→</span></button>
+        <button class="back-button" type="button" id="popupInviaNo">TORNA AL RIEPILOGO</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="popup-conserve" id="popupCondizioni" hidden>
+    <div class="popup-conserve-card privacy-card" role="dialog" aria-modal="true" aria-labelledby="condizioniTitolo">
+      <button type="button" class="privacy-chiudi" data-chiudi-condizioni aria-label="Chiudi le condizioni di vendita">×</button>
+      <p class="popup-conserve-aspetta">COME FUNZIONA</p>
+      <h2 id="condizioniTitolo">CONDIZIONI <em>DI VENDITA</em></h2>
+      <div class="privacy-testo">
+        <p>Qui trovi, in modo semplice, come funziona un ordine sul mio sito.</p>
+        <h3>CHI VENDE</h3>
+        <p>Alessio Falli, impresa agricola (marchio Sole Terra Acqua), Loc. Alvagnano 26, 01019 Vetralla (VT) · P.IVA 02456550561. WhatsApp e telefono +39 320 273 2892, email agricolasoleacquaterra@gmail.com.</p>
+        <h3>COSA VENDO</h3>
+        <p>Cassette di verdura di stagione del mio campo, che componi tu, e le mie conserve in vasetto. Le verdure disponibili cambiano ogni settimana. Le immagini delle verdure servono a riconoscerle: forma, colore e grandezza cambiano come in natura. Le foto dei vasetti sono quelle vere.</p>
+        <h3>PREZZI</h3>
+        <p>I prezzi sono in euro e sono finali. La consegna a Viterbo è gratuita; nelle zone vicine costa 2,50 €. Il totale lo vedi nel riepilogo prima di inviare l'ordine.</p>
+        <h3>COME SI ORDINA</h3>
+        <p>Componi la cassetta sul sito e invia l'ordine su WhatsApp con il messaggio già pronto. L'ordine è confermato quando ti rispondo su WhatsApp con la conferma: da quel momento vale l'accordo tra noi. Si ordina fino alle 21:00 del giorno prima della consegna. Se una verdura all'ultimo momento manca, ti avviso prima della consegna: la sostituisco con un'altra solo se sei d'accordo, altrimenti la tolgo dal conto.</p>
+        <h3>CONSEGNA</h3>
+        <p>Porto io l'ordine all'indirizzo che mi indichi, nel giorno e nella fascia oraria che scegli: a Viterbo dalle 14:30 alle 19:00, nelle zone vicine dalle 19:00 alle 20:40. Ogni fascia ha un numero limitato di consegne. Se non sei in casa ti chiamo o ti scrivo per trovare insieme una soluzione.</p>
+        <h3>PAGAMENTO</h3>
+        <p>Puoi pagare in contanti alla consegna, con bonifico o con PayPal: i dati per il bonifico e per PayPal te li mando su WhatsApp con la conferma.</p>
+        <h3>RECESSO</h3>
+        <p>Per la verdura fresca il diritto di recesso non c'è, perché si deteriora rapidamente (art. 59, comma 1, lettera d, del Codice del Consumo). Per le conserve puoi recedere entro 14 giorni dalla consegna, senza dare spiegazioni, scrivendomi su WhatsApp o per email: me le restituisci integre e ancora sigillate (i vasetti aperti non si possono restituire per motivi igienici) e te le ritiro io alla consegna successiva, oppure ci accordiamo. Ti rimborso entro 14 giorni con lo stesso mezzo che hai usato per pagare.</p>
+        <h3>SE QUALCOSA NON VA</h3>
+        <p>Se trovi verdura rovinata o un vasetto danneggiato o diverso da quello ordinato, scrivimi con una foto, se puoi entro 24 ore dalla consegna così rimedio subito: lo sostituisco alla consegna successiva o te lo rimborso. Restano sempre validi i diritti della garanzia legale di conformità (articoli 128 e seguenti del Codice del Consumo).</p>
+        <h3>ALLERGENI E INFORMAZIONI SUGLI ALIMENTI</h3>
+        <p>Per ogni conserva trovi sul sito ingredienti (gli allergeni sono in grassetto), peso e come si conserva: sono le stesse informazioni dell'etichetta. Se hai allergie o intolleranze scrivimi prima di ordinare.</p>
+        <h3>RECLAMI</h3>
+        <p>Per qualsiasi problema scrivimi su WhatsApp o per email: ti rispondo entro 2 giorni lavorativi. Vale la legge italiana; per le controversie è competente il giudice del luogo dove abiti.</p>
+        <p class="privacy-data">Ultimo aggiornamento: 27 ottobre 2026.</p>
+      </div>
+      <div class="popup-conserve-azioni">
+        <button type="button" class="primary-button" data-chiudi-condizioni>HO LETTO <span>✓</span></button>
       </div>
     </div>
   </div>
@@ -1007,6 +1082,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=55"></script>
+  <script src="app.js?v=56"></script>
 </body>
 </html>

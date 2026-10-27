@@ -1647,3 +1647,56 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .grafico-area { height: 130px; }
   .statistiche-accesso .primary-button { width: 100%; justify-content: center; }
 }
+
+/* fasce piene (gia' 4 ordini): si vedono ma non si scelgono */
+.time-grid label.piena { opacity: .45; cursor: not-allowed; }
+.time-grid label.piena span { text-decoration: line-through; }
+.time-grid label.piena small { text-decoration: none; display: block; color: var(--terracotta); font-weight: 900; }
+
+/* prima di aprire WhatsApp: come e' fatto il tasto INVIA */
+.popup-invia .popup-conserve-card { max-width: 460px; text-align: center; }
+.popup-invia h2 em { color: #128c4b; }
+.invia-esempio { position: relative; margin: 14px auto 16px; max-width: 330px; padding: 14px 12px 12px; border-radius: 16px; background: #efeae2; text-align: left; }
+.invia-bolla { margin-left: auto; width: 82%; padding: 9px 11px; border-radius: 10px 10px 2px 10px; background: #d9fdd3; font-family: Arial, sans-serif; font-size: .74rem; color: #303030; box-shadow: 0 1px 1px rgba(0,0,0,.08); }
+.invia-bolla b { display: block; font-size: .7rem; margin-bottom: 3px; }
+.invia-barra { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.invia-campo { flex: 1; padding: 11px 14px; border-radius: 999px; background: #fff; color: #8a8a8a; font-family: Arial, sans-serif; font-size: .8rem; }
+.invia-tasto { position: relative; flex: none; width: 46px; height: 46px; border-radius: 50%; background: #25d366; display: grid; place-items: center; box-shadow: 0 0 0 0 rgba(37,211,102,.6); animation: tastoInvia 1.4s ease-out infinite; }
+.invia-tasto svg { width: 22px; height: 22px; margin-left: 3px; }
+.invia-freccia { position: absolute; right: 2px; bottom: -26px; color: #128c4b; font-size: .7rem; font-weight: 900; letter-spacing: .12em; }
+@keyframes tastoInvia { 0% { box-shadow: 0 0 0 0 rgba(37,211,102,.6); } 100% { box-shadow: 0 0 0 16px rgba(37,211,102,0); } }
+.popup-invia .popup-conserve-card > p:not(.popup-conserve-aspetta) { margin-top: 26px; }
+
+/* dopo WhatsApp: "hai premuto INVIA?" */
+.success-domanda { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
+.success-domanda[hidden] { display: none; }
+.success-domanda.richiamo { animation: richiamoInvia .5s ease-in-out 3; }
+@keyframes richiamoInvia { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+/* dashboard: copia di sicurezza e posti presi */
+.copia-stato { margin: 8px 0 0; color: var(--green); font-size: .78rem; font-weight: 700; }
+.copia-stato.errore { color: var(--terracotta); }
+.order-filters #copiaAdesso { border-color: var(--green); color: var(--green); }
+.posti-elenco { display: grid; gap: 8px; }
+.posto-riga { display: grid; grid-template-columns: minmax(0, 1.4fr) auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--small-radius); }
+.posto-quando strong, .posto-quando small { display: block; }
+.posto-quando strong { font-size: .8rem; letter-spacing: .04em; }
+.posto-quando small { color: var(--muted); font-size: .72rem; margin-top: 2px; }
+.posto-codice { font: italic .85rem Georgia, serif; color: var(--terracotta); }
+.posto-stato { justify-self: start; padding: 5px 8px; border-radius: 999px; font-size: .64rem; font-weight: 900; letter-spacing: .06em; background: var(--sage-light); color: var(--green-deep); }
+.posto-stato.manca { background: #f6dfd6; color: #8a3f28; }
+.posto-stato.attesa { background: #f3ecd6; color: #6b5a26; }
+@media (max-width: 700px) {
+  .posto-riga { grid-template-columns: minmax(0, 1fr) auto; }
+  .posto-stato { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .invia-tasto { animation: none; } }
+
+/* versione leggera (telefoni deboli): niente animazioni, niente sfocature, tutto subito visibile */
+html.leggero *, html.leggero *::before, html.leggero *::after { animation: none !important; transition: none !important; }
+html.leggero .reveal { opacity: 1 !important; transform: none !important; }
+html.leggero .site-header { backdrop-filter: none; background: var(--paper); }
+html.leggero .furgone, html.leggero .cassetta-3d { display: none !important; }
+html.leggero .product-card, html.leggero .weekly-products article, html.leggero .box-option { transform: none !important; }
+html.leggero .invia-tasto { box-shadow: 0 0 0 5px rgba(37,211,102,.35); }
+.versione-cambia { grid-column: 1 / -1; justify-self: start; margin-top: 4px; border: 1px solid rgba(255,255,255,.3); background: transparent; color: inherit; padding: 8px 12px; border-radius: 999px; font: inherit; font-size: .64rem; font-weight: 900; letter-spacing: .1em; cursor: pointer; opacity: .8; }

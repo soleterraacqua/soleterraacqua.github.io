@@ -19,7 +19,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 55;
+const VERSIONE_SITO = 56;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -36,6 +36,8 @@ const FASCE_ORARIE = [
   ["17:10", "17:50"], ["17:50", "18:30"], ["18:30", "19:00"]
 ];
 const FASCIA_ZONE_VICINE = [["19:00", "20:40"]];
+// ogni fascia ha al massimo 4 ordini; i posti presi li conta lo script Google (prenotazioni senza dati personali)
+const MAX_ORDINI_FASCIA = 4;
 // il giorno fisso di consegna (0 domenica … 6 sabato, -1 nessuno) e' in calendario ogni settimana anche
 // senza pubblicare la settimana; dalla dashboard si cambia o si salta una data. Si ordina fino alle 21:00 del giorno prima
 const GIORNO_FISSO_INIZIALE = 5;
@@ -54,6 +56,9 @@ const LOCALITA = [
 const CARRELLO_KEY = "sole-terra-acqua-carrello";
 // Le conserve vere, dalle etichette. Ingredienti e pesi copiati dalle etichette:
 // se cambia un'etichetta, cambiare anche qui.
+// Niente frasi su nutrienti o salute ("poche calorie", "fonte di..."): le regole UE (Reg. 1924/2006) le
+// permettono solo a condizioni precise. Sotto ogni conserva c'e' come si conserva, uguale per tutte in etichetta.
+const COME_SI_CONSERVA = ["Lontano da fonti di calore e dalla luce.", "Una volta aperto, in frigorifero: da consumare entro 5 giorni."];
 const CONSERVE = [
   {
     id: "salsa-ciliegino", nome: "Salsa di pomodoro ciliegino", peso: "680 g", tinta: "#a3302a",
@@ -63,11 +68,6 @@ const CONSERVE = [
       "Sugo in dieci minuti: aglio e olio in padella, la salsa, un pizzico di sale e una foglia di basilico.",
       "Base per pizza e focaccia, stesa a crudo prima di infornare.",
       "Uova in purgatorio, polpette al sugo o il ragù cotto piano la domenica."
-    ],
-    buono: [
-      "Licopene, il pigmento rosso del pomodoro: con la cottura e un filo d'olio il corpo lo assorbe meglio.",
-      "Il ciliegino è dolce e saporito: tanta acqua e poche calorie, circa 20 ogni 100 grammi da fresco.",
-      "Potassio e altri carotenoidi, come il betacarotene."
     ]
   },
   {
@@ -78,11 +78,6 @@ const CONSERVE = [
       "Sulla pasta, sciolto con un cucchiaio dell'acqua di cottura: si condisce a fuoco spento.",
       "Spalmato su bruschette e crostini, con una scaglia di pecorino.",
       "In un panino o in una piadina con mozzarella e pomodoro."
-    ],
-    buono: [
-      "Zucchine: più del 90% è acqua, e la buccia porta fibre e luteina.",
-      "Basilico: tanto profumo, così per dare sapore basta meno sale.",
-      "Nocciole: vitamina E e grassi soprattutto monoinsaturi."
     ]
   },
   {
@@ -93,11 +88,6 @@ const CONSERVE = [
       "Su crostini caldi come antipasto, con un filo d'olio a crudo.",
       "Al posto della maionese in un panino o in un tramezzino.",
       "Per mantecare un risotto o condire la pasta corta all'ultimo momento."
-    ],
-    buono: [
-      "Zucchine: leggere, ricche d'acqua e di potassio.",
-      "Semi di girasole e di zucca: fibre, magnesio e zinco.",
-      "Sesamo e cumino dei prati: un po' di calcio dal sesamo e un profumo caldo, leggermente anisato."
     ]
   },
   {
@@ -108,11 +98,6 @@ const CONSERVE = [
       "Antipasto pronto, sul tagliere con salumi e formaggi.",
       "Nell'insalata di riso, di farro o di pasta fredda.",
       "Sulla pizza appena sfornata o dentro una focaccia farcita."
-    ],
-    buono: [
-      "Zucchine romanesche: le più saporite, poche calorie e tanta acqua.",
-      "Capperi: tra gli alimenti più ricchi di quercetina, un antiossidante naturale.",
-      "Olive e olio extravergine: grassi soprattutto monoinsaturi."
     ]
   },
   {
@@ -123,11 +108,6 @@ const CONSERVE = [
       "Contorno pronto per carne o pesce alla griglia.",
       "Su una fetta di pane casereccio tostato, come bruschetta.",
       "A pezzetti in una frittata o in una torta salata."
-    ],
-    buono: [
-      "Zucchine romanesche: potassio e fibre, soprattutto nella buccia.",
-      "Prezzemolo: tra gli aromi più ricchi di vitamina K e vitamina C.",
-      "Aglio: i suoi composti solforati, come l'allicina, gli danno il profumo inconfondibile."
     ]
   },
   {
@@ -138,11 +118,6 @@ const CONSERVE = [
       "Sulla pasta, allungata con un mestolo d'acqua di cottura.",
       "Su crostini, con una scaglia di formaggio stagionato.",
       "Come base per un risotto alla zucca pronto in poco tempo."
-    ],
-    buono: [
-      "Zucca butternut: tanto betacarotene, che il corpo trasforma in vitamina A.",
-      "Cipolla: tra le verdure più ricche di quercetina.",
-      "Nocciole tostate: vitamina E e grassi soprattutto monoinsaturi."
     ]
   },
   {
@@ -153,11 +128,6 @@ const CONSERVE = [
       "Con formaggi stagionati o erborinati, come una mostarda gentile.",
       "Su yogurt bianco o ricotta, per una colazione diversa.",
       "Su pane tostato e burro, oppure per farcire una crostata."
-    ],
-    buono: [
-      "Zucca butternut: il suo arancio è betacarotene, che il corpo trasforma in vitamina A.",
-      "Zucca: fibre e potassio nella polpa.",
-      "Zenzero fresco: il sapore pungente viene dai gingeroli, gli stessi della radice appena grattugiata."
     ]
   }
 ];
@@ -266,6 +236,10 @@ const state = {
   deliveryDays: [],
   giornoFisso: GIORNO_FISSO_INIZIALE,
   giornoFisso2: -1,
+  posti: {},          // giorno -> fascia -> posti gia' presi (dallo script Google)
+  postiLetti: 0,
+  idOrdine: "",       // codice dell'ordine, nato quando il cliente arriva al riepilogo (tiene il posto)
+  ordineInviato: null,
   saltati: [],
   ordiniChiusi: false,
   deliveryFee: 0,
@@ -281,6 +255,28 @@ const state = {
   preserves: [],
   optimized: false
 };
+
+// ---------- Versione leggera per i telefoni deboli ----------
+// Con poca memoria o pochi processori, rete lenta o "risparmio dati" il sito parte leggero: niente 3D
+// (campo e cassetta), niente furgoncino, inclinazioni e animazioni. Se non lo sa in anticipo, appena
+// aperto misura quanto e' fluido: se il telefono fa fatica passa al leggero per questa visita (alla
+// prossima rimisura: un momento storto non deve togliere il 3D per sempre).
+// Dal fondo della pagina si cambia a mano; quella scelta resta su quel telefono.
+const LEGGERO_KEY = "sole-terra-acqua-leggero";
+function telefonoDebole() {
+  const memoria = navigator.deviceMemory;          // in GB, la danno solo i browser Chrome
+  const processori = navigator.hardwareConcurrency;
+  const rete = navigator.connection;
+  return Boolean((memoria && memoria <= 2) || (processori && processori <= 2) || rete?.saveData || /(^|-)2g$|^3g$/.test(rete?.effectiveType || ""));
+}
+function sceltaLeggero() {
+  try { return localStorage.getItem(LEGGERO_KEY) || ""; } catch (_) { return ""; }
+}
+const versioneLeggera = () => document.documentElement.classList.contains("leggero");
+function leggeroInQuestaVisita() {
+  try { return sessionStorage.getItem(LEGGERO_KEY) === "auto"; } catch (_) { return false; }
+}
+if (sceltaLeggero() === "1" || (!sceltaLeggero() && (telefonoDebole() || leggeroInQuestaVisita()))) document.documentElement.classList.add("leggero");
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -362,13 +358,14 @@ function seedMissingOrderData() {
   });
 }
 
-function saveBusinessData() {
+function saveBusinessData({ copia = true } = {}) {
   try {
     localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(state.orders));
     localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(state.customers));
   } catch (_) {
     showToast("Memoria piena: alcuni dati potrebbero non essere salvati.");
   }
+  if (copia) programmaCopia();
 }
 
 function upsertCustomerFromOrder(order, addPoint = false) {
@@ -635,7 +632,8 @@ function importOrderFromHash() {
   const order = {
     ...imported,
     status: imported.status || "Confermato",
-    loyaltyCredited: Boolean(imported.loyaltyCredited)
+    loyaltyCredited: Boolean(imported.loyaltyCredited),
+    aggiornato: Date.now()
   };
   seedMissingOrderData();
   const exists = state.orders.some(item => item.id === order.id);
@@ -871,6 +869,7 @@ function goToStep(step) {
     }
   }
   if (step !== state.step) traccia("passo", String(step));
+  if (step === 3) leggiPosti();
   state.step = step;
   $$(".order-step").forEach(el => el.classList.toggle("active", Number(el.dataset.step) === step));
   $$(".stepper button").forEach((el, index) => {
@@ -1091,7 +1090,7 @@ function renderCrateItems(container, selected) {
 let cassetta3D = null;
 let cassetta3DPartita = false;
 function setupCassetta3D() {
-  if (cassetta3DPartita) return;
+  if (cassetta3DPartita || versioneLeggera()) return;
   if (matchMedia("(prefers-reduced-motion: reduce)").matches || navigator.connection?.saveData) return;
   if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) return;
   cassetta3DPartita = true;
@@ -1322,8 +1321,8 @@ function renderConserve() {
           <ol>${conserva.usi.map(uso => `<li>${uso}</li>`).join("")}</ol>
         </div>
         <div>
-          <h4>IL BUONO DELLA VERDURA</h4>
-          <ul>${conserva.buono.map(voce => `<li>${voce}</li>`).join("")}</ul>
+          <h4>COME SI CONSERVA</h4>
+          <ul>${COME_SI_CONSERVA.map(voce => `<li>${voce}</li>`).join("")}</ul>
         </div>
       </div>
       ${azioni}
@@ -1475,29 +1474,96 @@ function setupDatesAndTimes() {
   $("#areaChoices").innerHTML = LOCALITA.map(localita => `
     <label>
       <input type="radio" name="area" value="${localita.nome}" ${state.area === localita.nome ? "checked" : ""}>
-      <span>${localita.nome.toUpperCase()}<small>${localita.costo ? `+${money(localita.costo)} · ORE 19–20` : "CONSEGNA GRATUITA"}</small></span>
+      <span>${localita.nome.toUpperCase()}<small>${localita.costo ? `+${money(localita.costo)} · ORE 19–20:40` : "CONSEGNA GRATUITA"}</small></span>
     </label>
   `).join("");
+  disegnaFasce();
+
+  $$('input[name="deliveryDate"]').forEach(input => input.addEventListener("change", event => {
+    state.selectedDate = event.target.value;
+    disegnaFasce();   // le fasce piene cambiano da un giorno all'altro
+  }));
+}
+
+// le fasce della zona scelta; quelle con gia' 4 ordini nel giorno scelto sono PIENE e non si scelgono
+function disegnaFasce() {
   const zona = LOCALITA.find(localita => localita.nome === state.area);
   const fasce = !zona ? [] : zona.costo ? FASCIA_ZONE_VICINE : FASCE_ORARIE;
-  if (!fasce.some(([from, to]) => `${from}–${to}` === state.selectedTime)) {
-    // nelle zone vicine la fascia e' una sola: la scelgo io
-    state.selectedTime = fasce.length === 1 ? `${fasce[0][0]}–${fasce[0][1]}` : "";
+  const presi = state.posti[state.selectedDate] || {};
+  const piena = fascia => (presi[fascia] || 0) >= MAX_ORDINI_FASCIA;
+  if (!fasce.some(([from, to]) => `${from}–${to}` === state.selectedTime) || piena(state.selectedTime)) {
+    // nelle zone vicine la fascia e' una sola: la scelgo io (se non e' piena)
+    const unica = fasce.length === 1 ? `${fasce[0][0]}–${fasce[0][1]}` : "";
+    state.selectedTime = unica && !piena(unica) ? unica : "";
   }
   $("#timeGrid").innerHTML = !zona
     ? `<p class="date-empty">Prima scegli dove consegno: le fasce orarie dipendono dalla zona.</p>`
-    : fasce.map(([from, to]) => `
-      <label>
-        <input type="radio" name="deliveryTime" value="${from}–${to}" ${state.selectedTime === `${from}–${to}` ? "checked" : ""}>
-        <span>${from}–${to}<small>${zona.costo ? "ZONE VICINE" : `${minutiFascia(from, to)} MINUTI`}</small></span>
-      </label>
-    `).join("");
-
-  $$('input[name="deliveryDate"]').forEach(input => input.addEventListener("change", event => state.selectedDate = event.target.value));
+    : fasce.map(([from, to]) => {
+      const fascia = `${from}–${to}`;
+      const chiusa = piena(fascia);
+      const ultimo = !chiusa && (presi[fascia] || 0) === MAX_ORDINI_FASCIA - 1;
+      return `
+      <label class="${chiusa ? "piena" : ""}">
+        <input type="radio" name="deliveryTime" value="${fascia}" ${state.selectedTime === fascia ? "checked" : ""} ${chiusa ? "disabled" : ""}>
+        <span>${fascia}<small>${chiusa ? (zona.costo ? "PIENA · SCEGLI UN ALTRO GIORNO" : "PIENA") : ultimo ? "ULTIMO POSTO" : zona.costo ? "ZONE VICINE" : `${minutiFascia(from, to)} MINUTI`}</small></span>
+      </label>`;
+    }).join("");
   $$('input[name="deliveryTime"]').forEach(input => input.addEventListener("change", event => {
     state.selectedTime = event.target.value;
     updateSummary();
   }));
+}
+
+// ---------- posti nelle fasce (script Google): nessun dato personale, solo codice, giorno, fascia e zona ----------
+const postiAttivi = () => Boolean(indirizzoStatistiche()) && sitoPubblicato();
+const nuovoCodiceOrdine = () => `R${Date.now().toString(36).slice(-5).toUpperCase()}${Math.floor(Math.random() * 36).toString(36).toUpperCase()}`;
+
+async function chiediAlFoglio(corpo, attesa = 6000) {
+  const controllo = new AbortController();
+  const tempo = setTimeout(() => controllo.abort(), attesa);
+  try {
+    const risposta = await fetch(indirizzoStatistiche(), { method: "POST", body: JSON.stringify(corpo), cache: "no-store", signal: controllo.signal });
+    if (!risposta.ok) throw new Error(risposta.status);
+    return await risposta.json();
+  } finally {
+    clearTimeout(tempo);
+  }
+}
+
+async function leggiPosti(forza = false) {
+  if (!postiAttivi() || (!forza && Date.now() - state.postiLetti < 30000)) return;
+  state.postiLetti = Date.now();
+  try {
+    const dati = await chiediAlFoglio({ azione: "posti", giorni: giorniPrenotabili() });
+    if (!dati?.posti || JSON.stringify(dati.posti) === JSON.stringify(state.posti)) return;
+    state.posti = dati.posti;
+    if (state.step === 3) disegnaFasce();
+  } catch (_) {
+    state.postiLetti = 0;   // riprovo alla prossima occasione: senza rete il sito funziona come prima
+  }
+}
+
+// al passaggio al riepilogo tengo il posto per 20 minuti; se nel frattempo la fascia si e' riempita lo dico subito
+async function tieniPosto() {
+  if (!postiAttivi()) return null;
+  state.idOrdine ||= nuovoCodiceOrdine();
+  try {
+    const esito = await chiediAlFoglio({ azione: "tieni", id: state.idOrdine, giorno: state.orderData.date, fascia: state.orderData.time, zona: state.orderData.area }, 5000);
+    if (esito?.pieno) {
+      state.posti[state.orderData.date] = esito.posti || {};
+      state.postiLetti = Date.now();
+    }
+    return esito;
+  } catch (_) {
+    return null;
+  }
+}
+
+function confermaPosto(order) {
+  if (!postiAttivi()) return;
+  const corpo = JSON.stringify({ azione: "conferma", id: order.id, giorno: order.date, fascia: order.deliveryWindow, zona: order.area });
+  try { if (navigator.sendBeacon && navigator.sendBeacon(indirizzoStatistiche(), corpo)) return; } catch (_) {}
+  fetch(indirizzoStatistiche(), { method: "POST", mode: "no-cors", keepalive: true, body: corpo }).catch(() => {});
 }
 
 function validateDelivery() {
@@ -1654,6 +1720,17 @@ function chiudiPrivacy() {
   document.body.style.overflow = $("#popupConserve").hidden ? "" : "hidden";
 }
 
+function apriCondizioni() {
+  $("#popupCondizioni").hidden = false;
+  $("#popupCondizioni .privacy-testo").scrollTop = 0;
+  document.body.style.overflow = "hidden";
+}
+
+function chiudiCondizioni() {
+  $("#popupCondizioni").hidden = true;
+  document.body.style.overflow = $("#popupConserve").hidden ? "" : "hidden";
+}
+
 function confirmOrder() {
   // "come mi hai conosciuto" e' facoltativa: se non risponde, va bene lo stesso
   const origine = $('input[name="discovery"]:checked')?.value || "";
@@ -1685,8 +1762,27 @@ function confirmOrder() {
     return;
   }
 
-  // codice unico: prima ogni cliente al primo ordine riceveva lo stesso numero e in dashboard gli ordini si sovrapponevano
-  const orderId = `R${Date.now().toString(36).slice(-5).toUpperCase()}${Math.floor(Math.random() * 36).toString(36).toUpperCase()}`;
+  // prima di aprire WhatsApp spiego bene che li' bisogna premere INVIA (tanti si fermavano prima)
+  apriPopupInvia();
+}
+
+function apriPopupInvia() {
+  popupApertoAlle = performance.now();
+  $("#popupInvia").hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function chiudiPopupInvia() {
+  $("#popupInvia").hidden = true;
+  document.body.style.overflow = "";
+}
+
+// "HO CAPITO, APRI WHATSAPP": qui nasce l'ordine e si apre WhatsApp (nello stesso tocco, se no il telefono lo blocca)
+function inviaOrdine() {
+  chiudiPopupInvia();
+  const origine = $('input[name="discovery"]:checked')?.value || "";
+  // codice unico: e' quello che ha tenuto il posto nella fascia (o uno nuovo se il posto non si e' potuto tenere)
+  const orderId = state.idOrdine || nuovoCodiceOrdine();
   const cassette = cassetteOrdine().map(cassetta => ({ box: nomeScatola(cassetta.box), items: getOrderItems(cassetta.selectionOrder) }));
   const order = {
     id: orderId,
@@ -1709,6 +1805,7 @@ function confirmOrder() {
   order.olio = state.olio;
   order.notes = state.orderData.notes || "";
   order.loyaltyCredited = false;
+  order.aggiornato = Date.now();
   state.orders.unshift(order);
   try { localStorage.setItem("radici-demo-order", JSON.stringify(order)); } catch (_) {}
   saveBusinessData();
@@ -1716,20 +1813,39 @@ function confirmOrder() {
   window.open(whatsappUrl, "_blank", "noopener");
   traccia("ordine", cassette.map(cassetta => cassetta.box).join(" + "), "", Math.round(order.total * 100) / 100);
   inviaStatistiche();
+  confermaPosto(order);
+  state.idOrdine = "";
 
   $$(".order-step").forEach(el => el.classList.remove("active"));
   $("#orderSuccess").classList.add("active");
-  // l'ordine mi arriva solo se il cliente preme INVIA su WhatsApp: prima il sito diceva "confermato"
-  // e chi chiudeva WhatsApp senza inviare credeva di aver ordinato
+  // il riepilogo era lungo: torno su, cosi' tornando da WhatsApp si vede subito la domanda
+  window.scrollTo({ top: Math.max(0, $("#builderView").offsetTop), behavior: "smooth" });
+  // l'ordine mi arriva solo se il cliente preme INVIA su WhatsApp: la pagina glielo chiede finche' non risponde
   const [dalle, alle] = state.selectedTime.split("–");
+  state.ordineInviato = { id: orderId, nome: order.name.split(" ")[0], giorno: formatDate(state.orderData.date).toLowerCase(), dalle: dalle || "", alle: alle || "", risposto: false };
+  $("#successTitolo").innerHTML = "HAI PREMUTO <em>INVIA</em><br>SU WHATSAPP?";
+  $("#successDomanda").hidden = false;
+  $("#successDomanda").classList.remove("richiamo");
   $("#successCopy").innerHTML = `
-    <p class="success-saluto">Grazie ${escapeHtml(order.name.split(" ")[0])}, ci siamo quasi!</p>
-    <p class="success-invia-box">Su WhatsApp trovi già pronto il riepilogo del tuo ordine <strong>#${orderId}</strong>. Ti basta premere <strong>INVIA</strong>: è l'ultimo passo, e solo così l'ordine verrà elaborato.</p>
-    <p>Poi non devi fare altro: la tua cassetta te la porto io <strong>${formatDate(state.orderData.date).toLowerCase()}</strong>, tra le <strong>${escapeHtml(dalle || "")}</strong> e le <strong>${escapeHtml(alle || "")}</strong>.</p>
-    <p class="success-nota">WhatsApp non si è aperto? Tocca il pulsante qui sotto.</p>`;
+    <p class="success-invia-box">Su WhatsApp trovi già scritto il tuo ordine <strong>#${orderId}</strong>. <strong>Mi arriva solo se premi il tasto verde INVIA</strong> in basso a destra.</p>
+    <p class="success-nota">Non l'hai premuto o WhatsApp non si è aperto? Tocca <strong>NO, RIAPRI WHATSAPP</strong> e invialo.</p>`;
   $("#successWhatsapp").href = whatsappUrl;
-  showToast("Ultimo passo: premi INVIA su WhatsApp.", 5000);
+  showToast("Ultimo passo: su WhatsApp premi il tasto verde INVIA.", 6000);
   svuotaCarrello();
+}
+
+// il cliente risponde "si', l'ho inviato": grazie e riepilogo della consegna
+function ordineInviatoSi() {
+  const inviato = state.ordineInviato;
+  if (!inviato) return;
+  inviato.risposto = true;
+  traccia("inviato", inviato.id);
+  inviaStatistiche();
+  $("#successDomanda").hidden = true;
+  $("#successTitolo").innerHTML = `GRAZIE<br><em>${escapeHtml(inviato.nome.toUpperCase())}!</em>`;
+  $("#successCopy").innerHTML = `
+    <p class="success-saluto">Il tuo ordine #${escapeHtml(inviato.id)} è partito.</p>
+    <p>Appena lo ricevo ti rispondo su WhatsApp con la conferma. La cassetta te la porto io <strong>${escapeHtml(inviato.giorno)}</strong>, tra le <strong>${escapeHtml(inviato.dalle)}</strong> e le <strong>${escapeHtml(inviato.alle)}</strong>.</p>`;
 }
 
 function formatDate(value) {
@@ -1753,6 +1869,30 @@ function ripartiDaZero() {
   } catch (_) {}
 }
 
+// l'informativa privacy promette che i dati di chi non ordina da 24 mesi si cancellano da soli
+const MESI_DATI_CLIENTI = 24;
+function pulisciDatiVecchi() {
+  const limite = new Date();
+  limite.setMonth(limite.getMonth() - MESI_DATI_CLIENTI);
+  const dataLimite = limite.toISOString().slice(0, 10);
+  const ultimo = {};
+  state.orders.forEach(order => {
+    const chiave = customerKeyFromOrder(order);
+    const data = String(order.date || "");
+    if (!ultimo[chiave] || data > ultimo[chiave]) ultimo[chiave] = data;
+  });
+  const prima = state.orders.length + Object.keys(state.customers).length;
+  state.orders = state.orders.filter(order => {
+    const data = ultimo[customerKeyFromOrder(order)];
+    return !data || data >= dataLimite;
+  });
+  Object.keys(state.customers).forEach(chiave => {
+    const data = ultimo[chiave] || String(state.customers[chiave].lastDelivery || "");
+    if (data && data < dataLimite) delete state.customers[chiave];
+  });
+  return prima - state.orders.length - Object.keys(state.customers).length;
+}
+
 function loadLocalOrder() {
   ripartiDaZero();
   try {
@@ -1762,6 +1902,8 @@ function loadLocalOrder() {
     if (savedCustomers && typeof savedCustomers === "object") state.customers = savedCustomers;
     const saved = JSON.parse(localStorage.getItem("radici-demo-order"));
     if (saved && !state.orders.some(order => order.id === saved.id)) state.orders.unshift(saved);
+    if (saved?.date && saved.date < new Date(Date.now() - MESI_DATI_CLIENTI * 30.5 * 86400000).toISOString().slice(0, 10)) localStorage.removeItem("radici-demo-order");
+    pulisciDatiVecchi();
     seedMissingOrderData();
     rebuildCustomersFromOrders();
     saveBusinessData();
@@ -1774,9 +1916,10 @@ function applicaSettimana(dati) {
   if (Array.isArray(dati.giorni)) {
     state.deliveryDays = [...new Set(dati.giorni.filter(giorno => /^\d{4}-\d{2}-\d{2}$/.test(giorno)))].sort();
   }
-  if (Number.isInteger(dati.giornoFisso) && dati.giornoFisso >= -1 && dati.giornoFisso <= 6) state.giornoFisso = dati.giornoFisso;
+  // senza il campo (settimane pubblicate prima della versione 51) vale il venerdi', non l'ultimo ricordato
+  state.giornoFisso = Number.isInteger(dati.giornoFisso) && dati.giornoFisso >= -1 && dati.giornoFisso <= 6 ? dati.giornoFisso : GIORNO_FISSO_INIZIALE;
   state.giornoFisso2 = Number.isInteger(dati.giornoFisso2) && dati.giornoFisso2 >= -1 && dati.giornoFisso2 <= 6 ? dati.giornoFisso2 : -1;
-  if (Array.isArray(dati.saltati)) state.saltati = dati.saltati.filter(giorno => /^\d{4}-\d{2}-\d{2}$/.test(giorno));
+  state.saltati = Array.isArray(dati.saltati) ? dati.saltati.filter(giorno => /^\d{4}-\d{2}-\d{2}$/.test(giorno)) : [];
   if (Array.isArray(dati.prodotti)) {
     dati.prodotti.forEach(voce => {
       const product = PRODUCTS.find(item => item.id === voce?.id);
@@ -2339,6 +2482,7 @@ function inviaConfermaCliente(orderId) {
     return;
   }
   order.confermaInviata = true;
+  order.aggiornato = Date.now();
   saveBusinessData();
   renderDashboard(state.orderFilter);
   window.open(url, "_blank", "noopener");
@@ -2353,6 +2497,7 @@ function markOrderDelivered(orderId) {
   order.deliveredAt = new Date().toISOString();
   const customer = upsertCustomerFromOrder(order, !alreadyDelivered);
   order.loyaltyCredited = true;
+  order.aggiornato = customer.aggiornato = Date.now();
   saveBusinessData();
   renderDashboard(state.orderFilter);
   const notificationUrl = buildCustomerNotificationUrl(order, customer);
@@ -2373,6 +2518,7 @@ function useCustomerReward(customerId) {
   customer.rewardsUsed = (customer.rewardsUsed || 0) + 1;
   customer.lastReward = scelta;
   customer.lastRewardDate = new Date().toISOString().slice(0, 10);
+  customer.aggiornato = Date.now();
   saveBusinessData();
   renderDashboard(state.orderFilter);
   showToast(scelta ? `Omaggio segnato: ${scelta}.` : "Omaggio segnato come consegnato.");
@@ -2862,7 +3008,7 @@ function dispositivoVisita() {
 // in quale parte del sito sta il pulsante: la prima che lo contiene, dalla piu' piccola alla piu' grande
 const ZONE_CLICK = [
   ["#sideMenu", "Menu"], [".site-header", "Testata"], [".site-footer", "Fondo pagina"],
-  ["#popupPrivacy", "Informativa privacy"], ["#popupConserve", "Proposta conserve"], ["#aiutoWhatsapp", "Problemi? Scrivimi"],
+  ["#popupPrivacy", "Informativa privacy"], ["#popupCondizioni", "Condizioni di vendita"], ["#popupConserve", "Proposta conserve"], ["#popupInvia", "Prima di WhatsApp"], ["#aiutoWhatsapp", "Problemi? Scrivimi"],
   ["#mobileBasketBar", "Barra del carrello"], ["#basketSummary", "Riepilogo cassetta"], ["#orderSuccess", "Ordine pronto"],
   ["#ordiniChiusi", "Avviso ordini chiusi"], ["[data-step='1']", "Componi · dimensione"], ["[data-step='2']", "Componi · verdure"],
   ["[data-step='3']", "Componi · consegna"], ["[data-step='4']", "Componi · riepilogo"], [".hero", "Apertura"],
@@ -2950,7 +3096,7 @@ function osservaSezioni() {
 
 function iniziaVisita() {
   if (!devoContare()) return;
-  traccia("visita", provenienzaVisita(), dispositivoVisita());
+  traccia("visita", provenienzaVisita(), `${dispositivoVisita()}${versioneLeggera() ? " (versione leggera)" : ""}`);
   traccia("pagina", state.view === "builder" ? "componi" : state.view);
   osservaSezioni();
 }
@@ -3028,6 +3174,8 @@ async function caricaStatistiche({ forza = false } = {}) {
     statisticheLetteAlle = Date.now();
     ultimeStatistiche = dati;
     renderStatistiche(dati);
+    sincronizzaCopia();
+    caricaPrenotazioni();
     stato.textContent = `Aggiornate alle ${dati.aggiornato}: mentre la dashboard resta aperta si aggiornano da sole ogni 2 minuti.`;
   } catch (_) {
     stato.textContent = "Non riesco a leggere le statistiche (manca la rete o il Foglio Google non risponde): riprova con AGGIORNA.";
@@ -3040,11 +3188,11 @@ async function caricaStatistiche({ forza = false } = {}) {
 
 const NOMI_PASSI = {
   visite: "Entrano nel sito", componi: "Aprono «Componi la cassetta»", verdure: "Vedono le verdure", sceglie: "Mettono almeno una verdura",
-  consegna: "Scelgono la consegna", riepilogo: "Arrivano al riepilogo", ordine: "Preparano l'ordine su WhatsApp"
+  consegna: "Scelgono la consegna", riepilogo: "Arrivano al riepilogo", ordine: "Aprono WhatsApp con l'ordine", inviato: "Dicono di aver premuto INVIA"
 };
 const NOMI_EVENTI = {
   visita: "Nuova visita", pagina: "Apre", passo: "Va al passo", click: "Tocca", verdura: "Aggiunge", conserva: "Aggiunge", olio: "Aggiunge",
-  cassetta: "Sceglie la cassetta", ordine: "Prepara l'ordine", contatto: "Ti contatta con", sezione: "Guarda"
+  cassetta: "Sceglie la cassetta", ordine: "Prepara l'ordine", inviato: "Dice di aver premuto INVIA", contatto: "Ti contatta con", sezione: "Guarda"
 };
 const NOMI_PAGINE = { home: "la home", componi: "Componi la cassetta" };
 const NOMI_PROVENIENZE = { Diretto: "Link diretto (anche WhatsApp)" };
@@ -3135,7 +3283,7 @@ function renderStatistiche(dati) {
       ${schedaStatistica("I PULSANTI PIÙ TOCCATI", elencoBarre(pulsanti, { sotto: voce => `${voce.dove} · ${voce.visite === 1 ? "1 visita" : `${numero(voce.visite)} visite`}` })
         + (altriPulsanti.length ? `<details class="stat-altri"><summary>VEDI ALTRI ${altriPulsanti.length}</summary>${elencoBarre(altriPulsanti, { sotto: voce => voce.dove, massimo: pulsanti[0].volte })}</details>` : ""), "larga")}
       ${schedaStatistica("VERDURE PIÙ AGGIUNTE", elencoBarre(dati.verdure.slice(0, 12)))}
-      ${schedaStatistica("CONSERVE E OLIO AGGIUNTI", elencoBarre(conserveEOlio))}
+      ${schedaStatistica("CONSERVE AGGIUNTE", elencoBarre(conserveEOlio))}
       ${schedaStatistica("CASSETTE SCELTE", elencoBarre(dati.cassette, { nome: voce => `Cassetta ${voce.cosa.toLowerCase()}` }))}
       ${schedaStatistica("DA DOVE ARRIVANO", elencoBarre(dati.provenienza, { nome: voce => NOMI_PROVENIENZE[voce.cosa] || voce.cosa }))}
       ${schedaStatistica("CON COSA NAVIGANO", elencoBarre(dati.dispositivi, { nome: voce => voce.cosa.charAt(0).toUpperCase() + voce.cosa.slice(1), massimo: Math.max(visite, 1), scrivi: voce => `${numero(voce.volte)} <small>${percentuale(voce.volte, visite)}</small>` }))}
@@ -3148,7 +3296,121 @@ function renderStatistiche(dati) {
   corpo.hidden = false;
 }
 
+// ---------- Dashboard: copia di sicurezza di ordini e clienti nel Foglio Google ----------
+// Ordini e clienti vivono nella memoria del browser: se il telefono si rompe o cambia, si perderebbero.
+// Ogni modifica (e ogni apertura della dashboard) li unisce con la copia nel Foglio, che risponde con
+// l'elenco completo: cosi' telefono e computer restano uguali e un telefono nuovo riparte da li'.
+let copiaInCorso = false;
+let copiaProgrammata = 0;
+let copiaFattaAlle = 0;
+
+function programmaCopia() {
+  if (!isDashboardUnlocked()) return;
+  clearTimeout(copiaProgrammata);
+  copiaProgrammata = setTimeout(() => sincronizzaCopia({ forza: true }), 4000);
+}
+
+function scriviStatoCopia(testo, errore = false) {
+  const stato = $("#copiaStato");
+  if (!stato) return;
+  stato.textContent = testo;
+  stato.classList.toggle("errore", errore);
+}
+
+async function sincronizzaCopia({ forza = false } = {}) {
+  if (!isDashboardUnlocked() || copiaInCorso) return;
+  if (!indirizzoStatistiche()) return scriviStatoCopia("Copia di sicurezza non attiva: manca il collegamento al Foglio Google.", true);
+  const parola = leggiDaMemoria(PAROLA_STATISTICHE_KEY);
+  if (!parola) return scriviStatoCopia("Per la copia di sicurezza degli ordini scrivi la parola segreta nel riquadro STATISTICHE DEI CLICK.", true);
+  if (!forza && Date.now() - copiaFattaAlle < 60000) return;
+  copiaInCorso = true;
+  scriviStatoCopia("Copio ordini e clienti nel Foglio Google…");
+  try {
+    const dati = await chiediAlFoglio({
+      azione: "copia", parola,
+      ordini: state.orders.map(order => ({ ...order, cliente: customerKeyFromOrder(order) })),
+      clienti: state.customers
+    }, 20000);
+    if (dati?.errore) throw new Error(dati.errore);
+    if (!Array.isArray(dati?.ordini)) throw new Error("risposta");
+    // tengo l'ordine in cui li vedo; quelli arrivati dall'altro dispositivo vanno in cima, i piu' recenti prima
+    const dalFoglio = new Map(dati.ordini.map(order => [order.id, order]));
+    const miei = state.orders.filter(order => dalFoglio.has(order.id)).map(order => {
+      const dalla = dalFoglio.get(order.id);
+      dalFoglio.delete(order.id);
+      return dalla;
+    });
+    const nuovi = [...dalFoglio.values()].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+    state.orders = [...nuovi, ...miei];
+    state.customers = dati.clienti && typeof dati.clienti === "object" ? dati.clienti : state.customers;
+    saveBusinessData({ copia: false });
+    copiaFattaAlle = Date.now();
+    renderDashboard(state.orderFilter);
+    scriviStatoCopia(`Copia di sicurezza nel Foglio Google aggiornata alle ${dati.salvato?.slice(-5) || "adesso"} ✓ · ${state.orders.length} ordini, ${Object.keys(state.customers).length} clienti${dati.cancellati ? ` · ${dati.cancellati} dati oltre i 24 mesi cancellati` : ""}`);
+  } catch (errore) {
+    scriviStatoCopia(String(errore?.message) === "parola"
+      ? "Copia non fatta: la parola segreta non è giusta (riscrivila nel riquadro STATISTICHE)."
+      : "Copia non riuscita (rete o Foglio Google): riprovo alla prossima modifica.", true);
+  } finally {
+    copiaInCorso = false;
+  }
+}
+
+// ---------- Dashboard: i posti presi nelle fasce dal sito ----------
+async function caricaPrenotazioni() {
+  const elenco = $("#postiElenco");
+  if (!elenco || !isDashboardUnlocked()) return;
+  const parola = leggiDaMemoria(PAROLA_STATISTICHE_KEY);
+  if (!indirizzoStatistiche() || !parola) {
+    elenco.innerHTML = `<p class="stat-vuoto">Per vedere i posti scrivi la parola segreta nel riquadro STATISTICHE DEI CLICK.</p>`;
+    return;
+  }
+  try {
+    const dati = await chiediAlFoglio({ azione: "prenotazioni", parola }, 15000);
+    if (dati?.errore) throw new Error(dati.errore);
+    const attive = (dati.prenotazioni || []).filter(posto => posto.stato !== "liberata" && !posto.scaduta)
+      .sort((a, b) => (a.giorno + a.fascia).localeCompare(b.giorno + b.fascia));
+    if (!attive.length) {
+      elenco.innerHTML = `<p class="stat-vuoto">Nessun posto preso nelle prossime consegne.</p>`;
+      return;
+    }
+    const conti = {};
+    attive.forEach(posto => { conti[posto.giorno + posto.fascia] = (conti[posto.giorno + posto.fascia] || 0) + 1; });
+    const arrivati = new Set(state.orders.map(order => order.id));
+    elenco.innerHTML = attive.map(posto => {
+      const arrivato = arrivati.has(posto.id);
+      const stato = arrivato ? ["arrivato", "ORDINE ARRIVATO"] : posto.stato === "confermata" ? ["manca", "CONFERMATO, MA NON TI È ARRIVATO"] : ["attesa", "AL RIEPILOGO (POSTO TENUTO 20 MINUTI)"];
+      return `
+        <div class="posto-riga">
+          <span class="posto-quando"><strong>${formatDate(posto.giorno)}</strong><small>${escapeHtml(posto.fascia)} · ${escapeHtml(posto.zona || "")} · ${conti[posto.giorno + posto.fascia]}/${dati.massimo || MAX_ORDINI_FASCIA} posti</small></span>
+          <span class="posto-codice">#${escapeHtml(posto.id)}</span>
+          <span class="posto-stato ${stato[0]}">${stato[1]}</span>
+          ${arrivato ? "" : `<button type="button" class="pubblica-cambia" data-libera-posto="${escapeHtml(posto.id)}">LIBERA</button>`}
+        </div>`;
+    }).join("");
+  } catch (_) {
+    elenco.innerHTML = `<p class="stat-vuoto">Non riesco a leggere i posti (rete o Foglio Google): riprova con AGGIORNA.</p>`;
+  }
+}
+
+async function liberaPrenotazione(id) {
+  if (!window.confirm(`Libero il posto dell'ordine #${id}? Serve se l'ordine non ti è mai arrivato su WhatsApp.`)) return;
+  try {
+    const dati = await chiediAlFoglio({ azione: "libera", parola: leggiDaMemoria(PAROLA_STATISTICHE_KEY), id }, 15000);
+    showToast(dati?.ok ? "Posto liberato." : "Non ho trovato quel posto.");
+  } catch (_) {
+    showToast("Non riesco a liberare il posto: riprova tra poco.");
+  }
+  caricaPrenotazioni();
+}
+
 function setupStatisticheDashboard() {
+  $("#copiaAdesso").addEventListener("click", () => sincronizzaCopia({ forza: true }));
+  $("#aggiornaPosti").addEventListener("click", caricaPrenotazioni);
+  $("#postiElenco").addEventListener("click", event => {
+    const bottone = event.target.closest("[data-libera-posto]");
+    if (bottone) liberaPrenotazione(bottone.dataset.liberaPosto);
+  });
   $$("[data-periodo]").forEach(bottone => bottone.addEventListener("click", () => {
     scriviInMemoria(PERIODO_STATISTICHE_KEY, bottone.dataset.periodo);
     aggiornaPulsantiStatistiche();
@@ -3255,11 +3517,25 @@ function setupEvents() {
       goToStep(quotaCount() ? 2 : 1);
     }
   });
-  $("#toReview").addEventListener("click", () => {
-    if (validateDelivery()) {
-      renderCheckout();
-      goToStep(4);
+  $("#toReview").addEventListener("click", async () => {
+    const bottone = $("#toReview");
+    if (bottone.disabled || !validateDelivery()) return;
+    const testo = bottone.innerHTML;
+    bottone.disabled = true;
+    bottone.innerHTML = "CONTROLLO IL POSTO…";
+    const esito = await tieniPosto();
+    bottone.disabled = false;
+    bottone.innerHTML = testo;
+    if (esito?.pieno) {
+      const fascia = state.orderData.time;
+      disegnaFasce();
+      updateSummary();
+      showToast(`La fascia ${fascia} si è appena riempita: scegline un'altra.`, 5000);
+      $("#timeGrid").scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
     }
+    renderCheckout();
+    goToStep(4);
   });
   $("#confirmOrder").addEventListener("click", confirmOrder);
   $("#optimizeRoutes").addEventListener("click", optimizeRoutes);
@@ -3303,6 +3579,27 @@ function setupEvents() {
     renderPopupConserve();
     renderCheckout();
   });
+  $("#popupInviaApri").addEventListener("click", () => {
+    if (popupAppenaAperto()) return;   // il tocco che l'ha aperto non deve anche chiuderlo
+    inviaOrdine();
+  });
+  $("#popupInviaNo").addEventListener("click", () => {
+    if (popupAppenaAperto()) return;
+    chiudiPopupInvia();
+  });
+  $("#popupInvia").addEventListener("click", event => {
+    if (event.target === event.currentTarget && !popupAppenaAperto()) chiudiPopupInvia();
+  });
+  $("#successSi").addEventListener("click", ordineInviatoSi);
+  // tornando da WhatsApp senza aver risposto: la domanda si fa notare
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden || !state.ordineInviato || state.ordineInviato.risposto || !$("#orderSuccess").classList.contains("active")) return;
+    const domanda = $("#successDomanda");
+    domanda.classList.remove("richiamo");
+    void domanda.offsetWidth;
+    domanda.classList.add("richiamo");
+    domanda.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
   $("#popupConserveConferma").addEventListener("click", () => {
     if (popupAppenaAperto()) return;
     chiudiPopupConserve();
@@ -3321,10 +3618,16 @@ function setupEvents() {
       apriPrivacy();
     } else if (event.target.closest("[data-chiudi-privacy]") || event.target.id === "popupPrivacy") {
       chiudiPrivacy();
+    } else if (event.target.closest("[data-apri-condizioni]")) {
+      event.preventDefault();
+      apriCondizioni();
+    } else if (event.target.closest("[data-chiudi-condizioni]") || event.target.id === "popupCondizioni") {
+      chiudiCondizioni();
     }
   });
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && !$("#popupPrivacy").hidden) chiudiPrivacy();
+    if (event.key === "Escape" && !$("#popupCondizioni").hidden) chiudiCondizioni();
   });
   $("#popupConserve").addEventListener("click", event => {
     if (event.target === event.currentTarget && !popupAppenaAperto()) chiudiPopupConserve();   // tocco fuori: torno al riepilogo
@@ -3411,7 +3714,7 @@ function setupEvents() {
 
 // 3D leggero: le schede si inclinano verso il mouse; sul telefono verso il dito che preme.
 function setupInclinazione3D() {
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || versioneLeggera()) return;
   const SCHEDE = ".weekly-products article, .product-card, .box-option";
   const conMouse = matchMedia("(hover: hover) and (pointer: fine)").matches;
   const inclina = (scheda, evento, forza) => {
@@ -3446,7 +3749,7 @@ function setupInclinazione3D() {
 // 3D leggero: la galleria "Dal campo" diventa un anello di foto che si gira col dito o col mouse.
 function setupGalleria3D() {
   const binario = $(".gallery-rail");
-  if (!binario || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!binario || matchMedia("(prefers-reduced-motion: reduce)").matches || versioneLeggera()) return;
   const foto = $$("figure", binario);
   const n = foto.length;
   if (n < 3) return;
@@ -3559,7 +3862,7 @@ function setupFurgone() {
   const hero = $(".hero");
   const furgone = $("#furgone");
   if (!hero || !furgone) return;
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches || state.view !== "home") { furgone.remove(); return; }
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches || state.view !== "home" || versioneLeggera()) { furgone.remove(); return; }
 
   const misura = () => {
     const larghezza = hero.clientWidth;
@@ -3615,12 +3918,53 @@ function setupFurgone() {
 
 function setupCampo3D() {
   const hero = $(".hero");
-  if (!hero || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!hero || matchMedia("(prefers-reduced-motion: reduce)").matches || versioneLeggera()) return;
   if (navigator.connection?.saveData) return;
   if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) return;
   const parti = () => import(`./campo3d.js?v=${VERSIONE_SITO}`).then(m => m.avviaCampo3D(hero)).catch(() => {});
-  if ("requestIdleCallback" in window) requestIdleCallback(parti, { timeout: 1500 });
-  else setTimeout(parti, 700);
+  misuraFluidita().then(fluido => {
+    if (!fluido || versioneLeggera()) return;
+    if ("requestIdleCallback" in window) requestIdleCallback(parti, { timeout: 1500 });
+    else setTimeout(parti, 700);
+  });
+}
+
+// per due secondi conto i fotogrammi: sotto i 20 al secondo, o con piu' blocchi lunghi, il telefono fa fatica
+function misuraFluidita() {
+  if (sceltaLeggero() || versioneLeggera()) return Promise.resolve(!versioneLeggera());
+  return new Promise(fatto => {
+    let fotogrammi = 0;
+    let lunghi = 0;
+    let prima = 0;
+    const inizio = performance.now();
+    const conta = ora => {
+      if (prima && ora - prima > 120) lunghi++;
+      prima = ora;
+      fotogrammi++;
+      if (ora - inizio < 2000) return requestAnimationFrame(conta);
+      const alSecondo = fotogrammi / ((ora - inizio) / 1000);
+      const lento = alSecondo < 20 || lunghi >= 4;
+      if (lento && !versioneLeggera()) passaAlLeggero();
+      fatto(!lento);
+    };
+    // aspetto che la pagina sia caricata, se no misuro il caricamento e non il telefono
+    const via = () => setTimeout(() => requestAnimationFrame(conta), 400);
+    if (document.readyState === "complete") via();
+    else window.addEventListener("load", via, { once: true });
+  });
+}
+
+// passaggio al leggero senza ricaricare: tolgo quello che si puo' togliere al volo
+function passaAlLeggero() {
+  document.documentElement.classList.add("leggero");
+  try { sessionStorage.setItem(LEGGERO_KEY, "auto"); } catch (_) {}
+  $("#furgone")?.remove();
+  aggiornaPulsanteVersione();
+}
+
+function aggiornaPulsanteVersione() {
+  const bottone = $("#cambiaVersione");
+  if (bottone) bottone.textContent = versioneLeggera() ? "PASSA ALLA VERSIONE COMPLETA" : "VERSIONE LEGGERA (TELEFONI LENTI)";
 }
 
 function setupReveal() {
@@ -3659,7 +4003,12 @@ function openInitialRoute() {
 }
 
 function init() {
-  $("#versioneSito").textContent = `versione ${VERSIONE_SITO}`;
+  $("#versioneSito").textContent = `versione ${VERSIONE_SITO}${versioneLeggera() ? " · leggera" : ""}`;
+  aggiornaPulsanteVersione();
+  $("#cambiaVersione").addEventListener("click", () => {
+    try { localStorage.setItem(LEGGERO_KEY, versioneLeggera() ? "0" : "1"); } catch (_) {}
+    location.reload();
+  });
   window.addEventListener("load", aggiornaPostoAiuto);
   setTimeout(controllaVersione, 4000);
   $("#ordiniChiusiWhatsapp").href = `https://wa.me/${WHATSAPP_NUMBER}`;
