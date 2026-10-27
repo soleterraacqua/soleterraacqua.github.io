@@ -3,6 +3,9 @@ const SHEET_2 = "assets/catalogo-vettoriali-2.webp";
 const SHEET_EXTRA = "assets/catalogo-vettoriali-extra.webp";
 // foto nuove fatte con Gemini nello stesso stile (ottobre 2026): ravanelli, radicchi, zucca butternut
 const SHEET_NUOVE = "assets/catalogo-vettoriali-nuove.webp";
+// verdure d'autunno (27 ottobre 2026), stesso stile: castagne, melone invernale, cime di rapa, cavolo a punta.
+// Nascono spente: si accendono dalla dashboard la settimana che ci sono.
+const SHEET_AUTUNNO = "assets/catalogo-vettoriali-autunno.webp";
 const WHATSAPP_NUMBER = "393202732892";
 const ADMIN_PIN = "2892";
 const ADMIN_SESSION_KEY = "sole-terra-acqua-admin-unlocked";
@@ -16,7 +19,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 53;
+const VERSIONE_SITO = 54;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -210,7 +213,11 @@ const PRODUCTS = [
   { id: "scarola-riccia", name: "Scarola riccia", weight: "1 cespo", emoji: "🥬", sheet: SHEET_2, cols: 5, rows: 3, x: 0, y: 2, enabled: true },
   { id: "scarola-liscia", name: "Scarola liscia", weight: "1 cespo", emoji: "🥬", sheet: SHEET_2, cols: 5, rows: 3, x: 1, y: 2, enabled: true },
   { id: "cavolo-nero", name: "Cavolo nero", weight: "1 mazzo", emoji: "🥬", sheet: SHEET_2, cols: 5, rows: 3, x: 2, y: 2, enabled: true },
-  { id: "friggitelli", name: "Peperoni friggitelli", weight: "500 g", emoji: "🫑", sheet: SHEET_EXTRA, cols: 2, rows: 1, x: 1, y: 0, enabled: true }
+  { id: "friggitelli", name: "Peperoni friggitelli", weight: "500 g", emoji: "🫑", sheet: SHEET_EXTRA, cols: 2, rows: 1, x: 1, y: 0, enabled: true },
+  { id: "castagne", name: "Castagne", weight: "500 g", emoji: "🌰", sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 0, y: 0, enabled: false },
+  { id: "melone-invernale", name: "Melone invernale", weight: "1 pz", emoji: "🍈", sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 1, y: 0, enabled: false },
+  { id: "cime-rapa", name: "Cime di rapa", weight: "500 g", emoji: "🥬", sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 2, y: 0, enabled: false },
+  { id: "cavolo-punta", name: "Cavolo cappuccio a punta", weight: "1 pz", emoji: "🥬", sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 3, y: 0, enabled: false }
 ];
 
 const BOXES = {
