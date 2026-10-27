@@ -19,7 +19,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 57;
+const VERSIONE_SITO = 58;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -905,12 +905,16 @@ function scegliCassetta(indice) {
 // "nuova": si sceglie la dimensione e poi le verdure, come per la prima
 function aggiungiSecondaCassetta(come) {
   const [prima] = cassetteOrdine();
-  state.cassette = [prima, { box: prima.box, selectionOrder: come === "uguale" ? [...prima.selectionOrder] : [] }];
+  const copiate = come === "uguale" ? prima.selectionOrder.filter(id => !unaSola(id)) : [];
+  const lasciate = come === "uguale" ? prima.selectionOrder.length - copiate.length : 0;
+  state.cassette = [prima, { box: prima.box, selectionOrder: copiate }];
   state.attiva = 0;
   scegliCassetta(1);
   if (come === "uguale") {
     goToStep(2);
-    showToast("2ª cassetta aggiunta, uguale alla prima: se vuoi cambiala qui.", 4000);
+    showToast(lasciate
+      ? "2ª cassetta aggiunta, uguale alla prima tranne le verdure che si prendono una sola volta: se vuoi cambiala qui."
+      : "2ª cassetta aggiunta, uguale alla prima: se vuoi cambiala qui.", 4500);
   } else {
     goToStep(1);
     showToast("1ª cassetta pronta ✓ Ora scegli la dimensione della 2ª.", 4000);
@@ -959,11 +963,11 @@ function renderProducts() {
         <div class="product-card-body">
           <small>1 PRODOTTO · ${product.weight.toUpperCase()}</small>
           <h3>${product.name.toUpperCase()}</h3>
-          <p>Disponibile questa settimana</p>
+          <p class="${product.unoSolo ? "una-sola" : ""}">${product.unoSolo ? "Una sola per ordine" : "Disponibile questa settimana"}</p>
           <div class="counter">
             <button data-product-minus="${product.id}" ${quantity === 0 ? "disabled" : ""} aria-label="Togli ${product.name}">−</button>
             <b>${quantity}</b>
-            <button data-product-plus="${product.id}" aria-label="Aggiungi ${product.name}">+</button>
+            <button data-product-plus="${product.id}" ${product.unoSolo && quanteNelCarrello(product.id) >= 1 ? "disabled" : ""} aria-label="Aggiungi ${product.name}">+</button>
           </div>
         </div>
       </article>
@@ -974,7 +978,32 @@ function renderProducts() {
   $$("[data-product-minus]").forEach(button => button.addEventListener("click", () => changeProduct(button.dataset.productMinus, -1)));
 }
 
+// verdure "una sola per ordine" (scelte dalla dashboard, per quelle che ho in poche quantita'):
+// in tutto il carrello, anche con due cassette, ce ne puo' essere una sola
+const unaSola = id => PRODUCTS.find(product => product.id === id)?.unoSolo === true;
+const quanteNelCarrello = id => cassetteOrdine().reduce((somma, cassetta) => somma + cassetta.selectionOrder.filter(voce => voce === id).length, 0);
+
+// tiene solo la prima di ogni verdura "una sola" (carrelli salvati prima della regola, seconda cassetta copiata)
+function togliDoppieUnaSola(cassette) {
+  const viste = new Set();
+  let tolte = 0;
+  cassette.forEach(cassetta => {
+    cassetta.selectionOrder = cassetta.selectionOrder.filter(id => {
+      if (!unaSola(id)) return true;
+      if (viste.has(id)) { tolte++; return false; }
+      viste.add(id);
+      return true;
+    });
+  });
+  return tolte;
+}
+
 function changeProduct(id, amount) {
+  if (amount > 0 && unaSola(id) && quanteNelCarrello(id) >= 1) {
+    const nome = PRODUCTS.find(product => product.id === id)?.name || "Questa verdura";
+    showToast(`${nome}: se ne può prendere una sola per ordine.`, 3500);
+    return;
+  }
   const nextTotal = quotaCount() + amount;
   if (nextTotal < 0) return;
   state.quantities[id] = Math.max(0, state.quantities[id] + amount);
@@ -1188,6 +1217,7 @@ function ripristinaCarrello() {
     ? salvate.map(cassetta => ({ box: cassetta.box, selectionOrder: pulisci(cassetta.prodotti) }))
     : [{ box: BOXES[salvato.box] ? salvato.box : state.box, selectionOrder: pulisci(salvato.prodotti) }];
   state.attiva = Math.min(Math.max(0, Number(salvato.attiva) || 0), state.cassette.length - 1);
+  togliDoppieUnaSola(state.cassette);
   caricaCassetta(state.cassette[state.attiva]);
   const vendibili = new Set(conserveInVendita().map(conserva => conserva.id));
   state.conserve = {};
@@ -1927,6 +1957,7 @@ function applicaSettimana(dati) {
       if (typeof voce.nome === "string" && voce.nome.trim()) product.name = voce.nome.trim();
       if (typeof voce.peso === "string" && voce.peso.trim()) product.weight = voce.peso.trim();
       if (typeof voce.disponibile === "boolean") product.enabled = voce.disponibile;
+      product.unoSolo = voce.unoSolo === true;
       // solo foto caricate dalla dashboard nella cartella del sito
       product.customImage = /^assets\/prodotti\/[a-z0-9-]+\.(jpg|webp|png)$/.test(voce.foto || "") ? voce.foto : "";
     });
@@ -1952,6 +1983,7 @@ function applicaSettimana(dati) {
   // dalle cassette tolgo le verdure che questa settimana non ci sono
   const attive = new Set(PRODUCTS.filter(product => product.enabled !== false).map(product => product.id));
   cassetteOrdine().forEach(cassetta => { cassetta.selectionOrder = cassetta.selectionOrder.filter(id => attive.has(id)); });
+  togliDoppieUnaSola(cassetteOrdine());
   caricaCassetta(state.cassette[state.attiva]);
   return true;
 }
@@ -2031,7 +2063,7 @@ function renderRiepilogoSettimana() {
     </div>
     <div class="riepilogo-blocco">
       <small>VERDURE DISPONIBILI · ${verdure.length}</small>
-      <p>${verdure.map(product => `<span>${escapeHtml(product.name)} <em>${escapeHtml(product.weight)}</em></span>`).join("") || "<span>Nessuna</span>"}</p>
+      <p>${verdure.map(product => `<span>${escapeHtml(product.name)} <em>${escapeHtml(product.weight)}${product.unoSolo ? " · una sola" : ""}</em></span>`).join("") || "<span>Nessuna</span>"}</p>
     </div>
     <div class="riepilogo-blocco">
       <small>CONSERVE IN VENDITA · ${conserve.length}</small>
@@ -2122,6 +2154,10 @@ function renderWeekEditor({ forza = false } = {}) {
       </div>
       <input type="text" value="${escapeHtml(product.name)}" data-admin-name="${product.id}" aria-label="Nome ${escapeHtml(product.name)}">
       <input type="text" value="${escapeHtml(product.weight)}" data-admin-weight="${product.id}" aria-label="Peso ${escapeHtml(product.name)}">
+      <label class="una-sola-scelta" title="Il cliente ne può mettere una sola nel carrello">
+        <input type="checkbox" data-admin-unosolo="${product.id}" ${product.unoSolo ? "checked" : ""}>
+        <span>UNA SOLA</span>
+      </label>
       <label class="availability-toggle" title="Disponibile questa settimana">
         <input type="checkbox" data-admin-enabled="${product.id}" ${product.enabled !== false ? "checked" : ""}>
         <span></span>
@@ -2270,7 +2306,8 @@ async function saveWeekSettings() {
     id: product.id,
     nome: $(`[data-admin-name="${product.id}"]`)?.value.trim() || product.name,
     peso: $(`[data-admin-weight="${product.id}"]`)?.value.trim() || product.weight,
-    disponibile: Boolean($(`[data-admin-enabled="${product.id}"]`)?.checked)
+    disponibile: Boolean($(`[data-admin-enabled="${product.id}"]`)?.checked),
+    unoSolo: Boolean($(`[data-admin-unosolo="${product.id}"]`)?.checked)
   }));
   if (!verdure.some(voce => voce.disponibile)) {
     showToast("Accendi almeno una verdura disponibile.");

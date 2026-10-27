@@ -1297,7 +1297,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 .prezzo-campo input { min-height: 42px; padding: 9px 30px 9px 11px; }
 .prezzo-campo b { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: .8rem; }
 .admin-products-table { overflow-x: auto; }
-.admin-product-row { min-width: 610px; display: grid; grid-template-columns: 82px 1.2fr .8fr 90px; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.admin-product-row { min-width: 690px; display: grid; grid-template-columns: 82px 1.2fr .8fr 82px 90px; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
 .admin-product-header { color: var(--muted); font-size: .68rem; letter-spacing: .1em; font-weight: 900; padding-top: 0; border-top: 0; }
 .admin-product-thumb-wrap { position: relative; width: 70px; height: 62px; }
 .admin-product-thumb { width: 70px; height: 62px; border-radius: 12px; background-repeat: no-repeat; overflow: hidden; background-color: var(--cream); }
@@ -1417,7 +1417,8 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .popup-conserva button { padding: 8px 10px; font-size: .64rem; }
   .admin-products-table { overflow: visible; }
   .admin-product-header { display: none; }
-  .admin-product-row { min-width: 0; grid-template-columns: 58px minmax(0, 1fr) 52px; grid-template-areas: "foto nome dispo" "foto peso dispo"; gap: 6px 10px; }
+  .admin-product-row { min-width: 0; grid-template-columns: 58px minmax(0, 1fr) 76px; grid-template-areas: "foto nome dispo" "foto peso uno"; gap: 6px 10px; }
+  .admin-product-row > .una-sola-scelta { grid-area: uno; }
   .admin-product-row > .admin-product-thumb-wrap { grid-area: foto; width: 58px; height: 54px; }
   .admin-product-row > .admin-product-thumb-wrap .admin-product-thumb { width: 58px; height: 54px; }
   .admin-product-row > [data-admin-name] { grid-area: nome; }
@@ -1700,3 +1701,9 @@ html.leggero .furgone, html.leggero .cassetta-3d { display: none !important; }
 html.leggero .product-card, html.leggero .weekly-products article, html.leggero .box-option { transform: none !important; }
 html.leggero .invia-tasto { box-shadow: 0 0 0 5px rgba(37,211,102,.35); }
 .versione-cambia { grid-column: 1 / -1; justify-self: start; margin-top: 4px; border: 1px solid rgba(255,255,255,.3); background: transparent; color: inherit; padding: 8px 12px; border-radius: 999px; font: inherit; font-size: .64rem; font-weight: 900; letter-spacing: .1em; cursor: pointer; opacity: .8; }
+
+/* verdure "una sola per ordine": casella in dashboard e scritta sulla scheda */
+.una-sola-scelta { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: .62rem; font-weight: 900; letter-spacing: .06em; color: var(--muted); }
+.una-sola-scelta input { width: 17px; height: 17px; accent-color: var(--terracotta); }
+.una-sola-scelta:has(input:checked) { color: var(--terracotta); }
+.product-card p.una-sola { color: var(--terracotta); font-weight: 700; }
