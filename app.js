@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 69;
+const VERSIONE_SITO = 70;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -374,7 +374,8 @@ function aggiornaContenutoCassetta() {
     const prodotto = PRODUCTS.find(product => product.id === id);
     return prodotto ? `<span>${escapeHtml(prodotto.name)}${n > 1 ? ` <b>×${n}</b>` : ""}</span>` : "";
   }).filter(Boolean);
-  const html = voci.length ? voci.join("") : `<span class="contenuto-vuoto">Ancora vuota: tocca + sui prodotti</span>`;
+  // separati da uno spazio: e' li' che la riga puo' andare a capo (attaccati, il telefono tagliava l'elenco)
+  const html = voci.length ? voci.join(" ") : `<span class="contenuto-vuoto">Ancora vuota: tocca + sui prodotti</span>`;
   $$("[data-contenuto-cassetta]").forEach(el => { el.innerHTML = html; });
 }
 
@@ -4279,6 +4280,8 @@ function setupFurgone() {
       // telefono: nello spazio libero tra il riquadro KM 0 (in alto) e i testi (in basso)
       const sopra = riquadro.offsetTop + riquadro.offsetHeight + 14;
       const sotto = testi.offsetTop - 10;
+      // schermi bassi (iPhone SE, Android piccoli): se tra KM 0 e i titoli non c'e' posto, il furgoncino non passa
+      if (sotto - sopra < 70) return false;
       w = Math.max(130, Math.min(210, larghezza * 0.52, (sotto - sopra) * 330 / 175));
       const h = w * 175 / 330;
       top = sopra + Math.max(0, (sotto - sopra - h) / 2);
@@ -4300,7 +4303,7 @@ function setupFurgone() {
     if (partito) return;
     partito = true;
     if (state.view !== "home" || hero.getBoundingClientRect().bottom < 120) { furgone.remove(); return; }
-    misura();
+    if (misura() === false) { furgone.remove(); return; }
     furgone.classList.add("in-viaggio");
     furgone.addEventListener("animationend", event => { if (event.target === furgone) furgone.remove(); });
   };

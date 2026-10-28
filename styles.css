@@ -871,12 +871,13 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .massimo-scelta:not(.infinito) small { color: var(--terracotta); font-weight: 700; }
 /* cosa c'e' nella cassetta, scritto (v66): nomi separati da un puntino, "x2" se ripetuti */
 .contenuto-cassetta { margin: 8px 0 0; color: var(--green-deep); font-size: .8rem; line-height: 1.45; }
-.contenuto-cassetta span { white-space: nowrap; }
-.contenuto-cassetta span + span::before { content: "·"; margin: 0 7px; color: var(--terracotta); font-weight: 900; }
+/* v70: ogni prodotto resta intero sulla sua riga (si spezza solo se da solo e' piu' largo dello spazio);
+   il puntino sta in fondo alla riga, non all'inizio della successiva */
+.contenuto-cassetta span { display: inline-block; max-width: 100%; vertical-align: top; }
+.contenuto-cassetta span:not(:last-child)::after { content: "·"; margin: 0 2px 0 6px; color: var(--terracotta); font-weight: 900; }
 .contenuto-cassetta b { color: var(--terracotta); font-weight: 900; }
 .contenuto-cassetta .contenuto-vuoto { color: var(--muted); white-space: normal; }
 .contenuto-riepilogo { margin: 0 0 12px; padding: 10px 12px; border-radius: var(--small-radius); background: rgba(55,91,70,.07); white-space: normal; }
-.contenuto-riepilogo span { white-space: normal; }
 .basket-lines { border-top: 1px solid rgba(31,45,36,.15); padding-top: 10px; }
 .basket-lines div, .basket-total { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; }
 .basket-lines span { font-size: .72rem; letter-spacing: .1em; color: var(--muted); }
@@ -1811,4 +1812,32 @@ html.leggero .invia-tasto { box-shadow: 0 0 0 5px rgba(37,211,102,.35); }
 @media (max-width: 340px) {
   .hero-button { font-size: .76rem; letter-spacing: .04em; padding-inline: 16px 18px; gap: 12px; }
   .hero-button-righe small { font-size: .64rem; letter-spacing: 0; }
+}
+
+/* v70: telefoni con lo schermo basso (iPhone SE, iPhone 12-16 con le barre di Safari, Galaxy S, Android piccoli).
+   Prima l'apertura aveva un'altezza minima di 650 px e finiva sotto il bordo: "paghi alla consegna" e la casella delle
+   conserve si vedevano solo scorrendo. Ora l'apertura e' alta quanto lo schermo e titolo e spazi stringono un po' */
+@media (max-width: 700px) and (max-height: 780px) {
+  .hero { min-height: 0; }
+  .hero-content { bottom: 30px; }
+  .hero-content .eyebrow { margin-bottom: 10px; }
+  .hero-content h1 { font-size: clamp(2.5rem, 10.5vw, 3.5rem); margin-bottom: 14px; }
+  .hero-content > p:not(.eyebrow) { font-size: .92rem; line-height: 1.5; margin: 0; }
+  .hero-button { margin-top: 16px; }
+  .hero-extra { margin-top: 32px; }
+}
+/* schermi molto bassi (iPhone SE 1a serie, Android piccoli): via la frase sotto il titolo e la scheda KM 0, che li'
+   coprirebbe il titolo; il riquadro della cassetta che resta in alto si fa piu' piccolo */
+@media (max-width: 700px) and (max-height: 620px) {
+  .hero-proof { display: none; }
+  .hero-content > p:not(.eyebrow) { display: none; }
+  .hero-content h1 { font-size: clamp(2.3rem, 10vw, 3rem); }
+  .live-crate-card.fluttuante .crate-visual { zoom: .36; }
+}
+
+/* schermi strettissimi (Galaxy Z Fold chiuso, 280 px): la freccia del pulsante giallo non ci sta, resta la scritta */
+@media (max-width: 300px) {
+  .hero-button { font-size: .72rem; letter-spacing: .03em; padding-inline: 14px; }
+  .hero-button > span:last-child { display: none; }
+  .hero-button-righe small { font-size: .6rem; }
 }
