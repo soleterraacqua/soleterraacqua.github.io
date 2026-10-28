@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 71;
+const VERSIONE_SITO = 72;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -1990,6 +1990,8 @@ function buildWhatsAppUrl(orderInput) {
     ...(notes ? [`📝 ${notes}`] : []),
     "",
     `💶 *Totale ${money(order?.total || total())}* (${area === "Viterbo" ? "consegna gratuita" : `consegna ${money(2.5)} inclusa`})`,
+    // v72: la proposta dell'olio anche nell'ordine del cliente, in grassetto, al prezzo della dashboard
+    ...(olioDaProporre() && !olio ? ["", `🫒 *Vuoi anche l'olio nuovo? Latta da ${OLIO.litri} litri a ${money(prezzoLatta()).replace(",00", "")} (${money(OLIO.prezzoLitro).replace(",00", "")} al litro): scrivimi SÌ OLIO e te lo porto con la cassetta.*`] : []),
     importUrl ? `\nRegistra l'ordine: ${importUrl}` : ""
   ].filter((riga, indice, righe) => riga !== "" || (righe[indice - 1] && righe[indice - 1] !== "")).join("\n").trim();
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
