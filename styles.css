@@ -298,6 +298,7 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
    per andare avanti si dovesse per forza prendere una conserva */
 .popup-conserve-azioni .popup-conserve-no { width: 100%; justify-content: center; gap: 12px; min-height: 54px; padding: 14px 16px; border: 2px solid var(--green-deep); background: #fff; color: var(--green-deep); letter-spacing: .1em; }
 .popup-conserve-azioni .popup-conserve-no:hover { background: var(--sage-light); }
+.popup-conserve-azioni .popup-conserve-no[hidden] { display: none; }
 @keyframes popupSfondo { from { opacity: 0; } }
 @keyframes popupEntra { from { opacity: 0; transform: translateY(24px) scale(.94); } }
 @keyframes popupEsclamativo { 0%, 100% { transform: scale(1) rotate(0deg); } 12% { transform: scale(1.12) rotate(-8deg); } 24% { transform: scale(1.12) rotate(8deg); } 36% { transform: scale(1) rotate(0deg); } }
@@ -844,6 +845,14 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .live-crate-heading small { color: var(--terracotta); font-size: .68rem; letter-spacing: .14em; font-weight: 900; margin-bottom: 5px; }
 .live-crate-heading strong { font-size: .88rem; letter-spacing: .08em; }
 .live-crate-heading > span { font-size: .68rem; line-height: 1.45; letter-spacing: .1em; color: var(--muted); text-align: right; max-width: 120px; }
+/* cosa c'e' nella cassetta, scritto (v66): nomi separati da un puntino, "x2" se ripetuti */
+.contenuto-cassetta { margin: 8px 0 0; color: var(--green-deep); font-size: .8rem; line-height: 1.45; }
+.contenuto-cassetta span { white-space: nowrap; }
+.contenuto-cassetta span + span::before { content: "·"; margin: 0 7px; color: var(--terracotta); font-weight: 900; }
+.contenuto-cassetta b { color: var(--terracotta); font-weight: 900; }
+.contenuto-cassetta .contenuto-vuoto { color: var(--muted); white-space: normal; }
+.contenuto-riepilogo { margin: 0 0 12px; padding: 10px 12px; border-radius: var(--small-radius); background: rgba(55,91,70,.07); white-space: normal; }
+.contenuto-riepilogo span { white-space: normal; }
 .basket-lines { border-top: 1px solid rgba(31,45,36,.15); padding-top: 10px; }
 .basket-lines div, .basket-total { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; }
 .basket-lines span { font-size: .72rem; letter-spacing: .1em; color: var(--muted); }
@@ -1375,7 +1384,8 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
 .reveal.visible { opacity: 1; transform: none; }
 
 @media (max-width: 980px) {
-  body.con-barra .aiuto-whatsapp { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  body.con-barra .aiuto-whatsapp { bottom: calc(138px + env(safe-area-inset-bottom, 0px)); }
+  body.con-barra .toast { bottom: calc(184px + env(safe-area-inset-bottom, 0px)); }   /* sopra "Problemi? Scrivimi" */
   .conserve { padding-block: 80px; }
   .conserve-scelta { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding: 2px 4px 8px; margin-inline: -4px; }
   .conserve-scelta button { flex: 0 0 132px; scroll-snap-align: start; }
@@ -1426,6 +1436,7 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .live-crate-card.fluttuante .crate-visual { order: -1; width: var(--larghezza-cassetta, 360px); margin: 0; zoom: .46; }
   .live-crate-card.fluttuante .live-crate-heading { display: block; }
   .live-crate-card.fluttuante .live-crate-heading > span { display: none; }
+  .live-crate-card.fluttuante .contenuto-cassetta { margin-top: 5px; font-size: .74rem; line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
   .mobile-basket-bar { position: fixed; z-index: 25; left: 15px; right: 15px; bottom: 14px; background: var(--green-deep); color: white; display: flex; justify-content: space-between; padding: 13px 18px; box-shadow: 0 10px 35px rgba(0,0,0,.22); }
   .mobile-basket-bar small, .mobile-basket-bar strong { display: block; }
   .mobile-basket-bar small { color: #b8cabd; font-size: .68rem; letter-spacing: .1em; }
@@ -1434,6 +1445,11 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .mobile-basket-bar > div:nth-child(2) { margin-left: auto; text-align: right; min-width: 0; }
   .svuota-barra { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: none; margin: -4px -6px -4px 0; padding: 4px 6px 4px 12px; border: 0; border-left: 1px solid rgba(255,255,255,.22); background: none; color: white; cursor: pointer; }
   .mobile-basket-bar .svuota-barra small { font-size: .58rem; letter-spacing: .1em; }
+  .mobile-basket-bar { flex-wrap: wrap; row-gap: 10px; padding: 11px 14px 12px 18px; }
+  .barra-avanti { flex: 1 0 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; margin-left: -4px; padding: 0 20px; border: 0; border-radius: 999px; background: linear-gradient(180deg, #f9e6a8 0%, #e9c35c 100%); color: var(--green-deep); font: inherit; font-size: .8rem; font-weight: 900; letter-spacing: .1em; text-align: left; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.18); transition: opacity .2s ease, transform .2s ease; }
+  .barra-avanti:active { transform: scale(.98); }
+  .barra-avanti.in-attesa { opacity: .5; box-shadow: none; }
+  .barra-avanti[hidden] { display: none; }
   .dashboard-grid { grid-template-columns: 1fr; }
   .dashboard-stats { grid-template-columns: repeat(2, 1fr); }
   .week-manager-grid { grid-template-columns: 1fr; }
@@ -1503,7 +1519,7 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .stepper button { font-size: 0; }
   .stepper button span { font-size: .74rem; margin-bottom: 0; }
   .stepper i { margin-bottom: 0; }
-  .builder-layout { padding-bottom: 130px; }
+  .builder-layout { padding-bottom: 190px; }
   .step-heading { grid-template-columns: 35px 1fr; gap: 10px; }
   .step-heading h2 { font-size: 2rem; }
   .box-options { grid-template-columns: 1fr; }

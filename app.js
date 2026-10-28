@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 65;
+const VERSIONE_SITO = 66;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -336,6 +336,45 @@ function aggiornaSceltaScatole() {
   });
   $("#invitoSceltaCassetta").hidden = state.boxScelta;
   $("#avantiPasso1").classList.toggle("in-attesa", !state.boxScelta);
+  aggiornaBarraAvanti();
+}
+
+// Sul telefono il pulsante per andare avanti sta anche nella barra in basso, sotto il totale: quello del
+// passo e' in fondo alla pagina e, scelta la cassetta o finiti i prodotti, non si vedeva. La barra copia
+// scritta e stato del pulsante del passo e, toccata, lo preme lei.
+const AVANTI_DEL_PASSO = { 1: "#avantiPasso1", 2: "#toDelivery", 3: "#toReview", 4: "#confirmOrder" };
+function aggiornaBarraAvanti() {
+  const bottone = $("#barraAvanti");
+  if (!bottone) return;
+  const fonte = $(AVANTI_DEL_PASSO[state.step]);
+  bottone.hidden = !fonte || $("#orderSuccess").classList.contains("active");
+  if (bottone.hidden) return;
+  bottone.innerHTML = fonte.innerHTML;
+  bottone.classList.toggle("in-attesa", fonte.disabled || fonte.classList.contains("in-attesa"));
+}
+
+function premiBarraAvanti() {
+  const fonte = $(AVANTI_DEL_PASSO[state.step]);
+  if (!fonte) return;
+  if (!fonte.disabled) return fonte.click();
+  // al passo 2 il pulsante e' spento: dico perche' invece di non fare niente
+  if (state.step !== 2) return;
+  if (state.ordiniChiusi) return avvisaOrdiniChiusi();
+  const mancano = Math.max(1, boxData().min - quotaCount());
+  showToast(`Scegli ancora ${mancano} ${mancano === 1 ? "prodotto" : "prodotti"} per completare la cassetta.`);
+}
+
+// Cosa c'e' nella cassetta, scritto: si capisce senza guardare il disegno. Sul telefono sta accanto alla
+// cassetta (anche quando resta in alto mentre si scorre), sul computer sotto la cassetta del riepilogo.
+function aggiornaContenutoCassetta() {
+  const quante = new Map();
+  state.selectionOrder.forEach(id => quante.set(id, (quante.get(id) || 0) + 1));
+  const voci = [...quante].map(([id, n]) => {
+    const prodotto = PRODUCTS.find(product => product.id === id);
+    return prodotto ? `<span>${escapeHtml(prodotto.name)}${n > 1 ? ` <b>×${n}</b>` : ""}</span>` : "";
+  }).filter(Boolean);
+  const html = voci.length ? voci.join("") : `<span class="contenuto-vuoto">Ancora vuota: tocca + sui prodotti</span>`;
+  $$("[data-contenuto-cassetta]").forEach(el => { el.innerHTML = html; });
 }
 
 // "SCELGO I PRODOTTI" prima di aver scelto la cassetta: lo dico e scuoto le tre caselle
@@ -565,7 +604,9 @@ const VERDURE_NEL_LINK = [
   "broccolo-romanesco", "broccolo-siciliano", "cavolfiore", "cavolo-cappuccio", "cavolo-cappuccio-viola", "verza",
   "cipolle-tropea", "cipolle-bianche", "ravanelli", "aglio", "odori-misti", "zucca", "carciofi", "asparagi", "patate",
   "zucchine-romanesche", "cetrioli", "fiori-zucca", "peperoncini", "scarola-riccia", "scarola-liscia", "cavolo-nero",
-  "friggitelli"
+  "friggitelli",
+  // aggiunte dopo (v66): le verdure nuove vanno sempre in fondo, mai in mezzo, o i link gia' mandati sbagliano verdura
+  "castagne", "melone-invernale", "cime-rapa", "cavolo-punta"
 ];
 
 const codiceVerdure = cassette => (cassette || []).map(cassetta => (cassetta.items || []).map(item => {
@@ -574,29 +615,74 @@ const codiceVerdure = cassette => (cassette || []).map(cassetta => (cassetta.ite
   return item.quantity > 1 ? `${posizione}x${item.quantity}` : `${posizione}`;
 }).filter(Boolean).join(",")).join("-");
 
+// Formato 4 (v66): lo stesso ordine in circa 70 caratteri invece di 100 e piu'. Campi separati da punti:
+//   4+codice . giorno(3) fascia(1) zona(1) origine(1) cassette(P/M/G) . totale . nome . telefono . indirizzo
+//   . verdure (una lettera per pezzo, cassette separate da "-") . conserve (una lettera per pezzo) . latte d'olio
+// giorno = giorni dal 1/1/2026 in base 36; totale (centesimi) e telefono in base 36; "-" = campo vuoto.
+const CIFRE_LINK = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const GIORNO_ZERO_LINK = Date.UTC(2026, 0, 1);
+const FASCE_NEL_LINK = () => [...FASCE_ORARIE, ...FASCIA_ZONE_VICINE];
+
 function codificaOrdine(order) {
+  const [anno, mese, giorno] = String(order.date || "").split("-").map(Number);
+  const giorni = anno ? Math.round((Date.UTC(anno, mese - 1, giorno) - GIORNO_ZERO_LINK) / 86400000) : 0;
+  const fascia = FASCE_NEL_LINK().findIndex(([da]) => da === String(order.deliveryWindow || order.time || "").slice(0, 5));
   const origine = ORIGINI_CLIENTE.indexOf(order.source);
-  const verdure = codiceVerdure(order.cassette);
+  const telefono = normalizePhone(order.phone || "");
+  const pezzi = (posizione, quante) => (posizione >= 0 && posizione < CIFRE_LINK.length ? CIFRE_LINK[posizione].repeat(Math.max(1, quante || 1)) : "");
+  const verdure = (order.cassette || []).map(cassetta => (cassetta.items || [])
+    .map(item => pezzi(VERDURE_NEL_LINK.indexOf(item.id), item.quantity)).join("")).join("-");
+  const conserve = (order.conserve || []).map(item => pezzi(CONSERVE.findIndex(conserva => conserva.id === item.id), item.quantita)).join("");
+  const campi = [
+    `4${order.id}`,
+    Math.max(0, giorni).toString(36).padStart(3, "0") + (fascia >= 0 ? fascia.toString(36) : "z")
+      + Math.max(0, LOCALITA.findIndex(localita => localita.nome === order.area)).toString(36)
+      + (origine >= 0 ? origine : 9)
+      + String(order.box || "M").split(" + ").map(nome => nome.charAt(0).toUpperCase()).join(""),
+    Math.round(Number(order.total || 0) * 100).toString(36),
+    testoPerLink(order.name),
+    /^[1-9]\d{0,14}$/.test(telefono) ? Number(telefono).toString(36) : `X${telefono}`,
+    testoPerLink(order.address),
+    verdure,
+    conserve,
+    order.olio ? Number(order.olio).toString(36) : ""
+  ];
+  while (campi.length && !campi[campi.length - 1]) campi.pop();   // mai un punto finale: WhatsApp lo lascerebbe fuori
+  return campi.map(campo => campo || "-").join(".");
+}
+
+// il formato 4 riscritto nel formato 3: da li' in poi lo legge decodificaOrdine come prima
+function daFormato4(testo) {
+  const [testa, blocco = "", totale = "", nome = "", telefono = "", indirizzo = "", verdure = "", conserve = "", olio = ""] = testo.split(".");
+  const vuoto = campo => (campo === "-" ? "" : campo);
+  const giorni = parseInt(blocco.slice(0, 3), 36) || 0;
+  const data = new Date(GIORNO_ZERO_LINK + giorni * 86400000).toISOString().slice(2, 10).replace(/-/g, "");
+  const fascia = FASCE_NEL_LINK()[parseInt(blocco.charAt(3), 36)];
+  const conta = codice => {
+    const pezzi = new Map();
+    [...codice].forEach(cifra => { const n = CIFRE_LINK.indexOf(cifra); if (n >= 0) pezzi.set(n, (pezzi.get(n) || 0) + 1); });
+    return [...pezzi];
+  };
+  const cassette = vuoto(verdure).split("-").map(codice => conta(codice).map(([n, q]) => (q > 1 ? `${n}x${q}` : `${n}`)).join(",")).join("-");
   const extra = [
-    ...(order.conserve || []).map(item => `${CONSERVE.findIndex(conserva => conserva.id === item.id)}x${item.quantita}`),
-    order.olio ? `O${order.olio}` : ""                                        // latte d'olio: O1, O2...
+    ...conta(vuoto(conserve)).map(([n, q]) => `${n}x${q}`),
+    vuoto(olio) ? `O${parseInt(olio, 36)}` : ""
   ].filter(Boolean).join(",");
   return [
-    3,
-    order.id,
-    String(order.date || "").replace(/-/g, "").slice(2),                      // 2026-10-23 -> 261023
-    String(order.deliveryWindow || order.time || "").slice(0, 5).replace(":", ""),   // 19:00 -> 1900
-    testoPerLink(order.name),
-    normalizePhone(order.phone || ""),
-    testoPerLink(order.address),
-    Math.max(0, LOCALITA.findIndex(localita => localita.nome === order.area)),
-    String(order.box || "M").split(" + ").map(nome => nome.charAt(0).toUpperCase()).join(""),   // "Media + Piccola" -> MP
-    Math.round(Number(order.total || 0) * 100),                               // in centesimi
-    origine >= 0 ? origine : order.source ? testoPerLink(order.source) : 9,     // 9 = non ha risposto
-    extra || (verdure ? "n" : ""),                                            // n = niente conserve ne' olio
-    verdure                                                                   // le verdure di ogni cassetta
-  ].join(".").replace(/\.+$/, "");   // mai un punto finale: WhatsApp lo lascerebbe fuori dal link
+    3, testa.slice(1), data, fascia ? fascia[0].replace(":", "") : "",
+    nome, telefono.startsWith("X") ? telefono.slice(1) : parseInt(telefono, 36).toString(), indirizzo,
+    parseInt(blocco.charAt(4), 36) || 0, blocco.slice(6) || "M", parseInt(totale, 36) || 0,
+    blocco.charAt(5) || "9", extra || "n", cassette
+  ].join(".");
 }
+
+// ordine dal codice del link "Registra l'ordine": formato 4, formato 3 o i link vecchi in base64
+function ordineDalCodice(codice) {
+  if (/^4[A-Z0-9]/.test(codice)) return decodificaOrdine(daFormato4(codice));
+  if (codice.startsWith("3.")) return decodificaOrdine(codice);
+  return expandImportedOrder(decodeFromUrl(codice));
+}
+
 
 function decodificaOrdine(testo) {
   const [, id, data, inizio, nome, telefono, indirizzo, zona, scatola, centesimi, origine, codiceConserve, codiceCassette] = testo.split(".");
@@ -655,8 +741,7 @@ function dashboardImportUrl(order) {
 function importOrderFromHash() {
   const match = window.location.hash.match(/(?:import-order|o)=([^&]+)/);
   if (!match) return false;
-  // formato 3 (corto, "3.R...") oppure i link vecchi in base64
-  const imported = match[1].startsWith("3.") ? decodificaOrdine(match[1]) : expandImportedOrder(decodeFromUrl(match[1]));
+  const imported = ordineDalCodice(match[1]);
   if (!imported?.id || !imported?.name) {
     showToast("Link ordine non valido.");
     return false;
@@ -879,12 +964,16 @@ function aggiornaCassettaFluttuante() {
   }
 }
 
+function avvisaOrdiniChiusi() {
+  const riapre = prossimaRiapertura();
+  showToast(riapre ? `Ordini chiusi: si riapre ${riapre.alle}, ${riapre.perQuale} (${riapre.consegna}).` : "Ordini chiusi per ora: riapro appena fisso le prossime consegne.", 4500);
+}
+
 function goToStep(step) {
   // a ordini chiusi (dalle 21 della sera prima alle 13 del giorno di consegna) il sito resta tutto
   // visibile, ma non si va alla consegna
   if (step > 2 && state.ordiniChiusi) {
-    const riapre = prossimaRiapertura();
-    showToast(riapre ? `Ordini chiusi: si riapre ${riapre.alle}, ${riapre.perQuale} (${riapre.consegna}).` : "Ordini chiusi per ora: riapro appena fisso le prossime consegne.", 4500);
+    avvisaOrdiniChiusi();
     if (state.step <= 2) return;
     step = 2;
   }
@@ -1218,6 +1307,8 @@ function updateSummary() {
       : `Nel prezzo sono inclusi da ${box.min} a ${box.included} prodotti`;
   $("#liveCrateLabel").textContent = due ? `${state.attiva + 1}ª CASSETTA · ${box.label}` : state.boxScelta ? `CASSETTA ${box.label}` : "SCEGLI LA DIMENSIONE";
   aggiornaPulsanteConsegna();
+  aggiornaBarraAvanti();
+  aggiornaContenutoCassetta();
   $("#invitoConserve").hidden = count < box.min || !conserveInVendita().length;
   renderSecondaCassetta();
 
@@ -1811,8 +1902,10 @@ function selectedProductLines() {
   return getOrderItems().map(item => `- ${item.quantity} x ${item.name} (${item.weight})`);
 }
 
-// messaggio che il cliente mi manda: corto, una riga per cosa
-function buildWhatsAppUrl(orderInput, discoverySource) {
+// messaggio che il cliente mi manda: corto, una riga per cosa. "Come mi hai conosciuto" non ci va (v66):
+// il cliente la vedeva scritta nel messaggio. Resta nel link "Registra l'ordine" (un numero) e da li'
+// arriva nella dashboard, accanto al nome del cliente.
+function buildWhatsAppUrl(orderInput) {
   const order = typeof orderInput === "object" ? orderInput : null;
   const orderId = order?.id || orderInput;
   const notes = (order?.notes || state.orderData.notes || "").trim();
@@ -1841,7 +1934,6 @@ function buildWhatsAppUrl(orderInput, discoverySource) {
     ...(notes ? [`📝 ${notes}`] : []),
     "",
     `💶 *Totale ${money(order?.total || total())}* (${area === "Viterbo" ? "consegna gratuita" : `consegna ${money(2.5)} inclusa`})`,
-    ...(discoverySource ? [`Mi ha conosciuto: ${discoverySource}`] : []),
     importUrl ? `\nRegistra l'ordine: ${importUrl}` : ""
   ].filter((riga, indice, righe) => riga !== "" || (righe[indice - 1] && righe[indice - 1] !== "")).join("\n").trim();
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
@@ -1863,6 +1955,9 @@ function renderPopupConserve() {
     ? `CONFERMA CON ${pezzi} ${pezzi === 1 ? "CONSERVA" : "CONSERVE"} · ${money(total())} <span>→</span>`
     : `SCEGLI UNA CONSERVA QUI SOPRA <span>↑</span>`;
   $("#popupConserveConferma").disabled = !pezzi;
+  // "No grazie" sta sopra (v66): appena c'e' una conserva nel carrello sparisce, perche' l'ordine
+  // partirebbe comunque con la conserva e la scritta "solo la cassetta" sarebbe sbagliata
+  $("#popupConserveNo").hidden = pezzi > 0;
 }
 
 // sul telefono il popup compare sotto il dito: un doppio tocco premeva subito "No grazie"
@@ -1983,7 +2078,7 @@ function inviaOrdine() {
   state.orders.unshift(order);
   try { localStorage.setItem("radici-demo-order", JSON.stringify(order)); } catch (_) {}
   saveBusinessData();
-  const whatsappUrl = buildWhatsAppUrl(order, origine);
+  const whatsappUrl = buildWhatsAppUrl(order);
   window.open(whatsappUrl, "_blank", "noopener");
   traccia("ordine", cassette.map(cassetta => cassetta.box).join(" + "), "", Math.round(order.total * 100) / 100);
   inviaStatistiche();
@@ -2031,14 +2126,17 @@ function escapeHtml(value = "") {
   return value.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char]));
 }
 
-// il 14/10/2026 il sito riparte da zero: su ogni dispositivo, una volta sola, cancello
-// ordini e clienti di prova salvati (compresi quelli inventati del vecchio sito)
+// Il 28/10/2026 il sito apre davvero (la prima volta era ripartito da zero il 14/10): fino ad allora erano
+// tutte prove. Su ogni dispositivo, una volta sola, cancello ordini, clienti e carrello salvati. Dalla copia
+// nel Foglio Google non riprendo niente di piu' vecchio di INIZIO_DATI_VERI: li' gli ordini di prova restano
+// finche' non si svuotano a mano le schede, e senza questo filtro la copia li rimetterebbe in dashboard.
 const DATI_VERSIONE_KEY = "sole-terra-acqua-dati-versione";
-const DATI_VERSIONE = "2026-10-14";
+const DATI_VERSIONE = "2026-10-28";
+const INIZIO_DATI_VERI = Date.parse("2026-10-28T10:27:00+01:00");
 function ripartiDaZero() {
   try {
     if (localStorage.getItem(DATI_VERSIONE_KEY) === DATI_VERSIONE) return;
-    [ORDERS_STORAGE_KEY, CUSTOMERS_STORAGE_KEY, "radici-demo-order"].forEach(chiave => localStorage.removeItem(chiave));
+    [ORDERS_STORAGE_KEY, CUSTOMERS_STORAGE_KEY, "radici-demo-order", CARRELLO_KEY].forEach(chiave => localStorage.removeItem(chiave));
     localStorage.setItem(DATI_VERSIONE_KEY, DATI_VERSIONE);
   } catch (_) {}
 }
@@ -2647,8 +2745,11 @@ function buildConfirmationUrl(order) {
     order.date ? `📅 Te lo porto ${formatDate(order.date).toLowerCase()}${dalle && alle ? `, tra le ${dalle} e le ${alle}` : ""}.` : "📅 Ti scrivo io per il giorno di consegna.",
     `💶 Totale ${money(order.total)}${order.area === "Viterbo" ? " (consegna gratuita)" : ` (consegna ${money(2.5)} inclusa)`}.`
   ];
+  // la proposta dell'olio in grassetto (v66): in mezzo al messaggio passava inosservata. Prezzo = quello della dashboard
   if (olioDaProporre() && !order.olio) {
-    righe.push("", `🫒 Ho anche l'olio nuovo, in latta da ${OLIO.litri} litri: ${money(prezzoLatta())} (${money(OLIO.prezzoLitro)} al litro). Se lo vuoi rispondimi "sì olio" e te lo porto insieme alla cassetta.`);
+    const euro = valore => money(valore).replace(",00", "");
+    righe.push("", `🫒 *Ho anche l'olio nuovo: latta da ${OLIO.litri} litri a ${euro(prezzoLatta())} (${euro(OLIO.prezzoLitro)} al litro).*`,
+      `Se lo vuoi rispondimi *SÌ OLIO* e te lo porto insieme alla cassetta.`);
   }
   righe.push("", "A presto!", "Alessio");
   return `https://wa.me/${phone}?text=${encodeURIComponent(righe.join("\n"))}`;
@@ -3522,9 +3623,14 @@ async function sincronizzaCopia({ forza = false } = {}) {
       dalFoglio.delete(order.id);
       return dalla;
     });
-    const nuovi = [...dalFoglio.values()].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+    const nuovi = [...dalFoglio.values()]
+      .filter(order => (Number(order.aggiornato) || 0) >= INIZIO_DATI_VERI)   // le prove di prima restano fuori
+      .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
     state.orders = [...nuovi, ...miei];
-    state.customers = dati.clienti && typeof dati.clienti === "object" ? dati.clienti : state.customers;
+    if (dati.clienti && typeof dati.clienti === "object") {
+      state.customers = Object.fromEntries(Object.entries(dati.clienti)
+        .filter(([chiave, cliente]) => state.customers[chiave] || (Number(cliente?.aggiornato) || 0) >= INIZIO_DATI_VERI));
+    }
     saveBusinessData({ copia: false });
     copiaFattaAlle = Date.now();
     renderDashboard(state.orderFilter);
@@ -3669,6 +3775,7 @@ function setupEvents() {
     goToStep(state.step + 1);
   }));
   $$("[data-prev-step]").forEach(button => button.addEventListener("click", () => goToStep(state.step - 1)));
+  $("#barraAvanti").addEventListener("click", premiBarraAvanti);
   $$("[data-step-jump]").forEach(button => button.addEventListener("click", () => {
     const target = Number(button.dataset.stepJump);
     if (target >= 2 && !state.boxScelta) chiediSceltaCassetta();

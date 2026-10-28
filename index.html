@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=65">
+  <link rel="stylesheet" href="styles.css?v=66">
 </head>
 <body>
   <div class="app-shell">
@@ -431,6 +431,7 @@
                   <div>
                     <small>GUARDA LA TUA CASSETTA</small>
                     <strong id="liveCrateLabel">CASSETTA MEDIA</strong>
+                    <p class="contenuto-cassetta" id="contenutoCassetta" data-contenuto-cassetta aria-live="polite"></p>
                   </div>
                   <span>SI RIEMPIE MENTRE SCEGLI</span>
                 </div>
@@ -590,6 +591,7 @@
                 <img class="realistic-crate" src="assets/cassetta-media-nuova.webp" alt="Cassetta rustica in legno inclinata verso chi guarda" loading="lazy">
               </picture>
             </div>
+            <p class="contenuto-cassetta contenuto-riepilogo" id="contenutoRiepilogo" data-contenuto-cassetta></p>
             <div class="basket-lines">
               <div><span>PRODOTTI</span><strong id="summaryQuota">0 PRODOTTI · INCLUSI 4-6</strong></div>
               <div><span>EXTRA PRODOTTI</span><strong id="summaryExtras">0,00 €</strong></div>
@@ -610,6 +612,7 @@
           <div><small>TOTALE</small><strong id="mobileTotal">14,00 €</strong></div>
           <div><small id="mobileQuotaTitolo">CASSETTA</small><strong id="mobileQuota">0 prodotti</strong></div>
           <button type="button" class="svuota-barra" data-svuota-carrello hidden aria-label="Svuota il carrello"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg><small>SVUOTA</small></button>
+          <button type="button" class="barra-avanti in-attesa" id="barraAvanti">SCELGO I PRODOTTI <span>→</span></button>
         </div>
       </section>
 
@@ -1086,8 +1089,8 @@
       <p>Le mie verdure di stagione, chiuse in vasetto per quando l'orto riposa. Arriva insieme alla tua cassetta, <strong>senza costi di consegna in più</strong>.</p>
       <div class="popup-conserve-lista" id="popupConserveLista"></div>
       <div class="popup-conserve-azioni">
-        <button class="primary-button" type="button" id="popupConserveConferma">CONFERMA L'ORDINE <span>→</span></button>
         <button class="back-button popup-conserve-no" type="button" id="popupConserveNo">NO GRAZIE, CONFERMO SOLO LA CASSETTA <span aria-hidden="true">→</span></button>
+        <button class="primary-button" type="button" id="popupConserveConferma">CONFERMA L'ORDINE <span>→</span></button>
       </div>
     </div>
   </div>
@@ -1100,6 +1103,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=65"></script>
+  <script src="app.js?v=66"></script>
 </body>
 </html>
