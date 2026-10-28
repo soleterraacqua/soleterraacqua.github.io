@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 61;
+const VERSIONE_SITO = 62;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -232,11 +232,13 @@ const state = {
   view: "home",
   step: 1,
   box: "media",
+  // il cliente non ha ancora scelto la dimensione: nessuna cassetta e' evidenziata come scelta
+  boxScelta: false,
   quantities: Object.fromEntries(PRODUCTS.map(p => [p.id, 0])),
   selectionOrder: [],
   // le cassette dell'ordine (una, o due per chi ne ha bisogno): quella che si sta riempiendo
   // vive in box / quantities / selectionOrder, l'altra resta qui finche' non la si riapre
-  cassette: [{ box: "media", selectionOrder: [] }],
+  cassette: [{ box: "media", selectionOrder: [], scelta: false }],
   attiva: 0,
   deliveryDays: [],
   giornoFisso: GIORNO_FISSO_INIZIALE,
@@ -293,7 +295,7 @@ const conserveInVendita = () => CONSERVE.filter(conserva => conserva.disponibile
 const pezziConserve = () => Object.values(state.conserve).reduce((sum, value) => sum + value, 0);
 const costoConserve = () => CONSERVE.reduce((sum, conserva) => sum + (state.conserve[conserva.id] || 0) * conserva.prezzo, 0);
 const extraCassetta = cassetta => Math.max(0, cassetta.selectionOrder.length - BOXES[cassetta.box].included) * 2;
-const prezzoCassetta = cassetta => BOXES[cassetta.box].price + extraCassetta(cassetta);
+const prezzoCassetta = cassetta => (cassetta.scelta === false ? 0 : BOXES[cassetta.box].price + extraCassetta(cassetta));
 const costoCassette = () => cassetteOrdine().reduce((sum, cassetta) => sum + prezzoCassetta(cassetta), 0);
 const extraTotale = () => cassetteOrdine().reduce((sum, cassetta) => sum + extraCassetta(cassetta), 0);
 const prodottiTotali = () => cassetteOrdine().reduce((sum, cassetta) => sum + cassetta.selectionOrder.length, 0);
@@ -310,16 +312,41 @@ const total = () => costoCassette() + state.deliveryFee + costoConserve() + cost
 
 // tutte le cassette dell'ordine, con quella aperta aggiornata a come e' adesso
 function cassetteOrdine() {
-  state.cassette[state.attiva] = { box: state.box, selectionOrder: [...state.selectionOrder] };
+  state.cassette[state.attiva] = { box: state.box, selectionOrder: [...state.selectionOrder], scelta: state.boxScelta };
   return state.cassette;
 }
 
 function caricaCassetta(cassetta) {
   state.box = cassetta.box;
+  state.boxScelta = cassetta.scelta !== false;
   state.selectionOrder = [...cassetta.selectionOrder];
   Object.keys(state.quantities).forEach(id => { state.quantities[id] = 0; });
   state.selectionOrder.forEach(id => { state.quantities[id]++; });
-  $$(".box-option").forEach(el => el.classList.toggle("selected", el.dataset.box === state.box));
+  aggiornaSceltaScatole();
+}
+
+// Finche' il cliente non sceglie, nessuna cassetta e' verde (prima la media sembrava gia' scelta e
+// si andava avanti senza guardare): tutte e tre hanno il bordo che invita a toccarle.
+function aggiornaSceltaScatole() {
+  $("#boxOptions").classList.toggle("da-scegliere", !state.boxScelta);
+  $$(".box-option").forEach(el => {
+    const scelta = state.boxScelta && el.dataset.box === state.box;
+    el.classList.toggle("selected", scelta);
+    el.setAttribute("aria-pressed", String(scelta));
+  });
+  $("#invitoSceltaCassetta").hidden = state.boxScelta;
+  $("#avantiPasso1").classList.toggle("in-attesa", !state.boxScelta);
+}
+
+// "SCELGO I PRODOTTI" prima di aver scelto la cassetta: lo dico e scuoto le tre caselle
+function chiediSceltaCassetta() {
+  showToast("Prima scegli la cassetta: piccola, media o grande.", 3500);
+  const scatole = $("#boxOptions");
+  scatole.classList.remove("richiamo");
+  void scatole.offsetWidth;   // fa ripartire l'animazione anche al secondo tocco
+  scatole.classList.add("richiamo");
+  const alto = scatole.getBoundingClientRect().top;
+  if (alto < 80 || alto > window.innerHeight - 160) window.scrollTo({ top: Math.max(0, alto + window.scrollY - 140), behavior: "smooth" });
 }
 
 function normalizePhone(value = "") {
@@ -861,6 +888,10 @@ function goToStep(step) {
     if (state.step <= 2) return;
     step = 2;
   }
+  if (step >= 2 && !state.boxScelta) {
+    state.boxScelta = true;
+    aggiornaSceltaScatole();
+  }
   if (step > 2) {
     // con due cassette devono essere pronte tutte e due: se manca qualcosa riapro quella giusta
     const cassette = cassetteOrdine();
@@ -890,7 +921,8 @@ function goToStep(step) {
 
 function selectBox(key) {
   state.box = key;
-  $$(".box-option").forEach(el => el.classList.toggle("selected", el.dataset.box === key));
+  state.boxScelta = true;
+  aggiornaSceltaScatole();
   renderProducts();
   updateSummary();
   dropCrates();
@@ -913,7 +945,8 @@ function aggiungiSecondaCassetta(come) {
   const [prima] = cassetteOrdine();
   const copiate = come === "uguale" ? prima.selectionOrder.filter(id => !unaSola(id)) : [];
   const lasciate = come === "uguale" ? prima.selectionOrder.length - copiate.length : 0;
-  state.cassette = [prima, { box: prima.box, selectionOrder: copiate }];
+  // "nuova": la dimensione della 2a la sceglie il cliente, nessuna e' gia' evidenziata
+  state.cassette = [prima, { box: prima.box, selectionOrder: copiate, scelta: come === "uguale" }];
   state.attiva = 0;
   scegliCassetta(1);
   if (come === "uguale") {
@@ -1161,10 +1194,10 @@ function updateSummary() {
   $("#summaryCassetteTitolo").textContent = due ? "LE TUE 2 CASSETTE" : "LA TUA CASSETTA";
   $("#summaryBoxLabel").textContent = due
     ? cassette.map(cassetta => BOXES[cassetta.box].label).join(" + ")
-    : `${box.label} · ${box.price} €`;
+    : state.boxScelta ? `${box.label} · ${box.price} €` : "DA SCEGLIERE";
   $("#summaryQuota").textContent = due
     ? `${cassette.map(cassetta => cassetta.selectionOrder.length).join(" + ")} PRODOTTI`
-    : `${count} PRODOTTI · INCLUSI ${includedRange}`;
+    : state.boxScelta ? `${count} PRODOTTI · INCLUSI ${includedRange}` : "PICCOLA, MEDIA O GRANDE";
   $("#summaryExtras").textContent = money(extraTotale());
   $("#summaryDelivery").textContent = state.selectedTime ? `${state.selectedTime}${state.deliveryFee ? ` · ${money(state.deliveryFee)}` : " · GRATIS"}` : "DA DEFINIRE";
   $("#summaryTotal").textContent = money(total());
@@ -1183,7 +1216,7 @@ function updateSummary() {
     : extraItems
       ? `${extraItems} ${extraItems === 1 ? "prodotto extra" : "prodotti extra"} · ${money(extraCost())}`
       : `Nel prezzo sono inclusi da ${box.min} a ${box.included} prodotti`;
-  $("#liveCrateLabel").textContent = due ? `${state.attiva + 1}ª CASSETTA · ${box.label}` : `CASSETTA ${box.label}`;
+  $("#liveCrateLabel").textContent = due ? `${state.attiva + 1}ª CASSETTA · ${box.label}` : state.boxScelta ? `CASSETTA ${box.label}` : "SCEGLI LA DIMENSIONE";
   aggiornaPulsanteConsegna();
   $("#invitoConserve").hidden = count < box.min || !conserveInVendita().length;
   renderSecondaCassetta();
@@ -1208,7 +1241,7 @@ function updateSummary() {
 
 function salvaCarrello() {
   try {
-    const cassette = cassetteOrdine().map(cassetta => ({ box: cassetta.box, prodotti: cassetta.selectionOrder }));
+    const cassette = cassetteOrdine().map(cassetta => ({ box: cassetta.box, prodotti: cassetta.selectionOrder, scelta: cassetta.scelta !== false }));
     localStorage.setItem(CARRELLO_KEY, JSON.stringify({ box: state.box, prodotti: state.selectionOrder, conserve: state.conserve, olio: state.olio, cassette, attiva: state.attiva }));
   } catch (_) {}
 }
@@ -1221,9 +1254,11 @@ function ripristinaCarrello() {
   const pulisci = prodotti => (Array.isArray(prodotti) ? prodotti : []).filter(id => attivi.has(id));
   // i carrelli salvati prima della seconda cassetta hanno solo box e prodotti
   const salvate = (Array.isArray(salvato.cassette) ? salvato.cassette : []).filter(cassetta => BOXES[cassetta?.box]).slice(0, 2);
+  // "scelta" c'e' dalla v62: prima, chi aveva gia' delle verdure la cassetta l'aveva scelta di sicuro
+  const scelta = (cassetta, prodotti) => (typeof cassetta.scelta === "boolean" ? cassetta.scelta : prodotti.length > 0);
   state.cassette = salvate.length
-    ? salvate.map(cassetta => ({ box: cassetta.box, selectionOrder: pulisci(cassetta.prodotti) }))
-    : [{ box: BOXES[salvato.box] ? salvato.box : state.box, selectionOrder: pulisci(salvato.prodotti) }];
+    ? salvate.map(cassetta => ({ box: cassetta.box, selectionOrder: pulisci(cassetta.prodotti), scelta: scelta(cassetta, pulisci(cassetta.prodotti)) }))
+    : [{ box: BOXES[salvato.box] ? salvato.box : state.box, selectionOrder: pulisci(salvato.prodotti), scelta: scelta(salvato, pulisci(salvato.prodotti)) }];
   state.attiva = Math.min(Math.max(0, Number(salvato.attiva) || 0), state.cassette.length - 1);
   togliDoppieUnaSola(state.cassette);
   caricaCassetta(state.cassette[state.attiva]);
@@ -1238,7 +1273,8 @@ function ripristinaCarrello() {
 function svuotaCarrello() {
   state.conserveProposte = false;
   // dopo l'ordine si riparte da una cassetta sola, della dimensione della prima
-  state.cassette = [{ box: cassetteOrdine()[0].box, selectionOrder: [] }];
+  const [prima] = cassetteOrdine();
+  state.cassette = [{ box: prima.box, selectionOrder: [], scelta: prima.scelta }];
   state.attiva = 0;
   caricaCassetta(state.cassette[0]);
   state.conserve = {};
@@ -3610,7 +3646,10 @@ function setupEvents() {
   $("#menuButton").addEventListener("click", () => openMenu(true));
   $("#closeMenu").addEventListener("click", () => openMenu(false));
   $("#menuBackdrop").addEventListener("click", () => openMenu(false));
-  $("#headerCart").addEventListener("click", () => { navigate("builder"); goToStep(2); });
+  $("#headerCart").addEventListener("click", () => {
+    navigate("builder");
+    goToStep(state.boxScelta ? 2 : 1);
+  });
 
   $$("[data-view-link]").forEach(link => link.addEventListener("click", event => {
     event.preventDefault();
@@ -3624,11 +3663,15 @@ function setupEvents() {
     navigate("builder");
     goToStep(1);
   }));
-  $$("[data-next-step]").forEach(button => button.addEventListener("click", () => goToStep(state.step + 1)));
+  $$("[data-next-step]").forEach(button => button.addEventListener("click", () => {
+    if (state.step === 1 && !state.boxScelta) return chiediSceltaCassetta();
+    goToStep(state.step + 1);
+  }));
   $$("[data-prev-step]").forEach(button => button.addEventListener("click", () => goToStep(state.step - 1)));
   $$("[data-step-jump]").forEach(button => button.addEventListener("click", () => {
     const target = Number(button.dataset.stepJump);
-    if (target <= state.step || target <= 2 || state.ordiniChiusi) goToStep(target);
+    if (target >= 2 && !state.boxScelta) chiediSceltaCassetta();
+    else if (target <= state.step || target <= 2 || state.ordiniChiusi) goToStep(target);
     else showToast("Completa questo passaggio prima di continuare.");
   }));
   $$(".box-option").forEach(button => button.addEventListener("click", () => selectBox(button.dataset.box)));
@@ -4167,6 +4210,7 @@ function init() {
   loadAdminSettings();
   loadPreserves();
   ripristinaCarrello();
+  aggiornaSceltaScatole();
   renderConserve();
   renderConserveCarrello();
   renderOlio();
