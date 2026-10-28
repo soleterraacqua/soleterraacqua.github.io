@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 72;
+const VERSIONE_SITO = 73;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -1882,7 +1882,10 @@ function confermaPosto(order) {
   if (!postiAttivi()) return;
   const verdure = {};
   (order.cassette || []).forEach(cassetta => (cassetta.items || []).forEach(item => { verdure[item.id] = (verdure[item.id] || 0) + (item.quantity || 1); }));
-  const corpo = JSON.stringify({ azione: "conferma", id: order.id, giorno: order.date, fascia: order.deliveryWindow, zona: order.area, verdure });
+  // v73: insieme al posto mando l'ordine completo, che compare da solo nella mia dashboard
+  // (prima arrivava li' solo toccando il link "Registra l'ordine" in ogni messaggio WhatsApp)
+  const ordine = { ...order, cliente: customerKeyFromOrder(order) };
+  const corpo = JSON.stringify({ azione: "conferma", id: order.id, giorno: order.date, fascia: order.deliveryWindow, zona: order.area, verdure, ordine });
   try { if (navigator.sendBeacon && navigator.sendBeacon(indirizzoStatistiche(), corpo)) return; } catch (_) {}
   fetch(indirizzoStatistiche(), { method: "POST", mode: "no-cors", keepalive: true, body: corpo }).catch(() => {});
 }
@@ -3034,7 +3037,7 @@ function renderDashboard(filter = state.orderFilter || "all") {
     $("#nextDeliveries").innerHTML = `<p class="dashboard-vuoto">Nessuna consegna in programma.</p>`;
   }
   if (!visible.length) {
-    $("#ordersTable").innerHTML = `<div class="empty-table-note">Ancora nessun ordine. Quando un cliente ordina ti arriva un WhatsApp: apri il link "Importa" del messaggio e l'ordine compare qui.</div>`;
+    $("#ordersTable").innerHTML = `<div class="empty-table-note">Ancora nessun ordine. Quando un cliente conferma dal sito, l'ordine compare qui da solo (la dashboard si aggiorna ogni 2 minuti). Per un ordine che non c'è, tocca il link "Registra l'ordine" nel suo messaggio WhatsApp.</div>`;
   }
   const viterbo = daConsegnare.filter(order => order.area === "Viterbo");
   const vicine = daConsegnare.filter(order => order.area !== "Viterbo");
@@ -3120,7 +3123,7 @@ function aggiornataAlle(quando) {
 
 function documentoConsegne(gruppi, kmPerGiorno) {
   const blocchi = [];
-  if (!gruppi.length) blocchi.push({ tipo: "vuoto", testo: "Nessun ordine da consegnare: quando registri un ordine dal link WhatsApp compare qui." });
+  if (!gruppi.length) blocchi.push({ tipo: "vuoto", testo: "Nessun ordine da consegnare: gli ordini confermati dal sito compaiono qui da soli." });
   gruppi.forEach((gruppo, indiceGiorno) => {
     const km = kmPerGiorno?.[indiceGiorno];
     const conKm = km && km.metodo !== "offline" && gruppo.ordini.length > 1;
@@ -3168,7 +3171,7 @@ function documentoConsegne(gruppi, kmPerGiorno) {
 
 function documentoRaccolta(gruppi) {
   const blocchi = [];
-  if (!gruppi.length) blocchi.push({ tipo: "vuoto", testo: "Nessun ordine da consegnare: quando registri un ordine dal link WhatsApp compare qui." });
+  if (!gruppi.length) blocchi.push({ tipo: "vuoto", testo: "Nessun ordine da consegnare: gli ordini confermati dal sito compaiono qui da soli." });
   gruppi.forEach(gruppo => {
     const cassette = gruppo.ordini.flatMap(cassetteDellOrdine);
     blocchi.push({ tipo: "giorno", testo: formatDate(gruppo.data), destra: `${gruppo.ordini.length} ${gruppo.ordini.length === 1 ? "ordine" : "ordini"} · ${cassette.length} ${cassette.length === 1 ? "cassetta" : "cassette"}` });
@@ -3710,6 +3713,7 @@ async function sincronizzaCopia({ forza = false } = {}) {
       .filter(order => (Number(order.aggiornato) || 0) >= INIZIO_DATI_VERI)   // le prove di prima restano fuori
       .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
     state.orders = [...nuovi, ...miei];
+    if (nuovi.length) showToast(nuovi.length === 1 ? `Nuovo ordine: ${nuovi[0].name} (#${nuovi[0].id}).` : `${nuovi.length} ordini nuovi in dashboard.`, 5000);
     if (dati.clienti && typeof dati.clienti === "object") {
       state.customers = Object.fromEntries(Object.entries(dati.clienti)
         .filter(([chiave, cliente]) => state.customers[chiave] || (Number(cliente?.aggiornato) || 0) >= INIZIO_DATI_VERI));
