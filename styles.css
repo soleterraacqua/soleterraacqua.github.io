@@ -1841,3 +1841,10 @@ html.leggero .invia-tasto { box-shadow: 0 0 0 5px rgba(37,211,102,.35); }
   .hero-button > span:last-child { display: none; }
   .hero-button-righe small { font-size: .6rem; }
 }
+
+/* v71: chi prepara le conserve (laboratorio autorizzato, HACCP): ben visibile nella sezione della home e, in breve,
+   nel riquadro delle conserve del carrello */
+.conserve-garanzia { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 24px; padding: 13px 18px; border-radius: var(--small-radius); background: rgba(55,91,70,.08); border: 1px solid rgba(55,91,70,.2); color: var(--green-deep); font-size: .92rem; line-height: 1.5; }
+.conserve-garanzia > span:first-child { flex: none; display: grid; place-items: center; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%; background: var(--green); color: #fffaf0; font-size: .8rem; font-weight: 900; }
+.conserve-garanzia strong { color: var(--green-deep); }
+.conserve-carrello-head p.conserve-garanzia-breve { margin-top: 4px; color: var(--green); font-size: .8rem; font-weight: 700; }
