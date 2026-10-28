@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 66;
+const VERSIONE_SITO = 67;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -234,6 +234,7 @@ const state = {
   box: "media",
   // il cliente non ha ancora scelto la dimensione: nessuna cassetta e' evidenziata come scelta
   boxScelta: false,
+  verdurePrese: {},
   quantities: Object.fromEntries(PRODUCTS.map(p => [p.id, 0])),
   selectionOrder: [],
   // le cassette dell'ordine (una, o due per chi ne ha bisogno): quella che si sta riempiendo
@@ -995,7 +996,7 @@ function goToStep(step) {
     }
   }
   if (step !== state.step) traccia("passo", String(step));
-  if (step === 3) leggiPosti();
+  if (step === 3 || (step === 2 && Object.keys(scorteDellaSettimana()).length)) leggiPosti();
   state.step = step;
   $$(".order-step").forEach(el => el.classList.toggle("active", Number(el.dataset.step) === step));
   $$(".stepper button").forEach((el, index) => {
@@ -1085,17 +1086,27 @@ function renderProducts() {
   const grid = $("#productGrid");
   grid.innerHTML = PRODUCTS.filter(product => product.enabled !== false).map(product => {
     const quantity = state.quantities[product.id];
+    const restano = perMe(product.id) - quanteNelCarrello(product.id);
+    const esaurita = perMe(product.id) === 0 && !quanteNelCarrello(product.id);
+    const scritte = [
+      product.unoSolo ? "Una sola per ordine" : "",
+      esaurita ? "Esaurita questa settimana"
+        : restano < 0 ? (perMe(product.id) ? `Ne restano solo ${perMe(product.id)}: togline ${-restano}` : "Finita: toglila dal carrello")
+        : restano === 0 ? "Hai preso le ultime"
+        : restano <= 5 ? (restano === 1 ? "Ne resta 1" : `Ne restano ${restano}`) : ""
+    ].filter(Boolean);
+    const piuSpento = (product.unoSolo && quanteNelCarrello(product.id) >= 1) || restano <= 0;
     return `
-      <article class="product-card ${quantity ? "selected" : ""}" data-product-card="${product.id}">
+      <article class="product-card ${quantity ? "selected" : ""} ${esaurita ? "esaurita" : ""} ${restano < 0 ? "troppe" : ""}" data-product-card="${product.id}">
         <div class="product-card-image" style="${productVisualStyle(product)}" role="img" aria-label="${product.name}"></div>
         <div class="product-card-body">
           <small>1 PRODOTTO · ${product.weight.toUpperCase()}</small>
           <h3>${product.name.toUpperCase()}</h3>
-          <p class="${product.unoSolo ? "una-sola" : ""}">${product.unoSolo ? "Una sola per ordine" : "Disponibile questa settimana"}</p>
+          <p class="${scritte.length ? "una-sola" : ""}">${scritte.join(" · ") || "Disponibile questa settimana"}</p>
           <div class="counter">
             <button data-product-minus="${product.id}" ${quantity === 0 ? "disabled" : ""} aria-label="Togli ${product.name}">−</button>
             <b>${quantity}</b>
-            <button data-product-plus="${product.id}" ${product.unoSolo && quanteNelCarrello(product.id) >= 1 ? "disabled" : ""} aria-label="Aggiungi ${product.name}">+</button>
+            <button data-product-plus="${product.id}" ${piuSpento ? "disabled" : ""} aria-label="Aggiungi ${product.name}">+</button>
           </div>
         </div>
       </article>
@@ -1110,6 +1121,30 @@ function renderProducts() {
 // in tutto il carrello, anche con due cassette, ce ne puo' essere una sola
 const unaSola = id => PRODUCTS.find(product => product.id === id)?.unoSolo === true;
 const quanteNelCarrello = id => cassetteOrdine().reduce((somma, cassetta) => somma + cassetta.selectionOrder.filter(voce => voce === id).length, 0);
+
+// Massimo della settimana (v67): lo scelgo in dashboard per ogni verdura, in porzioni (1 porzione = 1 "prodotto"
+// del sito, cioe' il suo peso: 800 g, 1 mazzo, 1-2 cespi...). Vale per tutti i clienti insieme: lo script Google
+// conta le porzioni prese nelle prenotazioni della settimana (state.verdurePrese, senza quelle di questo cliente).
+const massimoDi = id => PRODUCTS.find(product => product.id === id)?.massimo ?? null;
+const perMe = id => {
+  const massimo = massimoDi(id);
+  return massimo === null ? Infinity : Math.max(0, massimo - (state.verdurePrese[id] || 0));
+};
+// le porzioni di ogni verdura in tutto il carrello (anche con due cassette): {id: pezzi}
+function verdureDelCarrello() {
+  const conti = {};
+  cassetteOrdine().forEach(cassetta => cassetta.selectionOrder.forEach(id => { conti[id] = (conti[id] || 0) + 1; }));
+  return conti;
+}
+const scorteDellaSettimana = () => Object.fromEntries(PRODUCTS.filter(product => product.massimo !== null && product.massimo !== undefined).map(product => [product.id, product.massimo]));
+// la settimana pubblicata: i giorni ancora prenotabili piu' quelli della lista gia' passati da meno di 7 giorni
+// (con due consegne nella stessa settimana il massimo vale per tutte e due)
+function giorniDellaSettimana() {
+  const settimanaFa = new Date(`${oggiLocale()}T12:00:00`);
+  settimanaFa.setDate(settimanaFa.getDate() - 6);
+  const da = `${settimanaFa.getFullYear()}-${String(settimanaFa.getMonth() + 1).padStart(2, "0")}-${String(settimanaFa.getDate()).padStart(2, "0")}`;
+  return [...new Set([...giorniPrenotabili(), ...state.deliveryDays.filter(giorno => giorno >= da && giorno <= oggiLocale())])].sort();
+}
 
 // tiene solo la prima di ogni verdura "una sola" (carrelli salvati prima della regola, seconda cassetta copiata)
 function togliDoppieUnaSola(cassette) {
@@ -1127,6 +1162,12 @@ function togliDoppieUnaSola(cassette) {
 }
 
 function changeProduct(id, amount) {
+  if (amount > 0 && quanteNelCarrello(id) >= perMe(id)) {
+    const nome = PRODUCTS.find(product => product.id === id)?.name || "Questa verdura";
+    const quante = perMe(id);
+    showToast(quante ? `${nome}: questa settimana ne ho ancora ${quante === 1 ? "1 porzione" : `${quante} porzioni`}, sono tutte nel tuo carrello.` : `${nome}: questa settimana è esaurita.`, 4000);
+    return;
+  }
   if (amount > 0 && unaSola(id) && quanteNelCarrello(id) >= 1) {
     const nome = PRODUCTS.find(product => product.id === id)?.name || "Questa verdura";
     showToast(`${nome}: se ne può prendere una sola per ordine.`, 3500);
@@ -1799,8 +1840,16 @@ async function leggiPosti(forza = false) {
   if (!postiAttivi() || (!forza && Date.now() - state.postiLetti < 30000)) return;
   state.postiLetti = Date.now();
   try {
-    const dati = await chiediAlFoglio({ azione: "posti", giorni: giorniPrenotabili() });
-    if (!dati?.posti || JSON.stringify(dati.posti) === JSON.stringify(state.posti)) return;
+    const dati = await chiediAlFoglio({ azione: "posti", giorni: giorniPrenotabili(), giorniVerdure: giorniDellaSettimana(), tranne: state.idOrdine || undefined });
+    if (!dati?.posti) return;
+    // lo script senza le verdure (prima della v67) non risponde "verdure": il massimo vale allora per il singolo ordine
+    const verdure = dati.verdure && typeof dati.verdure === "object" ? dati.verdure : {};
+    if (JSON.stringify(verdure) !== JSON.stringify(state.verdurePrese)) {
+      state.verdurePrese = verdure;
+      renderProducts();
+      updateSummary();
+    }
+    if (JSON.stringify(dati.posti) === JSON.stringify(state.posti)) return;
     state.posti = dati.posti;
     if (state.step === 3) disegnaFasce();
   } catch (_) {
@@ -1813,11 +1862,15 @@ async function tieniPosto() {
   if (!postiAttivi()) return null;
   state.idOrdine ||= nuovoCodiceOrdine();
   try {
-    const esito = await chiediAlFoglio({ azione: "tieni", id: state.idOrdine, giorno: state.orderData.date, fascia: state.orderData.time, zona: state.orderData.area }, 5000);
+    const esito = await chiediAlFoglio({
+      azione: "tieni", id: state.idOrdine, giorno: state.orderData.date, fascia: state.orderData.time, zona: state.orderData.area,
+      verdure: verdureDelCarrello(), scorte: scorteDellaSettimana(), giorniVerdure: giorniDellaSettimana()
+    }, 5000);
     if (esito?.pieno) {
       state.posti[state.orderData.date] = esito.posti || {};
       state.postiLetti = Date.now();
     }
+    if (esito?.esaurite && esito.verdure && typeof esito.verdure === "object") state.verdurePrese = esito.verdure;
     return esito;
   } catch (_) {
     return null;
@@ -1826,7 +1879,9 @@ async function tieniPosto() {
 
 function confermaPosto(order) {
   if (!postiAttivi()) return;
-  const corpo = JSON.stringify({ azione: "conferma", id: order.id, giorno: order.date, fascia: order.deliveryWindow, zona: order.area });
+  const verdure = {};
+  (order.cassette || []).forEach(cassetta => (cassetta.items || []).forEach(item => { verdure[item.id] = (verdure[item.id] || 0) + (item.quantity || 1); }));
+  const corpo = JSON.stringify({ azione: "conferma", id: order.id, giorno: order.date, fascia: order.deliveryWindow, zona: order.area, verdure });
   try { if (navigator.sendBeacon && navigator.sendBeacon(indirizzoStatistiche(), corpo)) return; } catch (_) {}
   fetch(indirizzoStatistiche(), { method: "POST", mode: "no-cors", keepalive: true, body: corpo }).catch(() => {});
 }
@@ -2200,6 +2255,8 @@ function applicaSettimana(dati) {
       if (typeof voce.peso === "string" && voce.peso.trim()) product.weight = voce.peso.trim();
       if (typeof voce.disponibile === "boolean") product.enabled = voce.disponibile;
       product.unoSolo = voce.unoSolo === true;
+      // massimo della settimana in porzioni (una porzione = il suo "peso"); senza numero = senza limite
+      product.massimo = Number.isInteger(voce.massimo) && voce.massimo >= 0 ? voce.massimo : null;
       // solo foto caricate dalla dashboard nella cartella del sito
       product.customImage = /^assets\/prodotti\/[a-z0-9-]+\.(jpg|webp|png)$/.test(voce.foto || "") ? voce.foto : "";
     });
@@ -2305,7 +2362,7 @@ function renderRiepilogoSettimana() {
     </div>
     <div class="riepilogo-blocco">
       <small>VERDURE DISPONIBILI · ${verdure.length}</small>
-      <p>${verdure.map(product => `<span>${escapeHtml(product.name)} <em>${escapeHtml(product.weight)}${product.unoSolo ? " · una sola" : ""}</em></span>`).join("") || "<span>Nessuna</span>"}</p>
+      <p>${verdure.map(product => `<span>${escapeHtml(product.name)} <em>${escapeHtml(product.weight)}${product.unoSolo ? " · una sola" : ""}${product.massimo === null || product.massimo === undefined ? "" : ` · max ${product.massimo}${state.verdurePrese[product.id] ? ` (prese ${state.verdurePrese[product.id]})` : ""}`}</em></span>`).join("") || "<span>Nessuna</span>"}</p>
     </div>
     <div class="riepilogo-blocco">
       <small>CONSERVE IN VENDITA · ${conserve.length}</small>
@@ -2367,6 +2424,23 @@ function contaVerdureAccese() {
   if (conta) conta.textContent = `${accese} accese su ${tutte.length}`;
 }
 
+// campo MAX della dashboard: vuoto = senza limite (∞), altrimenti un numero intero di porzioni
+function leggiMassimo(id) {
+  const valore = String($(`[data-admin-massimo="${id}"]`)?.value ?? "").trim();
+  if (valore === "") return null;
+  const numero = Math.floor(Number(valore));
+  return Number.isFinite(numero) && numero >= 0 ? Math.min(999, numero) : null;
+}
+
+function aggiornaCampoMassimo(id) {
+  const scatola = $(`[data-admin-massimo="${id}"]`)?.closest(".massimo-scelta");
+  if (!scatola) return;
+  const massimo = leggiMassimo(id);
+  const peso = $(`[data-admin-weight="${id}"]`)?.value.trim() || "";
+  scatola.classList.toggle("infinito", massimo === null);
+  $(`[data-admin-unita="${id}"]`).textContent = massimo === null ? "senza limite" : `porzioni da ${peso}`;
+}
+
 function renderWeekEditor({ forza = false } = {}) {
   if (!$("#weeklyProductsEditor")) return;
   const inModifica = Boolean(state.modificaSettimana);
@@ -2396,6 +2470,11 @@ function renderWeekEditor({ forza = false } = {}) {
       </div>
       <input type="text" value="${escapeHtml(product.name)}" data-admin-name="${product.id}" aria-label="Nome ${escapeHtml(product.name)}">
       <input type="text" value="${escapeHtml(product.weight)}" data-admin-weight="${product.id}" aria-label="Peso ${escapeHtml(product.name)}">
+      <div class="massimo-scelta ${product.massimo === null || product.massimo === undefined ? "infinito" : ""}" title="Quante porzioni posso vendere questa settimana, a tutti i clienti insieme">
+        <button type="button" data-admin-infinito="${product.id}" aria-label="Senza limite">∞</button>
+        <input type="number" min="0" max="999" step="1" inputmode="numeric" placeholder="MAX" value="${product.massimo ?? ""}" data-admin-massimo="${product.id}" aria-label="Massimo di ${escapeHtml(product.name)} questa settimana">
+        <small data-admin-unita="${product.id}">${product.massimo === null || product.massimo === undefined ? "senza limite" : `porzioni da ${escapeHtml(product.weight)}`}</small>
+      </div>
       <label class="una-sola-scelta" title="Il cliente ne può mettere una sola nel carrello">
         <input type="checkbox" data-admin-unosolo="${product.id}" ${product.unoSolo ? "checked" : ""}>
         <span>UNA SOLA</span>
@@ -2549,7 +2628,8 @@ async function saveWeekSettings() {
     nome: $(`[data-admin-name="${product.id}"]`)?.value.trim() || product.name,
     peso: $(`[data-admin-weight="${product.id}"]`)?.value.trim() || product.weight,
     disponibile: Boolean($(`[data-admin-enabled="${product.id}"]`)?.checked),
-    unoSolo: Boolean($(`[data-admin-unosolo="${product.id}"]`)?.checked)
+    unoSolo: Boolean($(`[data-admin-unosolo="${product.id}"]`)?.checked),
+    ...(leggiMassimo(product.id) === null ? {} : { massimo: leggiMassimo(product.id) })
   }));
   if (!verdure.some(voce => voce.disponibile)) {
     showToast("Accendi almeno una verdura disponibile.");
@@ -3776,6 +3856,18 @@ function setupEvents() {
   }));
   $$("[data-prev-step]").forEach(button => button.addEventListener("click", () => goToStep(state.step - 1)));
   $("#barraAvanti").addEventListener("click", premiBarraAvanti);
+  // dashboard: ∞ svuota il massimo; scrivendo un numero o cambiando il peso si aggiorna la scritta sotto
+  $("#weeklyProductsEditor")?.addEventListener("click", event => {
+    const infinito = event.target.closest("[data-admin-infinito]");
+    if (!infinito) return;
+    const campo = $(`[data-admin-massimo="${infinito.dataset.adminInfinito}"]`);
+    campo.value = "";
+    aggiornaCampoMassimo(infinito.dataset.adminInfinito);
+  });
+  $("#weeklyProductsEditor")?.addEventListener("input", event => {
+    const id = event.target.dataset.adminMassimo || event.target.dataset.adminWeight;
+    if (id) aggiornaCampoMassimo(id);
+  });
   $$("[data-step-jump]").forEach(button => button.addEventListener("click", () => {
     const target = Number(button.dataset.stepJump);
     if (target >= 2 && !state.boxScelta) chiediSceltaCassetta();
@@ -3829,6 +3921,17 @@ function setupEvents() {
       updateSummary();
       showToast(`La fascia ${fascia} si è appena riempita: scegline un'altra.`, 5000);
       $("#timeGrid").scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (esito?.esaurite) {
+      const nomi = Object.entries(esito.esaurite).map(([id, restano]) => {
+        const nome = PRODUCTS.find(product => product.id === id)?.name || id;
+        return restano ? `${nome} (ne restano ${restano})` : `${nome} (finita)`;
+      });
+      goToStep(2);
+      renderProducts();
+      updateSummary();
+      showToast(`Mentre sceglievi sono finite le ultime porzioni: ${nomi.join(", ")}. Togli quelle in più e riprova.`, 7000);
       return;
     }
     renderCheckout();

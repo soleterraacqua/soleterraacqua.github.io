@@ -845,6 +845,19 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .live-crate-heading small { color: var(--terracotta); font-size: .68rem; letter-spacing: .14em; font-weight: 900; margin-bottom: 5px; }
 .live-crate-heading strong { font-size: .88rem; letter-spacing: .08em; }
 .live-crate-heading > span { font-size: .68rem; line-height: 1.45; letter-spacing: .1em; color: var(--muted); text-align: right; max-width: 120px; }
+/* verdura finita per questa settimana (v67): la scheda resta visibile ma spenta */
+.product-card.esaurita { opacity: .55; }
+.product-card.esaurita .product-card-image { filter: grayscale(.8); }
+/* nel carrello ce ne sono piu' di quelle rimaste: bordo terracotta finche' non le toglie */
+.product-card.troppe { border-color: var(--terracotta); box-shadow: 0 0 0 2px var(--terracotta) inset; }
+/* dashboard: massimo della settimana per ogni verdura (∞ = senza limite) */
+.massimo-scelta { display: grid; grid-template-columns: 34px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 6px; row-gap: 3px; align-items: center; }
+.massimo-scelta button { grid-row: 1; height: 38px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--muted); font-size: 1.15rem; line-height: 1; cursor: pointer; }
+.massimo-scelta.infinito button { background: var(--green); border-color: var(--green); color: #fff; }
+.massimo-scelta input { grid-row: 1; width: 100%; min-height: 38px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: .85rem; font-weight: 700; text-align: center; }
+.massimo-scelta.infinito input { color: var(--muted); }
+.massimo-scelta small { grid-column: 1 / -1; color: var(--muted); font-size: .64rem; letter-spacing: .02em; line-height: 1.25; overflow-wrap: anywhere; }
+.massimo-scelta:not(.infinito) small { color: var(--terracotta); font-weight: 700; }
 /* cosa c'e' nella cassetta, scritto (v66): nomi separati da un puntino, "x2" se ripetuti */
 .contenuto-cassetta { margin: 8px 0 0; color: var(--green-deep); font-size: .8rem; line-height: 1.45; }
 .contenuto-cassetta span { white-space: nowrap; }
@@ -1340,7 +1353,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 .prezzo-campo input { min-height: 42px; padding: 9px 30px 9px 11px; }
 .prezzo-campo b { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: .8rem; }
 .admin-products-table { overflow-x: auto; }
-.admin-product-row { min-width: 690px; display: grid; grid-template-columns: 82px 1.2fr .8fr 82px 90px; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.admin-product-row { min-width: 820px; display: grid; grid-template-columns: 82px 1.2fr .8fr 130px 82px 90px; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
 .admin-product-header { color: var(--muted); font-size: .68rem; letter-spacing: .1em; font-weight: 900; padding-top: 0; border-top: 0; }
 .admin-product-thumb-wrap { position: relative; width: 70px; height: 62px; }
 .admin-product-thumb { width: 70px; height: 62px; border-radius: 12px; background-repeat: no-repeat; overflow: hidden; background-color: var(--cream); }
@@ -1468,7 +1481,9 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .popup-conserve-azioni .popup-conserve-no { font-size: .72rem; letter-spacing: .05em; gap: 8px; padding-inline: 10px; }
   .admin-products-table { overflow: visible; }
   .admin-product-header { display: none; }
-  .admin-product-row { min-width: 0; grid-template-columns: 58px minmax(0, 1fr) 76px; grid-template-areas: "foto nome dispo" "foto peso uno"; gap: 6px 10px; }
+  .admin-product-row { min-width: 0; grid-template-columns: 58px minmax(0, 1fr) 76px; grid-template-areas: "foto nome dispo" "foto peso uno" "foto massimo massimo"; gap: 6px 10px; }
+  .admin-product-row > .massimo-scelta { grid-area: massimo; grid-template-columns: 38px 90px minmax(0, 1fr); grid-template-rows: auto; }
+  .admin-product-row > .massimo-scelta small { grid-column: 3; grid-row: 1; }
   .admin-product-row > .una-sola-scelta { grid-area: uno; }
   .admin-product-row > .admin-product-thumb-wrap { grid-area: foto; width: 58px; height: 54px; }
   .admin-product-row > .admin-product-thumb-wrap .admin-product-thumb { width: 58px; height: 54px; }
