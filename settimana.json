@@ -1,5 +1,5 @@
 {
-  "aggiornato": "2026-10-28T08:42:11.418Z",
+  "aggiornato": "2026-10-28T10:41:56.916Z",
   "giorni": [],
   "giornoFisso": 5,
   "giornoFisso2": -1,
@@ -41,6 +41,7 @@
       "peso": "1 - 2 cespi",
       "disponibile": true,
       "unoSolo": false,
+      "massimo": 20,
       "foto": ""
     },
     {
@@ -49,6 +50,7 @@
       "peso": "1 - 2 cespi",
       "disponibile": true,
       "unoSolo": false,
+      "massimo": 40,
       "foto": ""
     },
     {
@@ -246,7 +248,7 @@
     {
       "id": "zucchine-romanesche",
       "nome": "Zucchine romanesche",
-      "peso": "700 - 800 &",
+      "peso": "700 - 800 g",
       "disponibile": true,
       "unoSolo": true,
       "foto": ""
@@ -313,6 +315,7 @@
       "peso": "500 g",
       "disponibile": true,
       "unoSolo": false,
+      "massimo": 60,
       "foto": ""
     },
     {
@@ -337,6 +340,7 @@
       "peso": "1 pz - 2pz",
       "disponibile": true,
       "unoSolo": false,
+      "massimo": 40,
       "foto": ""
     }
   ],
