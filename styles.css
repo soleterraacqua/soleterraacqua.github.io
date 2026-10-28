@@ -168,18 +168,21 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .primary-button { background: var(--green); color: var(--cream); }
 .hero-button {
   margin-top: 20px;
-  /* il pulsante principale e' color grano: si stacca dalla foto e dalle caselle chiare qui sotto */
-  background: linear-gradient(180deg, #f7e3a4 0%, #eccb6d 100%);
+  /* il pulsante principale e' color grano: si stacca dalla foto e dalle caselle chiare qui sotto. E' il piu'
+     forte dell'apertura (v65): piu' alto della casella delle conserve, scritta piu' grande e piu' marcata
+     (il Trebuchet non ha un grassetto piu' pesante: lo ispessisco con un filo di contorno), alone dorato */
+  background: linear-gradient(180deg, #f9e6a8 0%, #e9c35c 100%);
   color: var(--green-deep);
   width: 100%;
   max-width: 500px;
-  min-height: 62px;
-  font-size: .9rem;
+  min-height: 68px;
+  font-size: .98rem;
+  -webkit-text-stroke: .45px currentColor;
   border-radius: 999px;
   padding-inline: 26px 28px;
   position: relative;
   z-index: 2;
-  box-shadow: 0 14px 36px rgba(9, 24, 14, .28), 0 0 0 0 rgba(247, 240, 223, .34);
+  box-shadow: 0 14px 36px rgba(9, 24, 14, .3), 0 0 26px rgba(247, 227, 164, .38), 0 0 0 0 rgba(247, 240, 223, .34);
   animation: ctaBreath 3.8s ease-in-out infinite;
   transform-origin: center;
 }
@@ -187,7 +190,7 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
   content: "";
   position: absolute;
   inset: -7px;
-  border: 1px solid rgba(247, 227, 164, .7);
+  border: 1.5px solid rgba(247, 227, 164, .88);
   border-radius: inherit;
   pointer-events: none;
 }
@@ -200,11 +203,11 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 @keyframes ctaBreath {
   0%, 100% {
     transform: translateY(0) scale(1);
-    box-shadow: 0 14px 36px rgba(9, 24, 14, .28), 0 0 0 0 rgba(247, 240, 223, .34);
+    box-shadow: 0 14px 36px rgba(9, 24, 14, .3), 0 0 26px rgba(247, 227, 164, .38), 0 0 0 0 rgba(247, 240, 223, .34);
   }
   50% {
     transform: translateY(-5px) scale(1.045);
-    box-shadow: 0 19px 43px rgba(9, 24, 14, .35), 0 0 0 10px rgba(247, 240, 223, 0);
+    box-shadow: 0 19px 43px rgba(9, 24, 14, .36), 0 0 34px rgba(247, 227, 164, .5), 0 0 0 10px rgba(247, 240, 223, 0);
   }
 }
 .primary-button:hover, .secondary-button:hover, .cream-button:hover { transform: translateY(-2px); }
@@ -305,11 +308,11 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
    quanto "Componi la tua cassetta" e allineata a lui; si muovono solo i vasetti, ogni tanto: due pulsanti che
    respirano insieme si fanno concorrenza. Niente sfocatura dietro: sui telefoni deboli pesa. */
 .hero-extra { max-width: 500px; margin-top: 46px; }
-.hero-conserve { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 78px; padding: 10px 14px 10px 132px; border: 1px solid rgba(255,255,255,.75); border-radius: 22px; background: linear-gradient(180deg, #fffaf0 0%, #f7ecd4 100%); color: var(--green-deep); text-decoration: none; box-shadow: 0 16px 34px rgba(0,0,0,.32); transition: transform .25s ease, box-shadow .25s ease; }
+.hero-conserve { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 72px; padding: 9px 14px 9px 124px; border: 1px solid rgba(255,255,255,.75); border-radius: 22px; background: linear-gradient(180deg, #fffaf0 0%, #f7ecd4 100%); color: var(--green-deep); text-decoration: none; box-shadow: 0 14px 30px rgba(0,0,0,.24); transition: transform .25s ease, box-shadow .25s ease; }
 .hero-conserve:hover, .hero-conserve:focus-visible { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(0,0,0,.38); }
 .hero-conserve:focus-visible { outline: 3px solid #f3d48a; outline-offset: 3px; }
 /* lo stesso contorno sottile staccato di "Componi la tua cassetta", color crema come la casella */
-.hero-conserve::before { content: ""; position: absolute; inset: -7px; border: 1px solid rgba(255,250,240,.7); border-radius: 29px; pointer-events: none; }
+.hero-conserve::before { content: ""; position: absolute; inset: -7px; border: 1px solid rgba(255,250,240,.5); border-radius: 29px; pointer-events: none; }
 /* la "respirazione" del pulsante principale: la usa anche l'invito alle conserve nel riepilogo */
 @keyframes conserveRespiro {
   0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 12px 30px rgba(19,35,24,.26), 0 0 0 0 rgba(237,180,154,.55); }
@@ -317,11 +320,11 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 }
 /* i vasetti escono di circa 28px dal bordo di sopra (il margine sopra lascia spazio all'alone del pulsante
    principale); ogni tanto fanno un piccolo saluto */
-.hero-conserve-vasetti { position: absolute; left: 10px; bottom: 6px; width: 108px; pointer-events: none; transform-origin: 50% 100%; animation: vasettiSaluto 6s ease-in-out 2.5s infinite; }
+.hero-conserve-vasetti { position: absolute; left: 10px; bottom: 6px; width: 100px; pointer-events: none; transform-origin: 50% 100%; animation: vasettiSaluto 6s ease-in-out 2.5s infinite; }
 .hero-conserve-vasetti img { display: block; width: 100%; height: auto; }
 .hero-conserve-testo { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; line-height: 1.05; }
 .hero-conserve-testo small { padding: 4px 8px 3px; border-radius: 999px; background: #a5543b; color: #fffaf0; font-size: .58rem; font-weight: 900; letter-spacing: .16em; }
-.hero-conserve-testo strong { font-size: 1rem; letter-spacing: .1em; white-space: nowrap; }
+.hero-conserve-testo strong { font-size: .9rem; letter-spacing: .09em; white-space: nowrap; }
 .hero-conserve-testo span { color: #7b6a55; font-size: .76rem; font-weight: 600; white-space: nowrap; }
 .hero-conserve-freccia { display: grid; place-items: center; flex-shrink: 0; width: 42px; height: 42px; margin-left: auto; border-radius: 50%; background: var(--terracotta); color: #fffaf0; font-size: 1.15rem; font-weight: 900; box-shadow: 0 6px 14px rgba(165,84,59,.35); transition: transform .25s ease; }
 .hero-conserve:hover .hero-conserve-freccia { transform: translateX(4px); }
@@ -476,7 +479,7 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 }
 /* telefoni stretti: il pulsante principale resta su una riga */
 @media (max-width: 400px) {
-  .hero-button { font-size: .8rem; letter-spacing: .07em; padding-inline: 20px 22px; }
+  .hero-button { font-size: .84rem; letter-spacing: .06em; padding-inline: 20px 22px; }
   .hero-button-icona { display: none; }
 }
 .weekly-products { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 40px 0 44px; }
@@ -1467,13 +1470,13 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .conserve-carrello-griglia { grid-template-columns: 1fr; }
   .admin-conserva-row { grid-template-columns: 40px 1fr 96px 54px; gap: 8px; }
   .admin-conserva-row img { width: 40px; }
-  .hero-button { min-height: 60px; font-size: .86rem; padding-inline: 22px 24px; }
+  .hero-button { min-height: 64px; font-size: .92rem; padding-inline: 22px 24px; }
   .hero-extra { margin-top: 38px; }
-  .hero-conserve { min-height: 70px; gap: 10px; padding: 8px 12px 8px 108px; border-radius: 20px; }
+  .hero-conserve { min-height: 66px; gap: 10px; padding: 8px 12px 8px 102px; border-radius: 20px; }
   .hero-conserve::before { border-radius: 27px; }
-  .hero-conserve-vasetti { left: 6px; bottom: 5px; width: 90px; }
+  .hero-conserve-vasetti { left: 6px; bottom: 5px; width: 86px; }
   .hero-conserve-testo { gap: 4px; }
-  .hero-conserve-testo strong { font-size: .88rem; letter-spacing: .08em; }
+  .hero-conserve-testo strong { font-size: .82rem; letter-spacing: .07em; }
   .hero-conserve-testo span { font-size: .7rem; }
   .hero-conserve-freccia { width: 38px; height: 38px; font-size: 1.05rem; }
   .conserva-liste { grid-template-columns: 1fr; }
@@ -1755,7 +1758,7 @@ html.leggero .invia-tasto { box-shadow: 0 0 0 5px rgba(37,211,102,.35); }
 
 /* telefoni molto stretti: la casella delle conserve stringe vasetti e scritta (dopo le regole dei telefoni, che vincerebbero) */
 @media (max-width: 379px) {
-  .hero-conserve { padding-left: 100px; }
-  .hero-conserve-vasetti { width: 86px; }
-  .hero-conserve-testo strong { font-size: .8rem; letter-spacing: .05em; }
+  .hero-conserve { padding-left: 96px; }
+  .hero-conserve-vasetti { width: 82px; }
+  .hero-conserve-testo strong { font-size: .76rem; letter-spacing: .05em; }
 }
