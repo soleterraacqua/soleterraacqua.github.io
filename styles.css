@@ -175,7 +175,7 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
   color: var(--green-deep);
   width: 100%;
   max-width: 500px;
-  min-height: 68px;
+  min-height: 76px;
   font-size: .98rem;
   -webkit-text-stroke: .45px currentColor;
   border-radius: 999px;
@@ -195,6 +195,9 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
   pointer-events: none;
 }
 .hero-button-testo { display: inline-flex; align-items: center; gap: 13px; }
+/* v69: sotto la scritta, piccola, la rassicurazione sul pagamento: si legge appena si apre il sito, senza scorrere */
+.hero-button-righe { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; line-height: 1.05; text-align: left; }
+.hero-button-righe small { font-size: .7rem; font-weight: 700; letter-spacing: .03em; -webkit-text-stroke: 0; color: #4b5a2e; white-space: nowrap; }
 .hero-button-icona { width: 26px; height: 24px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; stroke-linecap: round; }
 .hero-button:hover {
   animation-play-state: paused;
@@ -1421,7 +1424,7 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .header-cart { justify-self: end; }
   .hero { min-height: 650px; height: calc(100svh - var(--header-height)); }
   .hero-shade { background: linear-gradient(0deg, rgba(19,35,24,.78), rgba(19,35,24,.05) 70%); }
-  .hero-content { width: min(620px, calc(100% - 48px)); left: 24px; right: auto; top: auto; bottom: 45px; transform: none; }
+  .hero-content { width: min(620px, calc(100% - 48px)); left: 24px; right: auto; top: auto; bottom: 40px; transform: none; }
   .hero-content h1 { font-size: clamp(3.3rem, 12vw, 5rem); }
   .hero-proof { top: 24px; right: 24px; left: auto; bottom: auto; }
   .story { grid-template-columns: 1fr; }
@@ -1509,8 +1512,10 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .conserve-carrello-griglia { grid-template-columns: 1fr; }
   .admin-conserva-row { grid-template-columns: 40px 1fr 96px 54px; gap: 8px; }
   .admin-conserva-row img { width: 40px; }
-  .hero-button { min-height: 64px; font-size: .92rem; padding-inline: 22px 24px; }
-  .hero-extra { margin-top: 38px; }
+  .hero-button { min-height: 70px; font-size: .92rem; padding-inline: 22px 24px; }
+  .hero-button-righe { gap: 4px; }
+  .hero-button-righe small { font-size: .72rem; letter-spacing: .01em; }
+  .hero-extra { margin-top: 35px; }
   .hero-conserve { min-height: 66px; gap: 10px; padding: 8px 12px 8px 102px; border-radius: 20px; }
   .hero-conserve::before { border-radius: 27px; }
   .hero-conserve-vasetti { left: 6px; bottom: 5px; width: 86px; }
@@ -1800,4 +1805,10 @@ html.leggero .invia-tasto { box-shadow: 0 0 0 5px rgba(37,211,102,.35); }
   .hero-conserve { padding-left: 96px; }
   .hero-conserve-vasetti { width: 82px; }
   .hero-conserve-testo strong { font-size: .76rem; letter-spacing: .05em; }
+}
+
+/* telefoni da 320 px: la scritta del pulsante principale e la sua seconda riga stringono, la freccia resta dentro */
+@media (max-width: 340px) {
+  .hero-button { font-size: .76rem; letter-spacing: .04em; padding-inline: 16px 18px; gap: 12px; }
+  .hero-button-righe small { font-size: .64rem; letter-spacing: 0; }
 }
