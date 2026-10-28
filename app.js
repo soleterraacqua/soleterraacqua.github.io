@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 62;
+const VERSIONE_SITO = 63;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -1254,8 +1254,9 @@ function ripristinaCarrello() {
   const pulisci = prodotti => (Array.isArray(prodotti) ? prodotti : []).filter(id => attivi.has(id));
   // i carrelli salvati prima della seconda cassetta hanno solo box e prodotti
   const salvate = (Array.isArray(salvato.cassette) ? salvato.cassette : []).filter(cassetta => BOXES[cassetta?.box]).slice(0, 2);
-  // "scelta" c'e' dalla v62: prima, chi aveva gia' delle verdure la cassetta l'aveva scelta di sicuro
-  const scelta = (cassetta, prodotti) => (typeof cassetta.scelta === "boolean" ? cassetta.scelta : prodotti.length > 0);
+  // la dimensione resta scelta solo se nella cassetta ci sono gia' verdure: chi l'aveva soltanto
+  // toccata in una visita di prima ritrova le tre caselle da scegliere, nessuna gia' verde
+  const scelta = (cassetta, prodotti) => prodotti.length > 0 && cassetta.scelta !== false;
   state.cassette = salvate.length
     ? salvate.map(cassetta => ({ box: cassetta.box, selectionOrder: pulisci(cassetta.prodotti), scelta: scelta(cassetta, pulisci(cassetta.prodotti)) }))
     : [{ box: BOXES[salvato.box] ? salvato.box : state.box, selectionOrder: pulisci(salvato.prodotti), scelta: scelta(salvato, pulisci(salvato.prodotti)) }];
