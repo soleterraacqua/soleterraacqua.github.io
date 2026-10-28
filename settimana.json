@@ -1,7 +1,14 @@
 {
-  "aggiornato": "2026-10-14T06:38:14.686Z",
-  "giorni": [
-    "2026-10-23"
+  "aggiornato": "2026-10-28T08:42:11.418Z",
+  "giorni": [],
+  "giornoFisso": 5,
+  "giornoFisso2": -1,
+  "saltati": [
+    "2026-11-06",
+    "2026-11-13",
+    "2026-11-20",
+    "2026-11-27",
+    "2026-12-04"
   ],
   "prodotti": [
     {
@@ -9,13 +16,15 @@
       "nome": "Peperoni",
       "peso": "500 g",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "melanzane",
       "nome": "Melanzane",
       "peso": "500 g",
-      "disponibile": true,
+      "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -23,20 +32,23 @@
       "nome": "Pomodori",
       "peso": "500 g",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "lattuga-romana",
       "nome": "Lattuga romana",
-      "peso": "1 cespo",
+      "peso": "1 - 2 cespi",
       "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "lattuga-canasta",
       "nome": "Lattuga canasta",
-      "peso": "1 cespo",
+      "peso": "1 - 2 cespi",
       "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -44,6 +56,7 @@
       "nome": "Lattuga gentilina",
       "peso": "1 cespo",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -51,13 +64,31 @@
       "nome": "Lattuga iceberg",
       "peso": "1 cespo",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "cicoria",
       "nome": "Cicoria",
+      "peso": "600 g",
+      "disponibile": false,
+      "unoSolo": false,
+      "foto": ""
+    },
+    {
+      "id": "radicchio-treviso",
+      "nome": "Radicchio di Treviso",
       "peso": "500 g",
       "disponibile": false,
+      "unoSolo": false,
+      "foto": ""
+    },
+    {
+      "id": "radicchio-chioggia",
+      "nome": "Radicchio di Chioggia",
+      "peso": "1 cespo",
+      "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -65,13 +96,15 @@
       "nome": "Bieta colorata",
       "peso": "500 g",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "bieta-verde",
       "nome": "Bieta verde",
-      "peso": "500 g",
+      "peso": "800 g",
       "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -79,6 +112,7 @@
       "nome": "Cocomero",
       "peso": "1 pz",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -86,6 +120,7 @@
       "nome": "Melone",
       "peso": "1 pz",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -93,6 +128,7 @@
       "nome": "Broccolo romanesco",
       "peso": "1 pz",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -100,6 +136,7 @@
       "nome": "Broccolo siciliano",
       "peso": "1 pz",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -107,6 +144,7 @@
       "nome": "Cavolfiore",
       "peso": "1 pz",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -114,6 +152,7 @@
       "nome": "Cavolo cappuccio",
       "peso": "1 pz",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -121,6 +160,7 @@
       "nome": "Cavolo cappuccio viola",
       "peso": "1 pz",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -128,6 +168,7 @@
       "nome": "Verza",
       "peso": "1 pz",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -135,6 +176,7 @@
       "nome": "Cipolle di Tropea",
       "peso": "500 g",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -142,27 +184,39 @@
       "nome": "Cipolle bianche",
       "peso": "500 g",
       "disponibile": false,
+      "unoSolo": false,
+      "foto": ""
+    },
+    {
+      "id": "ravanelli",
+      "nome": "Ravanelli",
+      "peso": "15 ravanelli",
+      "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "aglio",
       "nome": "Mazzo di aglio",
-      "peso": "1 mazzo",
+      "peso": "7 teste",
       "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "odori-misti",
       "nome": "Odori misti",
-      "peso": "1 mazzo",
+      "peso": "1 mazzo di ogni odore",
       "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "zucca",
       "nome": "Zucca butternut",
-      "peso": "1 kg",
+      "peso": "1 -2 pz",
       "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -170,6 +224,7 @@
       "nome": "Carciofi",
       "peso": "3 pz",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -177,27 +232,31 @@
       "nome": "Asparagi",
       "peso": "1 mazzo",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "patate",
       "nome": "Patate",
-      "peso": "1 kg",
+      "peso": "1,1 kg",
       "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "zucchine-romanesche",
       "nome": "Zucchine romanesche",
-      "peso": "500 g",
+      "peso": "700 - 800 &",
       "disponibile": true,
+      "unoSolo": true,
       "foto": ""
     },
     {
       "id": "cetrioli",
       "nome": "Cetrioli",
       "peso": "500 g",
-      "disponibile": true,
+      "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -205,6 +264,7 @@
       "nome": "Fiori di zucca",
       "peso": "10 pz",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -212,27 +272,31 @@
       "nome": "Peperoncini",
       "peso": "200 g",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "scarola-riccia",
       "nome": "Scarola riccia",
-      "peso": "1 cespo",
+      "peso": "1 - 2 cespi",
       "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "scarola-liscia",
       "nome": "Scarola liscia",
-      "peso": "1 cespo",
+      "peso": "1 - 2 cespi",
       "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
       "id": "cavolo-nero",
       "nome": "Cavolo nero",
       "peso": "1 mazzo",
-      "disponibile": true,
+      "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
@@ -240,27 +304,39 @@
       "nome": "Peperoni friggitelli",
       "peso": "500 g",
       "disponibile": false,
+      "unoSolo": false,
       "foto": ""
     },
     {
-      "id": "radicchio-treviso",
-      "nome": "Radicchio di Treviso",
+      "id": "castagne",
+      "nome": "Castagne",
       "peso": "500 g",
       "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
-      "id": "radicchio-chioggia",
-      "nome": "Radicchio di Chioggia",
-      "peso": "1 cespo",
+      "id": "melone-invernale",
+      "nome": "Melone invernale",
+      "peso": "1 pz",
       "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     },
     {
-      "id": "ravanelli",
-      "nome": "Ravanelli",
-      "peso": "1 mazzo",
+      "id": "cime-rapa",
+      "nome": "Cime di rapa senza infiorescenza",
+      "peso": "700 g",
       "disponibile": true,
+      "unoSolo": false,
+      "foto": ""
+    },
+    {
+      "id": "cavolo-punta",
+      "nome": "Cavolo cappuccio a punta",
+      "peso": "1 pz - 2pz",
+      "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     }
   ],
@@ -300,5 +376,9 @@
       "prezzo": 6,
       "disponibile": true
     }
-  ]
+  ],
+  "olio": {
+    "prezzoLitro": 14,
+    "disponibile": true
+  }
 }
