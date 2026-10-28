@@ -299,30 +299,40 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 @keyframes popupEntra { from { opacity: 0; transform: translateY(24px) scale(.94); } }
 @keyframes popupEsclamativo { 0%, 100% { transform: scale(1) rotate(0deg); } 12% { transform: scale(1.12) rotate(-8deg); } 24% { transform: scale(1.12) rotate(8deg); } 36% { transform: scale(1) rotate(0deg); } }
 
-/* Pulsante "Le mie conserve" nell'apertura: largo quanto quello principale e allineato a lui, ma piu'
-   leggero (scuro trasparente con bordo chiaro; niente sfocatura dietro: sui telefoni deboli pesa e, con l'etichetta
-   che pulsa, Chrome scuriva un riquadro attorno), cosi' si vede senza rubare la scena a "Componi la tua cassetta".
-   Si muove solo l'etichetta NOVITA': due pulsanti che respirano insieme si fanno concorrenza. */
-.hero-extra { max-width: 500px; margin-top: 20px; }
-.hero-conserve { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 60px; padding: 6px 24px 6px 7px; border: 1.5px solid rgba(255,250,240,.62); border-radius: 999px; background: rgba(19,35,24,.56); color: #fffaf0; text-decoration: none; box-shadow: 0 12px 28px rgba(0,0,0,.22); transition: background .25s ease, border-color .25s ease, transform .25s ease; }
-.hero-conserve:hover, .hero-conserve:focus-visible { background: rgba(255,250,240,.16); border-color: #fffaf0; transform: translateY(-2px); }
+/* Casella "Le mie conserve" nell'apertura (v64): un'etichetta chiara color crema, come la scheda KM 0, con i
+   vasetti veri che escono dal bordo di sopra, appoggiati direttamente sulla casella (la tovaglietta a quadretti
+   della prima prova non piaceva). Prima era scura e trasparente e sulla foto del campo si vedeva poco. Larga
+   quanto "Componi la tua cassetta" e allineata a lui; si muovono solo i vasetti, ogni tanto: due pulsanti che
+   respirano insieme si fanno concorrenza. Niente sfocatura dietro: sui telefoni deboli pesa. */
+.hero-extra { max-width: 500px; margin-top: 46px; }
+.hero-conserve { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 78px; padding: 10px 14px 10px 132px; border: 1px solid rgba(255,255,255,.75); border-radius: 22px; background: linear-gradient(180deg, #fffaf0 0%, #f7ecd4 100%); color: var(--green-deep); text-decoration: none; box-shadow: 0 16px 34px rgba(0,0,0,.32); transition: transform .25s ease, box-shadow .25s ease; }
+.hero-conserve:hover, .hero-conserve:focus-visible { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(0,0,0,.38); }
+.hero-conserve:focus-visible { outline: 3px solid #f3d48a; outline-offset: 3px; }
+/* lo stesso contorno sottile staccato di "Componi la tua cassetta", color crema come la casella */
+.hero-conserve::before { content: ""; position: absolute; inset: -7px; border: 1px solid rgba(255,250,240,.7); border-radius: 29px; pointer-events: none; }
 /* la "respirazione" del pulsante principale: la usa anche l'invito alle conserve nel riepilogo */
 @keyframes conserveRespiro {
   0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 12px 30px rgba(19,35,24,.26), 0 0 0 0 rgba(237,180,154,.55); }
   50% { transform: translateY(-4px) scale(1.05); box-shadow: 0 18px 40px rgba(19,35,24,.32), 0 0 0 12px rgba(237,180,154,0); }
 }
-.hero-conserve-vasetti { display: flex; flex-shrink: 0; }
-.hero-conserve-vasetti img { width: 46px; height: 46px; border-radius: 50%; border: 2px solid #fffaf0; object-fit: cover; background: #f5f0dd; }
-.hero-conserve-vasetti img + img { margin-left: -14px; }
-.hero-conserve-testo { display: flex; align-items: center; gap: 10px; min-width: 0; line-height: 1; }
-.hero-conserve-testo small { flex-shrink: 0; padding: 5px 9px 4px; border-radius: 999px; background: #a5543b; color: #fffaf0; font-size: .62rem; font-weight: 900; letter-spacing: .14em; animation: novitaPulsa 3.8s ease-in-out 1.9s infinite; }
-.hero-conserve-testo strong { font-size: .86rem; letter-spacing: .12em; white-space: nowrap; }
-.hero-conserve-freccia { margin-left: auto; padding-left: 6px; color: #f3d48a; font-size: 1.2rem; font-weight: 900; transition: transform .25s ease; }
+/* i vasetti escono di circa 28px dal bordo di sopra (il margine sopra lascia spazio all'alone del pulsante
+   principale); ogni tanto fanno un piccolo saluto */
+.hero-conserve-vasetti { position: absolute; left: 10px; bottom: 6px; width: 108px; pointer-events: none; transform-origin: 50% 100%; animation: vasettiSaluto 6s ease-in-out 2.5s infinite; }
+.hero-conserve-vasetti img { display: block; width: 100%; height: auto; }
+.hero-conserve-testo { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; line-height: 1.05; }
+.hero-conserve-testo small { padding: 4px 8px 3px; border-radius: 999px; background: #a5543b; color: #fffaf0; font-size: .58rem; font-weight: 900; letter-spacing: .16em; }
+.hero-conserve-testo strong { font-size: 1rem; letter-spacing: .1em; white-space: nowrap; }
+.hero-conserve-testo span { color: #7b6a55; font-size: .76rem; font-weight: 600; white-space: nowrap; }
+.hero-conserve-freccia { display: grid; place-items: center; flex-shrink: 0; width: 42px; height: 42px; margin-left: auto; border-radius: 50%; background: var(--terracotta); color: #fffaf0; font-size: 1.15rem; font-weight: 900; box-shadow: 0 6px 14px rgba(165,84,59,.35); transition: transform .25s ease; }
 .hero-conserve:hover .hero-conserve-freccia { transform: translateX(4px); }
-@keyframes novitaPulsa {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(237,180,154,.6); }
-  50% { transform: scale(1.07); box-shadow: 0 0 0 7px rgba(237,180,154,0); }
+.hero-conserve:hover .hero-conserve-vasetti { animation-play-state: paused; transform: translateY(-3px) rotate(-2deg); }
+@keyframes vasettiSaluto {
+  0%, 78%, 100% { transform: rotate(0deg) translateY(0); }
+  82% { transform: rotate(-4deg) translateY(-3px); }
+  88% { transform: rotate(3deg) translateY(-3px); }
+  94% { transform: rotate(-1deg) translateY(0); }
 }
+@media (prefers-reduced-motion: reduce) { .hero-conserve-vasetti { animation: none; } }
 
 .hero-proof {
   position: absolute;
@@ -468,10 +478,6 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 @media (max-width: 400px) {
   .hero-button { font-size: .8rem; letter-spacing: .07em; padding-inline: 20px 22px; }
   .hero-button-icona { display: none; }
-}
-@media (max-width: 379px) {
-  .hero-conserve-vasetti img + img { display: none; }
-  .hero-conserve-testo strong { font-size: .76rem; letter-spacing: .06em; }
 }
 .weekly-products { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 40px 0 44px; }
 .weekly-products article { background: var(--cream); padding-bottom: 18px; position: relative; overflow: hidden; border-radius: var(--soft-radius); transition: transform .4s ease; }
@@ -1462,12 +1468,14 @@ body.vista-azienda .aiuto-whatsapp { display: none; }
   .admin-conserva-row { grid-template-columns: 40px 1fr 96px 54px; gap: 8px; }
   .admin-conserva-row img { width: 40px; }
   .hero-button { min-height: 60px; font-size: .86rem; padding-inline: 22px 24px; }
-  .hero-extra { margin-top: 17px; }
-  .hero-conserve { min-height: 56px; gap: 10px; padding: 5px 18px 5px 6px; }
-  .hero-conserve-vasetti img { width: 42px; height: 42px; }
-  .hero-conserve-testo { gap: 8px; }
-  .hero-conserve-testo small { font-size: .56rem; letter-spacing: .1em; padding: 5px 7px 4px; }
-  .hero-conserve-testo strong { font-size: .8rem; letter-spacing: .08em; }
+  .hero-extra { margin-top: 38px; }
+  .hero-conserve { min-height: 70px; gap: 10px; padding: 8px 12px 8px 108px; border-radius: 20px; }
+  .hero-conserve::before { border-radius: 27px; }
+  .hero-conserve-vasetti { left: 6px; bottom: 5px; width: 90px; }
+  .hero-conserve-testo { gap: 4px; }
+  .hero-conserve-testo strong { font-size: .88rem; letter-spacing: .08em; }
+  .hero-conserve-testo span { font-size: .7rem; }
+  .hero-conserve-freccia { width: 38px; height: 38px; font-size: 1.05rem; }
   .conserva-liste { grid-template-columns: 1fr; }
   .conserva-chiedi { width: 100%; justify-content: center; }
   .section-wrap { width: min(100% - 30px, 600px); }
@@ -1744,3 +1752,10 @@ html.leggero .invia-tasto { box-shadow: 0 0 0 5px rgba(37,211,102,.35); }
 .una-sola-scelta input { width: 17px; height: 17px; accent-color: var(--terracotta); }
 .una-sola-scelta:has(input:checked) { color: var(--terracotta); }
 .product-card p.una-sola { color: var(--terracotta); font-weight: 700; }
+
+/* telefoni molto stretti: la casella delle conserve stringe vasetti e scritta (dopo le regole dei telefoni, che vincerebbero) */
+@media (max-width: 379px) {
+  .hero-conserve { padding-left: 100px; }
+  .hero-conserve-vasetti { width: 86px; }
+  .hero-conserve-testo strong { font-size: .8rem; letter-spacing: .05em; }
+}
