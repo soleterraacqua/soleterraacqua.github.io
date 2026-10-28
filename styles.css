@@ -357,7 +357,15 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .hero-proof strong { font: italic 700 1.75rem/1 Georgia, serif; color: var(--terracotta); white-space: nowrap; }
 .hero-proof span { font-size: .71rem; font-weight: 900; line-height: 1.55; letter-spacing: .08em; padding-right: 2px; }
 
-.trust-strip { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 1180px; margin: 0 auto; padding: 34px 0; border-bottom: 1px solid var(--line); }
+.trust-strip { display: grid; grid-template-columns: repeat(4, 1fr); max-width: 1180px; margin: 0 auto; padding: 34px 0; border-bottom: 1px solid var(--line); }
+/* v68: "Paghi alla consegna" accanto agli altri tre: si vede appena sotto l'apertura senza coprire niente.
+   Al posto del numero c'e' il simbolo dell'euro, cosi' si distingue un poco dagli altri */
+.trust-strip > .trust-pagamento > span { font-style: normal; font-weight: 700; }
+.trust-strip > .trust-pagamento strong { color: var(--green-deep); }
+@media (min-width: 701px) and (max-width: 980px) {
+  .trust-strip { grid-template-columns: repeat(2, 1fr); row-gap: 24px; padding-inline: 24px; }
+  .trust-strip > div:nth-child(2n) { border-right: 0; }
+}
 .trust-strip > div { display: flex; align-items: center; justify-content: center; gap: 16px; border-right: 1px solid var(--line); }
 .trust-strip > div:last-child { border: 0; }
 .trust-strip > div > span { color: var(--terracotta); font: italic 1.6rem Georgia, serif; }
