@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 74;
+const VERSIONE_SITO = 75;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -883,6 +883,7 @@ function aggiornaPostoAiuto() {
 }
 
 function navigate(view, anchor) {
+  if (state.inserisco && view !== "builder") fineInserimento();
   if (view === "dashboard" && !isOwnerRoute()) {
     view = "home";
     anchor = null;
@@ -1135,6 +1136,7 @@ const quanteNelCarrello = id => cassetteOrdine().reduce((somma, cassetta) => som
 // conta le porzioni prese nelle prenotazioni della settimana (state.verdurePrese, senza quelle di questo cliente).
 const massimoDi = id => PRODUCTS.find(product => product.id === id)?.massimo ?? null;
 const perMe = id => {
+  if (state.inserisco) return Infinity;   // v75: l'ordine c'e' gia' stato su WhatsApp, lo registro com'e'
   const massimo = massimoDi(id);
   return massimo === null ? Infinity : Math.max(0, massimo - (state.verdurePrese[id] || 0));
 };
@@ -1176,7 +1178,7 @@ function changeProduct(id, amount) {
     showToast(quante ? `${nome}: questa settimana ne ho ancora ${quante === 1 ? "1 porzione" : `${quante} porzioni`}, sono tutte nel tuo carrello.` : `${nome}: questa settimana è esaurita.`, 4000);
     return;
   }
-  if (amount > 0 && unaSola(id) && quanteNelCarrello(id) >= 1) {
+  if (amount > 0 && unaSola(id) && quanteNelCarrello(id) >= 1 && !state.inserisco) {
     const nome = PRODUCTS.find(product => product.id === id)?.name || "Questa verdura";
     showToast(`${nome}: se ne può prendere una sola per ordine.`, 3500);
     return;
@@ -1380,6 +1382,7 @@ function updateSummary() {
 }
 
 function salvaCarrello() {
+  if (state.inserisco) return;   // l'ordine che inserisco per un cliente non e' il carrello di questo telefono
   try {
     const cassette = cassetteOrdine().map(cassetta => ({ box: cassetta.box, prodotti: cassetta.selectionOrder, scelta: cassetta.scelta !== false }));
     localStorage.setItem(CARRELLO_KEY, JSON.stringify({ box: state.box, prodotti: state.selectionOrder, conserve: state.conserve, olio: state.olio, cassette, attiva: state.attiva }));
@@ -1639,6 +1642,8 @@ function giorniPrenotabiliDa(oggi, tardi) {
 }
 
 function giorniPrenotabili() {
+  // v75: l'ordine arrivato su WhatsApp lo inserisco io anche a ordini chiusi, per oggi compreso
+  if (state.inserisco) return giorniPrenotabiliDa(spostaGiorno(oggiLocale(), -1), false);
   const adesso = new Date();
   if (mattinaDiConsegna(adesso)) return [];
   return giorniPrenotabiliDa(oggiLocale(), adesso.getHours() >= ORA_CHIUSURA_ORDINI);
@@ -1804,7 +1809,8 @@ function disegnaFasce() {
   const zona = LOCALITA.find(localita => localita.nome === state.area);
   const fasce = !zona ? [] : zona.costo ? FASCIA_ZONE_VICINE : FASCE_ORARIE;
   const presi = state.posti[state.selectedDate] || {};
-  const piena = fascia => (presi[fascia] || 0) >= MAX_ORDINI_FASCIA;
+  // v75: inserendo io un ordine arrivato su WhatsApp posso usare anche le fasce piene
+  const piena = fascia => !state.inserisco && (presi[fascia] || 0) >= MAX_ORDINI_FASCIA;
   if (!fasce.some(([from, to]) => `${from}–${to}` === state.selectedTime) || piena(state.selectedTime)) {
     // nelle zone vicine la fascia e' una sola: la scelgo io (se non e' piena)
     const unica = fasce.length === 1 ? `${fasce[0][0]}–${fasce[0][1]}` : "";
@@ -1816,10 +1822,12 @@ function disegnaFasce() {
       const fascia = `${from}–${to}`;
       const chiusa = piena(fascia);
       const ultimo = !chiusa && (presi[fascia] || 0) === MAX_ORDINI_FASCIA - 1;
+      const nota = state.inserisco ? `${presi[fascia] || 0}/${MAX_ORDINI_FASCIA} PRESI`
+        : chiusa ? (zona.costo ? "PIENA · SCEGLI UN ALTRO GIORNO" : "PIENA") : ultimo ? "ULTIMO POSTO" : zona.costo ? "ZONE VICINE" : `${minutiFascia(from, to)} MINUTI`;
       return `
       <label class="${chiusa ? "piena" : ""}">
         <input type="radio" name="deliveryTime" value="${fascia}" ${state.selectedTime === fascia ? "checked" : ""} ${chiusa ? "disabled" : ""}>
-        <span>${fascia}<small>${chiusa ? (zona.costo ? "PIENA · SCEGLI UN ALTRO GIORNO" : "PIENA") : ultimo ? "ULTIMO POSTO" : zona.costo ? "ZONE VICINE" : `${minutiFascia(from, to)} MINUTI`}</small></span>
+        <span>${fascia}<small>${nota}</small></span>
       </label>`;
     }).join("");
   $$('input[name="deliveryTime"]').forEach(input => input.addEventListener("change", event => {
@@ -2100,6 +2108,10 @@ function chiudiCondizioni() {
 }
 
 function confirmOrder() {
+  if (state.inserisco) {
+    salvaOrdineInserito();
+    return;
+  }
   // "come mi hai conosciuto" e' facoltativa: se non risponde, va bene lo stesso
   const origine = $('input[name="discovery"]:checked')?.value || "";
   const privacy = $("#privacyCheck").checked;
@@ -2145,12 +2157,57 @@ function chiudiPopupInvia() {
   document.body.style.overflow = "";
 }
 
-// "HO CAPITO, APRI WHATSAPP": qui nasce l'ordine e si apre WhatsApp (nello stesso tocco, se no il telefono lo blocca)
-function inviaOrdine() {
-  chiudiPopupInvia();
-  const origine = $('input[name="discovery"]:checked')?.value || "";
-  // codice unico: e' quello che ha tenuto il posto nella fascia (o uno nuovo se il posto non si e' potuto tenere)
-  const orderId = state.idOrdine || nuovoCodiceOrdine();
+// v75: gli ordini arrivati su WhatsApp senza passare dal sito li inserisco io dalla dashboard con lo stesso
+// compositore: anche a ordini chiusi, nelle fasce piene e senza i massimi delle verdure. Alla fine niente
+// WhatsApp: l'ordine va in dashboard (e nella copia), occupa il suo posto e le sue verdure contano.
+function entraInserimento() {
+  if (!isDashboardUnlocked()) return;
+  state.inserisco = true;
+  document.body.classList.add("inserisco");
+  $("#inseriscoBanner").hidden = false;
+  $("#confirmOrder").innerHTML = "SALVA IN DASHBOARD <span>→</span>";
+  svuotaCarrello();
+  state.conserveProposte = true;   // niente popup delle conserve: le metto io se le ha chieste
+  state.idOrdine = "";
+  state.selectedTime = "";
+  $("#deliveryForm").reset();
+  navigate("builder");
+  goToStep(1);
+  leggiPosti(true);
+}
+
+function fineInserimento() {
+  state.inserisco = false;
+  document.body.classList.remove("inserisco");
+  $("#inseriscoBanner").hidden = true;
+  $("#confirmOrder").innerHTML = "INVIA L'ORDINE <span>→</span>";
+  svuotaCarrello();
+  state.idOrdine = "";
+  state.selectedTime = "";
+  $("#deliveryForm").reset();
+  setupDatesAndTimes();
+}
+
+async function salvaOrdineInserito() {
+  const order = { ...creaOrdine(nuovoCodiceOrdine(), ""), daWhatsapp: true, inseritoDaMe: true };
+  state.orders.unshift(order);
+  saveBusinessData();
+  navigate("dashboard");
+  showToast(`Ordine di ${order.name} salvato in dashboard.`, 4500);
+  if (!postiAttivi()) return;
+  // il posto e le verdure: la stessa conferma del sito, ma senza l'ordine (in copia va con la dashboard)
+  const { ordine, ...posto } = corpoConferma(order);
+  try {
+    const esito = await chiediAlFoglio(posto, 15000);
+    if (!esito?.ok) throw new Error(esito?.errore || "risposta");
+  } catch (_) {
+    showToast(`Ordine di ${order.name} salvato, ma il posto nella fascia non si è registrato: controlla la rete.`, 6000);
+  }
+  caricaPrenotazioni();
+}
+
+// l'ordine com'e' nel riepilogo: lo usano l'invio su WhatsApp del cliente e l'ordine inserito da me
+function creaOrdine(orderId, origine) {
   const cassette = cassetteOrdine().map(cassetta => ({ box: nomeScatola(cassetta.box), items: getOrderItems(cassetta.selectionOrder) }));
   const order = {
     id: orderId,
@@ -2174,6 +2231,17 @@ function inviaOrdine() {
   order.notes = state.orderData.notes || "";
   order.loyaltyCredited = false;
   order.aggiornato = Date.now();
+  return order;
+}
+
+// "HO CAPITO, APRI WHATSAPP": qui nasce l'ordine e si apre WhatsApp (nello stesso tocco, se no il telefono lo blocca)
+function inviaOrdine() {
+  chiudiPopupInvia();
+  const origine = $('input[name="discovery"]:checked')?.value || "";
+  // codice unico: e' quello che ha tenuto il posto nella fascia (o uno nuovo se il posto non si e' potuto tenere)
+  const orderId = state.idOrdine || nuovoCodiceOrdine();
+  const order = creaOrdine(orderId, origine);
+  const { cassette } = order;
   state.orders.unshift(order);
   try { localStorage.setItem("radici-demo-order", JSON.stringify(order)); } catch (_) {}
   saveBusinessData();
@@ -4002,7 +4070,8 @@ function setupEvents() {
     const testo = bottone.innerHTML;
     bottone.disabled = true;
     bottone.innerHTML = "CONTROLLO IL POSTO…";
-    const esito = await tieniPosto();
+    // inserendo io l'ordine niente posto tenuto: lo confermo direttamente quando salvo
+    const esito = state.inserisco ? null : await tieniPosto();
     bottone.disabled = false;
     bottone.innerHTML = testo;
     if (esito?.pieno) {
@@ -4045,6 +4114,8 @@ function setupEvents() {
     const elimina = event.target.closest("[data-elimina-ordine]");
     if (elimina) eliminaOrdine(elimina.dataset.eliminaOrdine);
   });
+  $("#nuovoOrdineWhatsapp").addEventListener("click", entraInserimento);
+  $("#annullaInserisco").addEventListener("click", () => navigate("dashboard"));
   $("#customersTable").addEventListener("click", event => {
     const button = event.target.closest("[data-use-reward]");
     if (button) useCustomerReward(button.dataset.useReward);

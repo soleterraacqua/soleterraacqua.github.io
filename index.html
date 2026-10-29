@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=74">
+  <link rel="stylesheet" href="styles.css?v=75">
 </head>
 <body>
   <div class="app-shell">
@@ -352,6 +352,16 @@
           </div>
         </div>
 
+        <div class="inserisco-banner section-wrap" id="inseriscoBanner" hidden>
+          <div class="inserisco-card">
+            <div>
+              <p class="eyebrow">ORDINE ARRIVATO SU WHATSAPP</p>
+              <p>Lo inserisci tu per il cliente: alla fine si salva in dashboard e non si apre WhatsApp. Puoi scegliere anche i giorni già chiusi e le fasce piene, senza i massimi delle verdure.</p>
+            </div>
+            <button type="button" class="pubblica-cambia" id="annullaInserisco">ANNULLA</button>
+          </div>
+        </div>
+
         <div class="ordini-chiusi section-wrap" id="ordiniChiusi" hidden>
           <div class="ordini-chiusi-card">
             <div>
@@ -646,6 +656,8 @@
             <button class="dashboard-logout" id="lockDashboard" type="button">ESCI</button>
           </div>
         </div>
+
+        <button type="button" class="primary-button nuovo-ordine-whatsapp" id="nuovoOrdineWhatsapp">+ AGGIUNGI UN ORDINE ARRIVATO SU WHATSAPP <span>→</span></button>
 
         <div class="dashboard-stats">
           <article><span>ORDINI DA CONSEGNARE</span><strong id="statOrders">0</strong><small id="statOrdersNota">su 32 posti per giornata</small></article>
@@ -1106,6 +1118,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=74"></script>
+  <script src="app.js?v=75"></script>
 </body>
 </html>

@@ -1227,6 +1227,17 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 .stato-cella { display: grid; gap: 5px; justify-items: start; }
 .verifica { font-size: .6rem; font-weight: 900; letter-spacing: .05em; line-height: 1.3; color: var(--green); }
 .verifica.controlla { color: var(--terracotta); }
+/* v75: ordini arrivati su WhatsApp senza passare dal sito, inseriti da me con il compositore */
+.nuovo-ordine-whatsapp { display: inline-flex; margin: 0 0 18px; }
+.inserisco-banner { margin-top: 4px; margin-bottom: 18px; }
+.inserisco-card { display: flex; gap: 16px; align-items: center; justify-content: space-between; padding: 16px 20px; border-radius: var(--soft-radius); background: #fff6e0; border: 2px solid #e9c35c; }
+.inserisco-card .eyebrow { margin: 0 0 4px; }
+.inserisco-card p:last-child { margin: 0; font-size: .86rem; line-height: 1.45; color: var(--green-deep); }
+body.inserisco .discovery-fieldset, body.inserisco .privacy-check, body.inserisco .satisfaction-note, body.inserisco .payoff { display: none; }
+@media (max-width: 640px) {
+  .nuovo-ordine-whatsapp { display: flex; width: 100%; justify-content: center; text-align: center; font-size: .78rem; }
+  .inserisco-card { flex-direction: column; align-items: stretch; padding: 14px 16px; }
+}
 .loyalty-prize {
   background: var(--green);
   color: var(--cream);
