@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 75;
+const VERSIONE_SITO = 76;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -38,8 +38,8 @@ const FASCE_ORARIE = [
   ["17:10", "17:50"], ["17:50", "18:30"], ["18:30", "19:00"]
 ];
 const FASCIA_ZONE_VICINE = [["19:00", "20:40"]];
-// ogni fascia ha al massimo 4 ordini; i posti presi li conta lo script Google (prenotazioni senza dati personali)
-const MAX_ORDINI_FASCIA = 4;
+// ogni fascia ha al massimo 5 ordini (4 fino alla v75); i posti presi li conta lo script Google (prenotazioni senza dati personali)
+const MAX_ORDINI_FASCIA = 5;
 // il giorno fisso di consegna (0 domenica … 6 sabato, -1 nessuno) e' in calendario ogni settimana anche
 // senza pubblicare la settimana; dalla dashboard si cambia o si salta una data. Si ordina fino alle 21:00 del giorno prima
 const GIORNO_FISSO_INIZIALE = 5;
@@ -1804,7 +1804,7 @@ function setupDatesAndTimes() {
   }));
 }
 
-// le fasce della zona scelta; quelle con gia' 4 ordini nel giorno scelto sono PIENE e non si scelgono
+// le fasce della zona scelta; quelle gia' al massimo di ordini nel giorno scelto sono PIENE e non si scelgono
 function disegnaFasce() {
   const zona = LOCALITA.find(localita => localita.nome === state.area);
   const fasce = !zona ? [] : zona.costo ? FASCIA_ZONE_VICINE : FASCE_ORARIE;
@@ -3176,7 +3176,7 @@ function renderDashboard(filter = state.orderFilter || "all") {
   `;
 
   const daConsegnare = state.orders.filter(order => order.status !== "Consegnato");
-  const posti = (FASCE_ORARIE.length + FASCIA_ZONE_VICINE.length) * 4;
+  const posti = (FASCE_ORARIE.length + FASCIA_ZONE_VICINE.length) * MAX_ORDINI_FASCIA;
   const prossimo = giorniPrenotabili()[0] || state.deliveryDays.find(giorno => giorno >= oggiLocale());
   $("#dashboardDate").textContent = prossimo ? formatDate(prossimo) : "NESSUNA IN CALENDARIO";
   $("#statOrders").textContent = daConsegnare.length;
