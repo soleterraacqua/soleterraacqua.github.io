@@ -1221,6 +1221,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 .conferma-action { border: 1px solid var(--green); background: #fffdf7; color: var(--green); border-radius: 999px; padding: 9px 12px; font-size: .66rem; font-weight: 900; letter-spacing: .07em; cursor: pointer; }
 .conferma-action.done { border-color: var(--line); color: var(--muted); }
 .delivery-action:disabled { opacity: .65; cursor: default; }
+/* v74: elimina l'ordine (piccolo, sotto gli altri) e quanto e' sicuro che il messaggio WhatsApp sia arrivato */
+.elimina-action { justify-self: start; border: 1px solid #d9a99a; background: transparent; color: var(--terracotta); border-radius: 999px; padding: 6px 12px; font-size: .62rem; font-weight: 900; letter-spacing: .08em; cursor: pointer; }
+.elimina-action:hover { background: #fbeee8; }
+.stato-cella { display: grid; gap: 5px; justify-items: start; }
+.verifica { font-size: .6rem; font-weight: 900; letter-spacing: .05em; line-height: 1.3; color: var(--green); }
+.verifica.controlla { color: var(--terracotta); }
 .loyalty-prize {
   background: var(--green);
   color: var(--cream);

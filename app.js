@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 73;
+const VERSIONE_SITO = 74;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -752,16 +752,23 @@ function importOrderFromHash() {
     ...imported,
     status: imported.status || "Confermato",
     loyaltyCredited: Boolean(imported.loyaltyCredited),
+    daWhatsapp: true,   // v74: il link sta nel messaggio arrivato, quindi l'ordine e' arrivato davvero
     aggiornato: Date.now()
   };
   seedMissingOrderData();
-  const exists = state.orders.some(item => item.id === order.id);
-  if (!exists) {
+  const presente = state.orders.find(item => item.id === order.id);
+  if (!presente) {
     state.orders.unshift(order);
     saveBusinessData();
     showToast(`Ordine ${order.id} importato: premi CONFERMA per scrivere al cliente.`, 5000);
   } else {
-    showToast(`Ordine ${order.id} già presente in dashboard.`);
+    // arrivato prima dal sito: ora so che il messaggio su WhatsApp c'e'
+    if (!presente.daWhatsapp) {
+      presente.daWhatsapp = true;
+      presente.aggiornato = Date.now();
+      saveBusinessData();
+    }
+    showToast(`Ordine ${order.id} già presente in dashboard: segnato come arrivato su WhatsApp.`);
   }
   history.replaceState(null, "", `${window.location.pathname}?${OWNER_QUERY}=${OWNER_VALUE}#dashboard`);
   navigate("dashboard");
@@ -1878,16 +1885,47 @@ async function tieniPosto() {
   }
 }
 
-function confermaPosto(order) {
-  if (!postiAttivi()) return;
+// v73: insieme al posto mando l'ordine completo, che compare da solo nella mia dashboard
+// (prima arrivava li' solo toccando il link "Registra l'ordine" in ogni messaggio WhatsApp)
+function corpoConferma(order, inviato = false) {
   const verdure = {};
   (order.cassette || []).forEach(cassetta => (cassetta.items || []).forEach(item => { verdure[item.id] = (verdure[item.id] || 0) + (item.quantity || 1); }));
-  // v73: insieme al posto mando l'ordine completo, che compare da solo nella mia dashboard
-  // (prima arrivava li' solo toccando il link "Registra l'ordine" in ogni messaggio WhatsApp)
   const ordine = { ...order, cliente: customerKeyFromOrder(order) };
-  const corpo = JSON.stringify({ azione: "conferma", id: order.id, giorno: order.date, fascia: order.deliveryWindow, zona: order.area, verdure, ordine });
+  return { azione: "conferma", id: order.id, giorno: order.date, fascia: order.deliveryWindow, zona: order.area, verdure, ordine, ...(inviato ? { inviato: true } : {}) };
+}
+
+function confermaPosto(order) {
+  if (!postiAttivi()) return;
+  const corpo = JSON.stringify(corpoConferma(order));
   try { if (navigator.sendBeacon && navigator.sendBeacon(indirizzoStatistiche(), corpo)) return; } catch (_) {}
   fetch(indirizzoStatistiche(), { method: "POST", mode: "no-cors", keepalive: true, body: corpo }).catch(() => {});
+}
+
+// v74: il 28/10 per 5 ordini su 15 l'avviso al Foglio non e' mai arrivato (passando a WhatsApp il telefono
+// sospende la pagina). Lo tengo in memoria e lo ripeto quando il cliente torna sul sito, finche' lo script
+// risponde ok: ripeterlo non crea doppioni. Dopo 6 ore lascio stare.
+const CONFERMA_DA_RIPETERE_KEY = "sole-terra-acqua-conferma-da-ripetere";
+
+function segnaDaRiconfermare(order, inviato = false) {
+  try { localStorage.setItem(CONFERMA_DA_RIPETERE_KEY, JSON.stringify({ order, inviato, quando: Date.now() })); } catch (_) {}
+}
+
+async function ripetiConferma() {
+  if (!postiAttivi() || ripetiConferma.inCorso) return;
+  let salvata = null;
+  try { salvata = JSON.parse(localStorage.getItem(CONFERMA_DA_RIPETERE_KEY) || "null"); } catch (_) {}
+  if (!salvata?.order?.id) return;
+  const togli = () => { try { localStorage.removeItem(CONFERMA_DA_RIPETERE_KEY); } catch (_) {} };
+  if (!(Date.now() - (Number(salvata.quando) || 0) < 6 * 3600000)) return togli();
+  ripetiConferma.inCorso = true;
+  try {
+    const esito = await chiediAlFoglio(corpoConferma(salvata.order, salvata.inviato === true), 10000);
+    if (esito?.ok) togli();
+  } catch (_) {
+    // senza rete riprovo alla prossima occasione
+  } finally {
+    ripetiConferma.inCorso = false;
+  }
 }
 
 function validateDelivery() {
@@ -2140,10 +2178,12 @@ function inviaOrdine() {
   try { localStorage.setItem("radici-demo-order", JSON.stringify(order)); } catch (_) {}
   saveBusinessData();
   const whatsappUrl = buildWhatsAppUrl(order);
-  window.open(whatsappUrl, "_blank", "noopener");
+  // v74: prima avviso il Foglio e poi apro WhatsApp (dopo, sul telefono, l'avviso a volte non partiva)
   traccia("ordine", cassette.map(cassetta => cassetta.box).join(" + "), "", Math.round(order.total * 100) / 100);
   inviaStatistiche();
   confermaPosto(order);
+  segnaDaRiconfermare(order);
+  window.open(whatsappUrl, "_blank", "noopener");
   state.idOrdine = "";
 
   $$(".order-step").forEach(el => el.classList.remove("active"));
@@ -2152,7 +2192,7 @@ function inviaOrdine() {
   window.scrollTo({ top: Math.max(0, $("#builderView").offsetTop), behavior: "smooth" });
   // l'ordine mi arriva solo se il cliente preme INVIA su WhatsApp: la pagina glielo chiede finche' non risponde
   const [dalle, alle] = state.selectedTime.split("–");
-  state.ordineInviato = { id: orderId, nome: order.name.split(" ")[0], giorno: formatDate(state.orderData.date).toLowerCase(), dalle: dalle || "", alle: alle || "", risposto: false };
+  state.ordineInviato = { id: orderId, nome: order.name.split(" ")[0], giorno: formatDate(state.orderData.date).toLowerCase(), dalle: dalle || "", alle: alle || "", risposto: false, order };
   $("#successTitolo").innerHTML = "HAI PREMUTO <em>INVIA</em><br>SU WHATSAPP?";
   $("#successDomanda").hidden = false;
   $("#successDomanda").classList.remove("richiamo");
@@ -2171,6 +2211,11 @@ function ordineInviatoSi() {
   inviato.risposto = true;
   traccia("inviato", inviato.id);
   inviaStatistiche();
+  // v74: in dashboard l'ordine diventa "INVIATO, DICE IL CLIENTE"
+  if (inviato.order) {
+    segnaDaRiconfermare(inviato.order, true);
+    ripetiConferma();
+  }
   $("#successDomanda").hidden = true;
   $("#successTitolo").innerHTML = `GRAZIE<br><em>${escapeHtml(inviato.nome.toUpperCase())}!</em>`;
   $("#successCopy").innerHTML = `
@@ -2984,6 +3029,42 @@ function savePreservesSettings() {
     : "Salvato, ma nessuna conserva e' attiva: attivane almeno una.");
 }
 
+// v74: il sito non vede dentro WhatsApp. "ARRIVATO SU WHATSAPP" = l'ho registrato dal link del suo messaggio;
+// "INVIATO, DICE IL CLIENTE" = sul sito ha risposto SI' a "hai premuto INVIA?"; altrimenti lo controllo io
+function verificaOrdine(order) {
+  if (order.daWhatsapp) return ["ok", "✓ ARRIVATO SU WHATSAPP"];
+  if (order.inviatoDalCliente) return ["ok", "✓ INVIATO, DICE IL CLIENTE"];
+  if (order.dalSito) return ["controlla", "CONTROLLA SU WHATSAPP"];
+  return null;
+}
+
+// v74: ELIMINA accanto a ogni ordine. Con la copia nel Foglio attiva lo tolgo prima li' (se no la prossima copia
+// lo rimetterebbe in dashboard), poi da qui; il suo posto nella fascia si libera
+async function eliminaOrdine(id) {
+  const order = state.orders.find(item => item.id === id);
+  if (!order) return;
+  if (!window.confirm(`Elimino l'ordine di ${order.name} (#${order.id}, ${formatDate(order.date).toLowerCase()})?\nIl suo posto nella fascia si libera. Non si può annullare.`)) return;
+  const parola = leggiDaMemoria(PAROLA_STATISTICHE_KEY);
+  if (indirizzoStatistiche() && parola) {
+    try {
+      const esito = await chiediAlFoglio({ azione: "elimina", parola, id }, 20000);
+      if (!esito?.ok) throw new Error(esito?.errore || "risposta");
+    } catch (errore) {
+      showToast(String(errore?.message) === "parola"
+        ? "Non eliminato: la parola segreta non è giusta (riscrivila nel riquadro STATISTICHE)."
+        : "Non riesco a eliminarlo adesso (rete o Foglio Google): riprova tra poco.", 5000);
+      return;
+    }
+  }
+  state.orders = state.orders.filter(item => item.id !== id);
+  // l'ordine fatto da questo telefono resta anche qui: al prossimo avvio lo rimetterei in elenco
+  try { if (JSON.parse(localStorage.getItem("radici-demo-order"))?.id === id) localStorage.removeItem("radici-demo-order"); } catch (_) {}
+  saveBusinessData({ copia: false });
+  renderDashboard(state.orderFilter);
+  caricaPrenotazioni();
+  showToast(`Ordine di ${order.name} eliminato.`);
+}
+
 function renderDashboard(filter = state.orderFilter || "all") {
   state.orderFilter = filter;
   const visible = state.orders.filter(order => {
@@ -3007,6 +3088,7 @@ function renderDashboard(filter = state.orderFilter || "all") {
       const delivered = order.status === "Consegnato";
       const customer = state.customers[customerKeyFromOrder(order)];
       const points = customer?.points || 0;
+      const verifica = verificaOrdine(order);
       return `
         <div class="order-row">
           <span>${escapeHtml(order.time || "—")}</span>
@@ -3014,10 +3096,11 @@ function renderDashboard(filter = state.orderFilter || "all") {
           <span>${escapeHtml(order.address)}</span>
           <span class="area-pill">${escapeHtml(order.area.toUpperCase())}</span>
           <span>${escapeHtml(order.box)} · ${money(order.total)}</span>
-          <span class="status-pill ${delivered ? "delivered" : ""}">${escapeHtml(order.status.toUpperCase())}</span>
+          <span class="stato-cella"><span class="status-pill ${delivered ? "delivered" : ""}">${escapeHtml(order.status.toUpperCase())}</span>${verifica ? `<small class="verifica ${verifica[0]}">${verifica[1]}</small>` : ""}</span>
           <div class="order-azioni">
             <button class="conferma-action ${order.confermaInviata ? "done" : ""}" data-conferma-ordine="${escapeHtml(order.id)}">${order.confermaInviata ? "RIMANDA CONFERMA" : olioDaProporre() && !order.olio ? "CONFERMA + OLIO" : "CONFERMA AL CLIENTE"}</button>
             <button class="delivery-action ${delivered ? "done" : ""}" data-deliver-order="${escapeHtml(order.id)}">${delivered ? "RIAVVISA CLIENTE" : "CONSEGNATO + AVVISA"}</button>
+            <button class="elimina-action" data-elimina-ordine="${escapeHtml(order.id)}">ELIMINA</button>
           </div>
         </div>
       `;
@@ -3959,6 +4042,8 @@ function setupEvents() {
     if (button) markOrderDelivered(button.dataset.deliverOrder);
     const conferma = event.target.closest("[data-conferma-ordine]");
     if (conferma) inviaConfermaCliente(conferma.dataset.confermaOrdine);
+    const elimina = event.target.closest("[data-elimina-ordine]");
+    if (elimina) eliminaOrdine(elimina.dataset.eliminaOrdine);
   });
   $("#customersTable").addEventListener("click", event => {
     const button = event.target.closest("[data-use-reward]");
@@ -4002,6 +4087,9 @@ function setupEvents() {
     if (event.target === event.currentTarget || event.target.closest("[data-chiudi-chiusi]")) chiudiPopupChiusi();
   });
   $("#successSi").addEventListener("click", ordineInviatoSi);
+  // v74: l'avviso al Foglio rimasto indietro riparte quando il cliente torna sul sito (o lo riapre)
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) ripetiConferma(); });
+  setTimeout(ripetiConferma, 3000);
   // tornando da WhatsApp senza aver risposto: la domanda si fa notare
   document.addEventListener("visibilitychange", () => {
     if (document.hidden || !state.ordineInviato || state.ordineInviato.risposto || !$("#orderSuccess").classList.contains("active")) return;
