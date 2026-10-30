@@ -1,29 +1,29 @@
 {
-  "aggiornato": "2026-10-28T10:41:56.916Z",
+  "aggiornato": "2026-10-30T13:47:46.068Z",
   "giorni": [],
   "giornoFisso": 5,
   "giornoFisso2": -1,
   "saltati": [
-    "2026-11-06",
     "2026-11-13",
     "2026-11-20",
     "2026-11-27",
-    "2026-12-04"
+    "2026-12-04",
+    "2026-12-11"
   ],
   "prodotti": [
     {
       "id": "peperoni",
       "nome": "Peperoni",
-      "peso": "500 g",
-      "disponibile": false,
-      "unoSolo": false,
+      "peso": "600 g",
+      "disponibile": true,
+      "unoSolo": true,
       "foto": ""
     },
     {
       "id": "melanzane",
       "nome": "Melanzane",
-      "peso": "500 g",
-      "disponibile": false,
+      "peso": "750/800 g",
+      "disponibile": true,
       "unoSolo": false,
       "foto": ""
     },
@@ -39,7 +39,7 @@
       "id": "lattuga-romana",
       "nome": "Lattuga romana",
       "peso": "1 - 2 cespi",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "massimo": 20,
       "foto": ""
@@ -48,7 +48,7 @@
       "id": "lattuga-canasta",
       "nome": "Lattuga canasta",
       "peso": "1 - 2 cespi",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "massimo": 40,
       "foto": ""
@@ -73,7 +73,7 @@
       "id": "cicoria",
       "nome": "Cicoria",
       "peso": "600 g",
-      "disponibile": false,
+      "disponibile": true,
       "unoSolo": false,
       "foto": ""
     },
@@ -297,7 +297,7 @@
       "id": "cavolo-nero",
       "nome": "Cavolo nero",
       "peso": "1 mazzo",
-      "disponibile": false,
+      "disponibile": true,
       "unoSolo": false,
       "foto": ""
     },
@@ -322,7 +322,7 @@
       "id": "melone-invernale",
       "nome": "Melone invernale",
       "peso": "1 pz",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "foto": ""
     },
@@ -338,7 +338,7 @@
       "id": "cavolo-punta",
       "nome": "Cavolo cappuccio a punta",
       "peso": "1 pz - 2pz",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "massimo": 40,
       "foto": ""
