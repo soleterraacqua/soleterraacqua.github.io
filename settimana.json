@@ -1,5 +1,5 @@
 {
-  "aggiornato": "2026-10-30T13:47:46.068Z",
+  "aggiornato": "2026-10-30T19:54:01.863Z",
   "giorni": [],
   "giornoFisso": 5,
   "giornoFisso2": -1,
@@ -382,7 +382,7 @@
     }
   ],
   "olio": {
-    "prezzoLitro": 14,
+    "prezzoLitro": 12,
     "disponibile": true
   }
 }
