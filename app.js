@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 78;
+const VERSIONE_SITO = 79;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -2910,6 +2910,148 @@ function renderDashboardLegacy(filter = "all") {
   renderWeekEditor();
 }
 
+// ---------- recensioni (v79) ----------
+// Il link nel messaggio "consegnato" (?recensione=CODICE) apre il riquadro delle stelle. Anonime: lo script salva
+// solo un'impronta cifrata dell'ordine (una recensione per consegna), il giorno, le stelle e il commento.
+// Sul sito compare solo la media delle stelle; il commento lo legge solo la dashboard.
+const RECENSIONE_QUERY = "recensione";
+const RECENSIONI_FATTE_KEY = "sole-terra-acqua-recensioni-fatte";
+const VALUTAZIONI_KEY = "sole-terra-acqua-valutazioni";
+const GIUDIZI = ["Tocca una stella", "Non mi è piaciuta", "Così così", "Buona", "Molto buona", "Ottima!"];
+const recensione = { id: "", stelle: 0 };
+const linkRecensione = order => `${window.location.origin}${window.location.pathname}?${RECENSIONE_QUERY}=${encodeURIComponent(order.id)}`;
+const stelleTesto = quante => "★".repeat(quante) + "☆".repeat(5 - quante);
+const mediaTesto = media => media.toFixed(1).replace(".", ",");
+
+function recensioniFatte() {
+  try { return JSON.parse(localStorage.getItem(RECENSIONI_FATTE_KEY)) || {}; } catch (_) { return {}; }
+}
+
+function apriRecensioneDaLink() {
+  const id = new URLSearchParams(window.location.search).get(RECENSIONE_QUERY) || "";
+  if (!/^R[A-Z0-9]{4,10}$/.test(id)) return;
+  recensione.id = id;
+  scegliStelle(Number(recensioniFatte()[id]) || 0);
+  $("#recensioneModulo").hidden = false;
+  $("#recensioneGrazie").hidden = true;
+  $("#popupRecensione").hidden = false;
+  document.body.style.overflow = "hidden";
+  traccia("pagina", "recensione");
+}
+
+function chiudiRecensione() {
+  $("#popupRecensione").hidden = true;
+  document.body.style.overflow = "";
+  // ricaricando la pagina non si riapre
+  history.replaceState(null, "", window.location.pathname);
+}
+
+function scegliStelle(stelle) {
+  recensione.stelle = stelle;
+  $$("[data-stelle]").forEach(bottone => {
+    const numero = Number(bottone.dataset.stelle);
+    bottone.classList.toggle("accesa", numero <= stelle);
+    bottone.setAttribute("aria-checked", String(numero === stelle));
+  });
+  $("#recensioneGiudizio").textContent = GIUDIZI[stelle];
+  $("#recensioneInvia").disabled = !stelle;
+  $("#recensioneErrore").textContent = "";
+}
+
+async function inviaRecensione() {
+  if (!recensione.id || !recensione.stelle) return;
+  const bottone = $("#recensioneInvia");
+  bottone.disabled = true;
+  $("#recensioneErrore").textContent = "";
+  try {
+    if (!postiAttivi()) throw new Error("rete");
+    const esito = await chiediAlFoglio({ azione: "recensione", id: recensione.id, stelle: recensione.stelle, commento: $("#recensioneCommento").value.trim().slice(0, 600) }, 20000);
+    if (!esito?.ok) throw new Error(esito?.errore || "risposta");
+  } catch (errore) {
+    $("#recensioneErrore").textContent = String(errore?.message) === "ordine"
+      ? "Non trovo questa consegna: scrivimi su WhatsApp e ti mando un link nuovo."
+      : "Non sono riuscito a inviarla: controlla la connessione e riprova.";
+    bottone.disabled = false;
+    return;
+  }
+  try {
+    localStorage.setItem(RECENSIONI_FATTE_KEY, JSON.stringify({ ...recensioniFatte(), [recensione.id]: recensione.stelle }));
+  } catch (_) {}
+  traccia("click", "Recensione inviata");
+  $("#recensioneStelleFatte").textContent = stelleTesto(recensione.stelle);
+  $("#recensioneModulo").hidden = true;
+  $("#recensioneGrazie").hidden = false;
+  caricaValutazioni(true);
+}
+
+// le stelle in home: media e numero, dall'ultima lettura salvata e poi dallo script (al massimo ogni 10 minuti)
+function mostraValutazioni(dati) {
+  const riquadro = $("#heroStelle");
+  const numero = Number(dati?.numero) || 0;
+  const media = Number(dati?.media) || 0;
+  riquadro.hidden = !(numero > 0 && media >= 1 && media <= 5);
+  if (riquadro.hidden) return;
+  const quante = `${numero} ${numero === 1 ? "recensione" : "recensioni"}`;
+  $("#heroStellePiene").style.width = `${media / 5 * 100}%`;
+  $("#heroStelleMedia").textContent = mediaTesto(media);
+  $("#heroStelleNumero").textContent = `· ${quante} dei clienti`;
+  riquadro.setAttribute("aria-label", `${mediaTesto(media)} stelle su 5, ${quante} dei clienti`);
+}
+
+async function caricaValutazioni(forza = false, attesa = 0) {
+  let salvate = null;
+  try { salvate = JSON.parse(localStorage.getItem(VALUTAZIONI_KEY)); } catch (_) {}
+  if (salvate) mostraValutazioni(salvate);
+  if (!postiAttivi() || (!forza && Date.now() - (Number(salvate?.letto) || 0) < 10 * 60000)) return;
+  // all'apertura aspetto un attimo: prima le foto e la pagina
+  if (attesa) await new Promise(fatto => setTimeout(fatto, attesa));
+  try {
+    const dati = await chiediAlFoglio({ azione: "valutazioni" }, 15000);
+    if (!dati?.ok) return;
+    try { localStorage.setItem(VALUTAZIONI_KEY, JSON.stringify({ numero: dati.numero, media: dati.media, letto: Date.now() })); } catch (_) {}
+    mostraValutazioni(dati);
+  } catch (_) {}
+}
+
+// dashboard: tutte le recensioni con il commento (con la parola segreta), senza sapere chi le ha scritte
+async function caricaRecensioni() {
+  const elenco = $("#recensioniElenco");
+  if (!elenco || !isDashboardUnlocked()) return;
+  const parola = leggiDaMemoria(PAROLA_STATISTICHE_KEY);
+  if (!indirizzoStatistiche() || !parola) {
+    elenco.innerHTML = `<p class="stat-vuoto">Per leggere le recensioni scrivi la parola segreta nel riquadro STATISTICHE DEI CLICK.</p>`;
+    return;
+  }
+  try {
+    const dati = await chiediAlFoglio({ azione: "recensioni", parola }, 20000);
+    if (!dati?.ok) throw new Error(dati?.errore || "risposta");
+    renderRecensioni(Array.isArray(dati.recensioni) ? dati.recensioni : []);
+  } catch (errore) {
+    elenco.innerHTML = `<p class="stat-vuoto">${String(errore?.message) === "parola"
+      ? "La parola segreta non è giusta: riscrivila nel riquadro STATISTICHE DEI CLICK."
+      : "Non riesco a leggere le recensioni adesso: riprova con AGGIORNA."}</p>`;
+  }
+}
+
+function renderRecensioni(lista) {
+  const valide = lista.filter(voce => Number.isInteger(voce?.stelle) && voce.stelle >= 1 && voce.stelle <= 5);
+  const media = valide.length ? valide.reduce((somma, voce) => somma + voce.stelle, 0) / valide.length : 0;
+  $("#statRecensioni").textContent = valide.length ? `recensioni: ${mediaTesto(media)} ★ su ${valide.length}` : "recensioni: ancora nessuna";
+  $("#recensioniMedia").innerHTML = valide.length ? `
+    <div class="recensioni-voto"><strong>${mediaTesto(media)}</strong><span>${stelleTesto(Math.round(media))}</span><small>${valide.length} ${valide.length === 1 ? "RECENSIONE" : "RECENSIONI"}</small></div>
+    <div class="recensioni-barre">${[5, 4, 3, 2, 1].map(stelle => {
+      const quante = valide.filter(voce => voce.stelle === stelle).length;
+      return `<div><span>${stelle} ★</span><i><b style="width:${quante / valide.length * 100}%"></b></i><small>${quante}</small></div>`;
+    }).join("")}</div>` : "";
+  $("#recensioniElenco").innerHTML = valide.length
+    ? valide.map(voce => `
+      <article class="recensione-voce">
+        <div><span class="stars">${stelleTesto(voce.stelle)}</span><small>${/^\d{4}-\d{2}-\d{2}$/.test(voce.giorno || "") ? escapeHtml(formatDate(voce.giorno)) : ""}</small></div>
+        ${voce.commento ? `<p>${escapeHtml(String(voce.commento))}</p>` : `<p class="senza-commento">Solo le stelle, senza commento.</p>`}
+      </article>`).join("")
+    : `<p class="stat-vuoto">Ancora nessuna recensione. Quando premi CONSEGNATO + AVVISA, nel messaggio al cliente c'è il link per lasciarla.</p>`;
+}
+
 function buildCustomerNotificationUrl(order, customer) {
   const phone = normalizePhone(order.phone);
   if (!phone) return "";
@@ -2931,6 +3073,8 @@ function buildCustomerNotificationUrl(order, customer) {
     const quante = missingPoints === 1 ? "ancora una consegna" : `ancora ${missingPoints} consegne`;
     righe.push(`Sei a ${customer.points || 0} consegne su ${POINTS_FOR_REWARD}: ${quante} e ricevi una conserva in omaggio.`);
   }
+  // v79: il link per la recensione anonima
+  righe.push("", "⭐ Com'era la cassetta? Lasciami un voto da 1 a 5 stelle: è anonimo, bastano 10 secondi e mi aiuta a migliorare.", linkRecensione(order));
   righe.push("", "A presto!");
   return `https://wa.me/${phone}?text=${encodeURIComponent(righe.join("\n"))}`;
 }
@@ -3738,6 +3882,7 @@ async function caricaStatistiche({ forza = false } = {}) {
     renderStatistiche(dati);
     sincronizzaCopia();
     caricaPrenotazioni();
+    caricaRecensioni();
     stato.textContent = `Aggiornate alle ${dati.aggiornato}: mentre la dashboard resta aperta si aggiornano da sole ogni 2 minuti.`;
   } catch (_) {
     stato.textContent = "Non riesco a leggere le statistiche (manca la rete o il Foglio Google non risponde): riprova con AGGIORNA.";
@@ -4296,6 +4441,13 @@ function setupEvents() {
     button.classList.add("active");
     renderDashboard(button.dataset.orderFilter);
   }));
+  $("#popupRecensione").addEventListener("click", event => {
+    const stella = event.target.closest("[data-stelle]");
+    if (stella) scegliStelle(Number(stella.dataset.stelle));
+    else if (event.target.closest("#recensioneInvia")) inviaRecensione();
+    else if (event.target === event.currentTarget || event.target.closest("[data-chiudi-recensione]")) chiudiRecensione();
+  });
+  $("#aggiornaRecensioni").addEventListener("click", caricaRecensioni);
   $("#giornateDashboard").addEventListener("click", event => {
     const bottone = event.target.closest("[data-giornata]");
     if (!bottone) return;
@@ -4653,6 +4805,8 @@ function init() {
   updateSummary();
   renderDashboard();
   if (!importOrderFromHash()) openInitialRoute();
+  apriRecensioneDaLink();
+  caricaValutazioni(false, 2500);
   showDashboardGate();
   setupStatistiche();
   registerServiceWorker();

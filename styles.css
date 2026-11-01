@@ -1872,3 +1872,51 @@ html.leggero .invia-tasto { box-shadow: 0 0 0 5px rgba(37,211,102,.35); }
 .conserve-garanzia > span:first-child { flex: none; display: grid; place-items: center; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%; background: var(--green); color: #fffaf0; font-size: .8rem; font-weight: 900; }
 .conserve-garanzia strong { color: var(--green-deep); }
 .conserve-carrello-head p.conserve-garanzia-breve { margin-top: 4px; color: var(--green); font-size: .8rem; font-weight: 700; }
+
+/* v79: recensioni anonime. In home la media delle stelle; il riquadro del link; il pannello in dashboard */
+.hero-stelle[hidden] { display: none; }
+.hero-stelle { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 9px; margin: 0 0 18px; padding: 7px 14px 7px 12px; border-radius: 999px; background: rgba(16, 30, 21, .45); color: var(--paper); font-size: .82rem; line-height: 1.2; }
+.hero-stelle-file { position: relative; display: inline-block; color: rgba(255, 250, 240, .35); letter-spacing: .08em; font-size: 1.02rem; white-space: nowrap; }
+.hero-stelle-piene { position: absolute; top: 0; left: 0; overflow: hidden; color: #f2c14e; white-space: nowrap; }
+.hero-stelle strong { font-size: .95rem; }
+.hero-stelle small { color: rgba(255, 250, 240, .82); font-size: .78rem; }
+.recensione-card { border-top-color: #e3a73a; }
+.recensione-modulo > p:not(.popup-conserve-aspetta), .recensione-grazie > p:not(.popup-conserve-aspetta) { margin: 0 auto 12px; max-width: 400px; color: var(--muted); font-size: .88rem; line-height: 1.5; }
+.recensione-stelle { display: flex; justify-content: center; gap: 4px; margin: 4px 0 2px; }
+.recensione-stelle button { width: 52px; height: 52px; border: 0; background: transparent; color: #d9cfbb; font-size: 2.6rem; line-height: 1; cursor: pointer; transition: transform .15s ease, color .15s ease; }
+.recensione-stelle button.accesa { color: #e3a73a; }
+.recensione-stelle button:active { transform: scale(.88); }
+.recensione-stelle button:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 10px; }
+.recensione-modulo .recensione-giudizio { min-height: 1.3em; margin-bottom: 12px; color: var(--green-deep); font-weight: 900; letter-spacing: .04em; }
+.recensione-commento { display: grid; gap: 6px; margin-bottom: 10px; text-align: left; }
+.recensione-commento > span { font-size: .72rem; font-weight: 900; letter-spacing: .12em; }
+.recensione-commento > span small { color: var(--muted); font-weight: 400; letter-spacing: 0; }
+.recensione-commento textarea { width: 100%; border: 1px solid var(--line); border-radius: var(--small-radius); padding: 10px 12px; background: #fff; font-size: 16px; line-height: 1.4; resize: vertical; }
+.recensione-commento > small { color: var(--muted); font-size: .74rem; }
+.recensione-modulo .field-error { display: block; min-height: 1em; margin-bottom: 8px; }
+.recensione-grazie .recensione-stelle-fatte { margin-bottom: 8px; color: #e3a73a; font-size: 2rem; letter-spacing: .08em; }
+.recensioni-media { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 18px; margin: 4px 0 16px; }
+.recensioni-media:empty { display: none; }
+.recensioni-voto { display: grid; justify-items: start; gap: 2px; }
+.recensioni-voto strong { font-size: 2.6rem; line-height: 1; }
+.recensioni-voto span { color: #f2c14e; letter-spacing: .08em; }
+.recensioni-voto small, .recensioni-barre small { color: #c6d1c7; font-size: .7rem; letter-spacing: .1em; font-weight: 900; }
+.recensioni-barre { display: grid; gap: 4px; }
+.recensioni-barre div { display: grid; grid-template-columns: 34px 1fr 24px; align-items: center; gap: 8px; font-size: .74rem; }
+.recensioni-barre i { height: 7px; border-radius: 999px; background: rgba(255, 250, 240, .18); overflow: hidden; }
+.recensioni-barre b { display: block; height: 100%; border-radius: 999px; background: #f2c14e; }
+.review-panel > div:first-child > p { color: #c6d1c7; line-height: 1.6; max-width: 530px; font-family: Arial, sans-serif; font-size: .88rem; }
+.review-panel .pubblica-cambia { border-color: rgba(255, 250, 240, .5); background: transparent; color: var(--cream); }
+.recensioni-elenco { display: grid; gap: 10px; align-content: start; max-height: 460px; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+.recensioni-elenco .stat-vuoto { background: var(--cream); color: var(--ink); padding: 18px; border-radius: var(--soft-radius); margin: 0; }
+.recensione-voce { background: var(--cream); color: var(--ink); padding: 14px 16px; border-radius: var(--soft-radius); }
+.recensione-voce > div { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.recensione-voce .stars { margin: 0; font-size: 1.05rem; }
+.recensione-voce small { color: var(--muted); font-size: .68rem; letter-spacing: .08em; font-weight: 900; }
+.recensione-voce p { margin: 8px 0 0; font: italic 1rem/1.5 Georgia, serif; overflow-wrap: anywhere; }
+.recensione-voce p.senza-commento { color: var(--muted); font: .82rem/1.4 Arial, sans-serif; }
+@media (max-width: 700px) {
+  .hero-stelle { margin-bottom: 12px; font-size: .76rem; }
+  .recensione-stelle button { width: 48px; height: 48px; font-size: 2.35rem; }
+  .recensioni-elenco { max-height: 380px; }
+}

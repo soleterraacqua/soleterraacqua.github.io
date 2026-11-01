@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=78">
+  <link rel="stylesheet" href="styles.css?v=79">
 </head>
 <body>
   <div class="app-shell">
@@ -196,6 +196,11 @@
             <p class="eyebrow light">DAL MIO CAMPO · A CASA TUA</p>
             <h1>LA TUA SPESA<br><em>HA RADICI.</em></h1>
             <p>Verdure di stagione raccolte vicino a te, nella cassetta che componi tu.</p>
+            <div class="hero-stelle" id="heroStelle" role="img" hidden>
+              <span class="hero-stelle-file" aria-hidden="true"><span class="hero-stelle-piene" id="heroStellePiene">★★★★★</span>★★★★★</span>
+              <strong id="heroStelleMedia" aria-hidden="true"></strong>
+              <small id="heroStelleNumero" aria-hidden="true"></small>
+            </div>
             <button class="primary-button hero-button" data-start-builder>
               <span class="hero-button-testo">
                 <svg class="hero-button-icona" viewBox="0 0 26 24" aria-hidden="true"><path d="M8 9.5C5.6 8.6 5 5.6 6.6 3.4c2.2 1.2 2.9 4 1.4 6.1ZM12.5 9.5c-.4-3 1.8-5.6 5-5.7.3 3.1-1.9 5.6-5 5.7Z"/><rect x="2.5" y="9.5" width="21" height="11" rx="1.6"/><path d="M2.5 15h21M9.5 9.5v11M16.5 9.5v11"/></svg>
@@ -665,7 +670,7 @@
           <article><span id="statOrdersTitolo">ORDINI DELLA GIORNATA</span><strong id="statOrders">0</strong><small id="statOrdersNota">su 40 posti per giornata</small></article>
           <article><span id="statRevenueTitolo">INCASSO PREVISTO</span><strong id="statRevenue">0,00 €</strong><small id="statRevenueNota">dagli ordini della giornata</small></article>
           <article><span>CONSEGNE EXTRA</span><strong id="statExtra">0</strong><small>fuori Viterbo, +2,50 €</small></article>
-          <article class="mint"><span>CLIENTI</span><strong id="statClienti">0</strong><small>recensioni: ancora nessuna</small></article>
+          <article class="mint"><span>CLIENTI</span><strong id="statClienti">0</strong><small id="statRecensioni">recensioni: ancora nessuna</small></article>
         </div>
 
         <section class="liste-giro">
@@ -939,18 +944,15 @@
           <div class="preserves-editor" id="preservesEditor"></div>
         </section>
 
-        <section class="review-panel">
+        <section class="review-panel" id="recensioniPanel">
           <div>
-            <p class="eyebrow">RECENSIONI PRIVATE</p>
+            <p class="eyebrow">RECENSIONI ANONIME</p>
             <h2>ASCOLTA CHI HA<br>RICEVUTO LA CASSETTA.</h2>
-            <p>La richiesta viene inviata solo dopo la consegna. Le risposte restano private e alimentano la percentuale di soddisfazione.</p>
+            <div class="recensioni-media" id="recensioniMedia"></div>
+            <p>Il link per lasciare da 1 a 5 stelle parte nel messaggio di CONSEGNATO + AVVISA. Sono anonime: vedi le stelle e il commento, non chi li ha scritti. Sul sito compare solo la media delle stelle, i commenti li leggi solo tu.</p>
+            <button type="button" class="pubblica-cambia" id="aggiornaRecensioni">AGGIORNA</button>
           </div>
-          <div class="review-mini-card">
-            <span>ULTIMA RECENSIONE</span>
-            <div class="stars">★★★★★</div>
-            <blockquote>“Tutto freschissimo, soprattutto le zucchine. Consegna precisa.”</blockquote>
-            <small>CLIENTE VERIFICATO · ORDINE #R0015</small>
-          </div>
+          <div class="recensioni-elenco" id="recensioniElenco"><p class="stat-vuoto">—</p></div>
         </section>
       </section>
     </main>
@@ -990,6 +992,43 @@
     <div class="visore-foglio" id="visoreFoglio"></div>
   </div>
 
+  <div class="popup-conserve popup-recensione" id="popupRecensione" hidden>
+    <div class="popup-conserve-card recensione-card" role="dialog" aria-modal="true" aria-labelledby="recensioneTitolo">
+      <button type="button" class="privacy-chiudi" data-chiudi-recensione aria-label="Chiudi">×</button>
+      <div class="recensione-modulo" id="recensioneModulo">
+        <p class="popup-conserve-aspetta">LA TUA OPINIONE</p>
+        <h2 id="recensioneTitolo">COM'ERA <em>LA TUA CASSETTA?</em></h2>
+        <p>Lasciami da 1 a 5 stelle. È tutto anonimo: non so chi l'ha scritta. Mi aiuta a migliorare, settimana dopo settimana.</p>
+        <div class="recensione-stelle" role="radiogroup" aria-label="Quante stelle">
+          <button type="button" role="radio" aria-checked="false" data-stelle="1" aria-label="1 stella">★</button>
+          <button type="button" role="radio" aria-checked="false" data-stelle="2" aria-label="2 stelle">★</button>
+          <button type="button" role="radio" aria-checked="false" data-stelle="3" aria-label="3 stelle">★</button>
+          <button type="button" role="radio" aria-checked="false" data-stelle="4" aria-label="4 stelle">★</button>
+          <button type="button" role="radio" aria-checked="false" data-stelle="5" aria-label="5 stelle">★</button>
+        </div>
+        <p class="recensione-giudizio" id="recensioneGiudizio" aria-live="polite">Tocca una stella</p>
+        <label class="recensione-commento" for="recensioneCommento">
+          <span>VUOI DIRMI QUALCOSA? <small>(facoltativo)</small></span>
+          <textarea id="recensioneCommento" maxlength="600" rows="3" placeholder="Cosa ti è piaciuto, cosa posso fare meglio…"></textarea>
+          <small>Il commento lo leggo solo io: sul sito compare solo la media delle stelle.</small>
+        </label>
+        <small class="field-error" id="recensioneErrore" aria-live="polite"></small>
+        <div class="popup-conserve-azioni">
+          <button type="button" class="primary-button" id="recensioneInvia" disabled>INVIA <span>→</span></button>
+        </div>
+      </div>
+      <div class="recensione-grazie" id="recensioneGrazie" hidden>
+        <p class="popup-conserve-aspetta">RICEVUTA</p>
+        <h2>GRAZIE <em>DI CUORE.</em></h2>
+        <p class="recensione-stelle-fatte" id="recensioneStelleFatte" aria-hidden="true"></p>
+        <p>La tua opinione mi aiuta a migliorare ogni settimana. A presto, con la prossima cassetta!</p>
+        <div class="popup-conserve-azioni">
+          <button type="button" class="primary-button" data-chiudi-recensione>VAI AL SITO <span>→</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="popup-conserve" id="popupPrivacy" hidden>
     <div class="popup-conserve-card privacy-card" role="dialog" aria-modal="true" aria-labelledby="privacyTitolo">
       <button type="button" class="privacy-chiudi" data-chiudi-privacy aria-label="Chiudi l'informativa">×</button>
@@ -1008,8 +1047,10 @@
         <p>I dati del tuo ordine mi arrivano nel messaggio WhatsApp che mi invii tu e, quando confermi l'ordine sul sito, anche in un mio foglio di calcolo Google protetto da una parola segreta: da lì l'ordine compare nella mia area riservata, sul mio telefono. Lo stesso foglio tiene la copia di sicurezza degli ordini, per non perderli se il telefono si rompe.</p>
         <p>Per non mettere più di 5 consegne nella stessa fascia oraria e non promettere più verdura di quella che ho, il sito conta i posti presi e le verdure già ordinate usando solo il codice dell'ordine, il giorno, la fascia, la zona di consegna e le verdure scelte.</p>
         <p>Una copia del carrello e degli ordini che fai resta nella memoria del browser del tuo dispositivo: puoi cancellarla quando vuoi cancellando i dati del sito dal browser.</p>
+        <h3>RECENSIONI</h3>
+        <p>Dopo la consegna ti mando un link per lasciarmi da 1 a 5 stelle e, se vuoi, un commento. La recensione è anonima: nel mio foglio di calcolo Google salvo solo le stelle, il commento, il giorno e un codice cifrato che serve a contare una sola recensione per consegna, senza il tuo nome né il codice dell'ordine. Sul sito compaiono solo la media delle stelle e il numero delle recensioni; il commento lo leggo solo io. Le recensioni si cancellano dopo 24 mesi.</p>
         <h3>CHI ALTRO LI VEDE</h3>
-        <p>WhatsApp (WhatsApp Ireland Ltd., gruppo Meta), che trasporta il messaggio con l'ordine secondo la propria informativa privacy. GitHub Pages (GitHub Inc.), che ospita il sito e per motivi tecnici e di sicurezza può registrare l'indirizzo IP di chi lo visita. Google (Google Ireland Ltd.), che ospita i miei fogli di calcolo: i conteggi anonimi delle visite, i posti presi nelle fasce orarie, gli ordini confermati sul sito e la loro copia di sicurezza. Per motivi tecnici riceve l'indirizzo IP di chi visita il sito, che a me non arriva. Per calcolare i chilometri del giro di consegne, dalla mia area riservata mando ai servizi di mappe di OpenStreetMap (Nominatim e OSRM) solo l'indirizzo e la località di consegna, mai nome o telefono. Questi servizi possono trattare dati anche fuori dall'Unione europea, con le garanzie previste dalla legge.</p>
+        <p>WhatsApp (WhatsApp Ireland Ltd., gruppo Meta), che trasporta il messaggio con l'ordine secondo la propria informativa privacy. GitHub Pages (GitHub Inc.), che ospita il sito e per motivi tecnici e di sicurezza può registrare l'indirizzo IP di chi lo visita. Google (Google Ireland Ltd.), che ospita i miei fogli di calcolo: i conteggi anonimi delle visite, i posti presi nelle fasce orarie, gli ordini confermati sul sito e la loro copia di sicurezza, le recensioni anonime. Per motivi tecnici riceve l'indirizzo IP di chi visita il sito, che a me non arriva. Per calcolare i chilometri del giro di consegne, dalla mia area riservata mando ai servizi di mappe di OpenStreetMap (Nominatim e OSRM) solo l'indirizzo e la località di consegna, mai nome o telefono. Questi servizi possono trattare dati anche fuori dall'Unione europea, con le garanzie previste dalla legge.</p>
         <h3>PER QUANTO TEMPO</h3>
         <p>Tengo i dati degli ordini per il tempo necessario a consegnarli e a gestire il regalo della decima cassetta; se non ordini più, dopo 24 mesi dall'ultimo ordine si cancellano da soli, sul mio telefono e nella copia di sicurezza. I dati che la legge mi obbliga a conservare per motivi fiscali restano per il tempo previsto dalla legge.</p>
         <h3>COOKIE E STATISTICHE</h3>
@@ -1017,7 +1058,7 @@
         <p>La memoria del browser serve solo a ricordare il carrello: è uno strumento tecnico e non richiede consenso.</p>
         <h3>I TUOI DIRITTI</h3>
         <p>Puoi chiedermi in ogni momento di vedere, correggere o cancellare i tuoi dati, di limitarne l'uso o di opporti, e di averne una copia: scrivimi su WhatsApp o per email. Se pensi che i tuoi dati non siano trattati correttamente puoi rivolgerti al Garante per la protezione dei dati personali (garanteprivacy.it).</p>
-        <p class="privacy-data">Ultimo aggiornamento: 27 ottobre 2026.</p>
+        <p class="privacy-data">Ultimo aggiornamento: 1 novembre 2026.</p>
       </div>
       <div class="popup-conserve-azioni">
         <button type="button" class="primary-button" data-chiudi-privacy>HO LETTO <span>✓</span></button>
@@ -1120,6 +1161,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=78"></script>
+  <script src="app.js?v=79"></script>
 </body>
 </html>
