@@ -1141,6 +1141,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 .dashboard-date small, .dashboard-date strong { display: block; }
 .dashboard-date small { font-size: .71rem; letter-spacing: .14em; color: var(--muted); margin-bottom: 7px; }
 .dashboard-date strong { font-size: .91rem; letter-spacing: .08em; }
+.giornate-dashboard { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.giornate-dashboard:empty { display: none; }
+.giornate-dashboard button { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; border: 1px solid var(--line); border-radius: 999px; background: #fffdf7; padding: 8px 14px; font-size: .72rem; font-weight: 900; letter-spacing: .08em; cursor: pointer; }
+.giornate-dashboard button b { min-width: 22px; padding: 2px 6px; border-radius: 999px; background: var(--sage-light); text-align: center; letter-spacing: 0; }
+.giornate-dashboard button.passata:not(.active) { color: var(--muted); }
+.giornate-dashboard button.active { background: var(--green); border-color: var(--green); color: white; }
+.giornate-dashboard button.active b { background: rgba(255, 255, 255, .22); }
 .dashboard-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
 .dashboard-stats article { background: #fffdf7; padding: 23px; min-height: 145px; display: flex; flex-direction: column; border-radius: var(--soft-radius); }
 .dashboard-stats article.mint { background: var(--sage-light); }

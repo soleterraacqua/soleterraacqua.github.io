@@ -21,7 +21,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 77;
+const VERSIONE_SITO = 78;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -260,6 +260,7 @@ const state = {
   orders: [...DEMO_ORDERS],
   customers: {},
   orderFilter: "all",
+  giornoDashboard: "",
   preserves: [],
   optimized: false
 };
@@ -771,6 +772,7 @@ function importOrderFromHash() {
     showToast(`Ordine ${order.id} già presente in dashboard: segnato come arrivato su WhatsApp.`);
   }
   history.replaceState(null, "", `${window.location.pathname}?${OWNER_QUERY}=${OWNER_VALUE}#dashboard`);
+  state.giornoDashboard = (presente || order).date || "";   // v78: la dashboard si apre sulla sua giornata
   navigate("dashboard");
   return true;
 }
@@ -2192,6 +2194,7 @@ async function salvaOrdineInserito() {
   const order = { ...creaOrdine(nuovoCodiceOrdine(), ""), daWhatsapp: true, inseritoDaMe: true };
   state.orders.unshift(order);
   saveBusinessData();
+  state.giornoDashboard = order.date || "";
   navigate("dashboard");
   showToast(`Ordine di ${order.name} salvato in dashboard.`, 4500);
   if (!postiAttivi()) return;
@@ -3133,14 +3136,48 @@ async function eliminaOrdine(id) {
   showToast(`Ordine di ${order.name} eliminato.`);
 }
 
+// v78: la dashboard divide le giornate (prima sommava gli ordini di venerdi' scorso a quelli nuovi).
+// Senza scelta vale la piu' vicina tra il primo giorno da oggi in poi con ordini da consegnare e il prossimo
+// giorno prenotabile; "tutte" = il totale
+const giornoCorto = giorno => new Date(`${giorno}T12:00:00`).toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" }).replace(/\./g, "").toUpperCase();
+
+function giornataAutomatica() {
+  const oggi = oggiLocale();
+  return [
+    state.orders.filter(order => order.status !== "Consegnato" && String(order.date || "") >= oggi).map(order => order.date).sort()[0],
+    giorniPrenotabili()[0] || state.deliveryDays.find(giorno => giorno >= oggi)
+  ].filter(Boolean).sort()[0] || "";
+}
+
+// le giornate da scegliere: quelle da oggi in poi e le ultime 3 passate con ordini
+function giornateDashboard(automatica) {
+  const oggi = oggiLocale();
+  const date = [...new Set([...state.orders.map(order => order.date), automatica].filter(giorno => /^\d{4}-\d{2}-\d{2}$/.test(giorno || "")))].sort();
+  return [...date.filter(giorno => giorno < oggi).slice(-3), ...date.filter(giorno => giorno >= oggi)];
+}
+
 function renderDashboard(filter = state.orderFilter || "all") {
   state.orderFilter = filter;
-  const visible = state.orders.filter(order => {
+  const automatica = giornataAutomatica();
+  const giornate = giornateDashboard(automatica);
+  if (state.giornoDashboard !== "tutte" && !giornate.includes(state.giornoDashboard)) state.giornoDashboard = "";
+  const giorno = state.giornoDashboard || automatica;
+  const tutte = giorno === "tutte" || !giorno;
+  const dellaGiornata = tutte ? state.orders : state.orders.filter(order => order.date === giorno);
+  const visible = dellaGiornata.filter(order => {
     if (filter === "all") return true;
     if (filter === "Fuori zona") return order.area !== "Viterbo";
     return order.area === filter;
   });
-  const upcoming = state.orders.filter(order => order.status !== "Consegnato").slice(0, 5);
+  const daConsegnare = dellaGiornata.filter(order => order.status !== "Consegnato");
+  const upcoming = [...daConsegnare]
+    .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) || inizioFascia(a).localeCompare(inizioFascia(b)))
+    .slice(0, 5);
+
+  $("#giornateDashboard").innerHTML = giornate.length ? [
+    ...giornate.map(data => `<button type="button" class="${data === giorno ? "active" : ""}${data < oggiLocale() ? " passata" : ""}" data-giornata="${data}" aria-pressed="${data === giorno}">${giornoCorto(data)} <b>${state.orders.filter(order => order.date === data).length}</b></button>`),
+    `<button type="button" class="${tutte ? "active" : ""}" data-giornata="tutte" aria-pressed="${tutte}">TOTALE <b>${state.orders.length}</b></button>`
+  ].join("") : "";
 
   $("#nextDeliveries").innerHTML = upcoming.map((order, index) => `
     <div class="next-delivery">
@@ -3175,20 +3212,25 @@ function renderDashboard(filter = state.orderFilter || "all") {
     }).join("")}
   `;
 
-  const daConsegnare = state.orders.filter(order => order.status !== "Consegnato");
   const posti = (FASCE_ORARIE.length + FASCIA_ZONE_VICINE.length) * MAX_ORDINI_FASCIA;
-  const prossimo = giorniPrenotabili()[0] || state.deliveryDays.find(giorno => giorno >= oggiLocale());
-  $("#dashboardDate").textContent = prossimo ? formatDate(prossimo) : "NESSUNA IN CALENDARIO";
-  $("#statOrders").textContent = daConsegnare.length;
-  $("#statOrdersNota").textContent = `su ${posti} posti per giornata`;
-  $("#statRevenue").textContent = money(daConsegnare.reduce((sum, order) => sum + Number(order.total || 0), 0));
-  $("#statExtra").textContent = daConsegnare.filter(order => order.area !== "Viterbo").length;
+  const consegnati = dellaGiornata.length - daConsegnare.length;
+  $("#dashboardDate").textContent = state.giornoDashboard === "tutte" ? "TUTTE LE GIORNATE" : tutte ? "NESSUNA IN CALENDARIO" : formatDate(giorno);
+  $("#statOrdersTitolo").textContent = tutte ? "ORDINI IN TOTALE" : "ORDINI DELLA GIORNATA";
+  $("#statOrders").textContent = dellaGiornata.length;
+  $("#statOrdersNota").textContent = tutte ? "di tutte le giornate" : `su ${posti} posti per giornata${consegnati ? ` · ${consegnati} consegnati` : ""}`;
+  $("#statRevenueTitolo").textContent = tutte ? "INCASSO TOTALE" : giorno < oggiLocale() ? "INCASSO" : "INCASSO PREVISTO";
+  $("#statRevenue").textContent = money(dellaGiornata.reduce((sum, order) => sum + Number(order.total || 0), 0));
+  $("#statRevenueNota").textContent = tutte ? "da tutti gli ordini" : `dagli ordini di ${giornoCorto(giorno).toLowerCase()}`;
+  $("#statExtra").textContent = dellaGiornata.filter(order => order.area !== "Viterbo").length;
   $("#statClienti").textContent = Object.keys(state.customers).length;
+  $("#ordiniEyebrow").textContent = tutte ? "TUTTI GLI ORDINI" : `ORDINI DI ${formatDate(giorno)}`;
   if (!daConsegnare.length) {
     $("#nextDeliveries").innerHTML = `<p class="dashboard-vuoto">Nessuna consegna in programma.</p>`;
   }
   if (!visible.length) {
-    $("#ordersTable").innerHTML = `<div class="empty-table-note">Ancora nessun ordine. Quando un cliente conferma dal sito, l'ordine compare qui da solo (la dashboard si aggiorna ogni 2 minuti). Per un ordine che non c'è, tocca il link "Registra l'ordine" nel suo messaggio WhatsApp.</div>`;
+    $("#ordersTable").innerHTML = state.orders.length && !tutte
+      ? `<div class="empty-table-note">Nessun ordine per ${formatDate(giorno).toLowerCase()}${filter !== "all" ? " in questa zona" : ""}. Gli altri li trovi toccando le altre giornate, sopra i numeri.</div>`
+      : `<div class="empty-table-note">Ancora nessun ordine. Quando un cliente conferma dal sito, l'ordine compare qui da solo (la dashboard si aggiorna ogni 2 minuti). Per un ordine che non c'è, tocca il link "Registra l'ordine" nel suo messaggio WhatsApp.</div>`;
   }
   const viterbo = daConsegnare.filter(order => order.area === "Viterbo");
   const vicine = daConsegnare.filter(order => order.area !== "Viterbo");
@@ -4254,6 +4296,12 @@ function setupEvents() {
     button.classList.add("active");
     renderDashboard(button.dataset.orderFilter);
   }));
+  $("#giornateDashboard").addEventListener("click", event => {
+    const bottone = event.target.closest("[data-giornata]");
+    if (!bottone) return;
+    state.giornoDashboard = bottone.dataset.giornata;
+    renderDashboard(state.orderFilter);
+  });
   $$("input, select, textarea", $("#deliveryForm")).forEach(field => field.addEventListener("input", () => field.classList.remove("invalid")));
   // "come mi hai conosciuto": toccando di nuovo la risposta scelta la si toglie (e' facoltativa)
   $$('input[name="discovery"]').forEach(input => {

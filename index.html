@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=77">
+  <link rel="stylesheet" href="styles.css?v=78">
 </head>
 <body>
   <div class="app-shell">
@@ -659,9 +659,11 @@
 
         <button type="button" class="primary-button nuovo-ordine-whatsapp" id="nuovoOrdineWhatsapp">+ AGGIUNGI UN ORDINE ARRIVATO SU WHATSAPP <span>→</span></button>
 
+        <div class="giornate-dashboard" id="giornateDashboard" aria-label="Scegli la giornata di consegna"></div>
+
         <div class="dashboard-stats">
-          <article><span>ORDINI DA CONSEGNARE</span><strong id="statOrders">0</strong><small id="statOrdersNota">su 32 posti per giornata</small></article>
-          <article><span>INCASSO PREVISTO</span><strong id="statRevenue">0,00 €</strong><small>dagli ordini da consegnare</small></article>
+          <article><span id="statOrdersTitolo">ORDINI DELLA GIORNATA</span><strong id="statOrders">0</strong><small id="statOrdersNota">su 40 posti per giornata</small></article>
+          <article><span id="statRevenueTitolo">INCASSO PREVISTO</span><strong id="statRevenue">0,00 €</strong><small id="statRevenueNota">dagli ordini della giornata</small></article>
           <article><span>CONSEGNE EXTRA</span><strong id="statExtra">0</strong><small>fuori Viterbo, +2,50 €</small></article>
           <article class="mint"><span>CLIENTI</span><strong id="statClienti">0</strong><small>recensioni: ancora nessuna</small></article>
         </div>
@@ -880,7 +882,7 @@
         <section class="orders-panel">
           <div class="panel-head orders-heading">
             <div>
-              <p class="eyebrow">TUTTI GLI ORDINI</p>
+              <p class="eyebrow" id="ordiniEyebrow">TUTTI GLI ORDINI</p>
               <h2>PIANO DI CONSEGNA</h2>
               <p class="copia-stato" id="copiaStato">—</p>
             </div>
@@ -1118,6 +1120,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=77"></script>
+  <script src="app.js?v=78"></script>
 </body>
 </html>
