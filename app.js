@@ -8,6 +8,9 @@ const SHEET_NUOVE = "assets/catalogo-vettoriali-nuove.webp";
 const SHEET_AUTUNNO = "assets/catalogo-vettoriali-autunno.webp";
 // foto vere (Wikimedia Commons, licenze libere: autori nelle condizioni di vendita), scontornate, 6 caselle in riga
 const SHEET_VERE = "assets/catalogo-foto-vere.webp";
+// finocchi (2 novembre 2026): foto Wikimedia Commons di Tiia Monto (CC BY-SA 4.0), scontornata e ripulita
+// dalle macchiette marroni, una casella sola
+const SHEET_FINOCCHI = "assets/catalogo-finocchi.webp";
 const WHATSAPP_NUMBER = "393202732892";
 const ADMIN_PIN = "2892";
 const ADMIN_SESSION_KEY = "sole-terra-acqua-admin-unlocked";
@@ -21,7 +24,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 79;
+const VERSIONE_SITO = 80;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -192,7 +195,8 @@ const PRODUCTS = [
   { id: "castagne", name: "Castagne", weight: "500 g", emoji: "🌰", cm: 15, sheet: SHEET_VERE, cols: 6, rows: 1, x: 4, y: 0, enabled: false },
   { id: "melone-invernale", name: "Melone invernale", weight: "1 pz", emoji: "🍈", cm: 22, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 1, y: 0, enabled: false },
   { id: "cime-rapa", name: "Cime di rapa", weight: "500 g", emoji: "🥬", cm: 30, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 2, y: 0, enabled: false },
-  { id: "cavolo-punta", name: "Cavolo cappuccio a punta", weight: "1 pz", emoji: "🥬", cm: 20, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 3, y: 0, enabled: false }
+  { id: "cavolo-punta", name: "Cavolo cappuccio a punta", weight: "1 pz", emoji: "🥬", cm: 20, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 3, y: 0, enabled: false },
+  { id: "finocchi", name: "Finocchi", weight: "2 pz", emoji: "🌿", cm: 28, sheet: SHEET_FINOCCHI, cols: 1, rows: 1, x: 0, y: 0, enabled: true }
 ];
 
 const BOXES = {
@@ -609,7 +613,9 @@ const VERDURE_NEL_LINK = [
   "zucchine-romanesche", "cetrioli", "fiori-zucca", "peperoncini", "scarola-riccia", "scarola-liscia", "cavolo-nero",
   "friggitelli",
   // aggiunte dopo (v66): le verdure nuove vanno sempre in fondo, mai in mezzo, o i link gia' mandati sbagliano verdura
-  "castagne", "melone-invernale", "cime-rapa", "cavolo-punta"
+  "castagne", "melone-invernale", "cime-rapa", "cavolo-punta",
+  // v80
+  "finocchi"
 ];
 
 const codiceVerdure = cassette => (cassette || []).map(cassetta => (cassetta.items || []).map(item => {
@@ -763,13 +769,16 @@ function importOrderFromHash() {
     saveBusinessData();
     showToast(`Ordine ${order.id} importato: premi CONFERMA per scrivere al cliente.`, 5000);
   } else {
-    // arrivato prima dal sito: ora so che il messaggio su WhatsApp c'e'
+    // arrivato prima dal sito: ora so che il messaggio su WhatsApp c'e' (v80: e solo da qui entra tra gli ordini)
+    const eraTraGliOrdini = ordineArrivato(presente);
     if (!presente.daWhatsapp) {
       presente.daWhatsapp = true;
       presente.aggiornato = Date.now();
       saveBusinessData();
     }
-    showToast(`Ordine ${order.id} già presente in dashboard: segnato come arrivato su WhatsApp.`);
+    showToast(eraTraGliOrdini
+      ? `Ordine ${order.id} già presente in dashboard.`
+      : `Ordine ${order.id} registrato: premi CONFERMA per scrivere al cliente.`, 5000);
   }
   history.replaceState(null, "", `${window.location.pathname}?${OWNER_QUERY}=${OWNER_VALUE}#dashboard`);
   state.giornoDashboard = (presente || order).date || "";   // v78: la dashboard si apre sulla sua giornata
@@ -2043,6 +2052,8 @@ function buildWhatsAppUrl(orderInput) {
     `💶 *Totale ${money(order?.total || total())}* (${area === "Viterbo" ? "consegna gratuita" : `consegna ${money(2.5)} inclusa`})`,
     // v72: la proposta dell'olio anche nell'ordine del cliente, in grassetto, al prezzo della dashboard
     ...(olioDaProporre() && !olio ? ["", `🫒 *Vuoi anche l'olio nuovo? Latta da ${OLIO.litri} litri a ${money(prezzoLatta()).replace(",00", "")} (${money(OLIO.prezzoLitro).replace(",00", "")} al litro): scrivimi SÌ OLIO e te lo porto con la cassetta.*`] : []),
+    // v80: il link della recensione resta nella chat del cliente, per quando ha ricevuto la cassetta
+    order ? `\n⭐ Dopo la consegna, se ti va, lasciami una recensione anonima (da 1 a 5 stelle): ${linkRecensione(order)}` : "",
     importUrl ? `\nRegistra l'ordine: ${importUrl}` : ""
   ].filter((riga, indice, righe) => riga !== "" || (righe[indice - 1] && righe[indice - 1] !== "")).join("\n").trim();
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
@@ -2919,7 +2930,9 @@ const RECENSIONI_FATTE_KEY = "sole-terra-acqua-recensioni-fatte";
 const VALUTAZIONI_KEY = "sole-terra-acqua-valutazioni";
 const GIUDIZI = ["Tocca una stella", "Non mi è piaciuta", "Così così", "Buona", "Molto buona", "Ottima!"];
 const recensione = { id: "", stelle: 0 };
-const linkRecensione = order => `${window.location.origin}${window.location.pathname}?${RECENSIONE_QUERY}=${encodeURIComponent(order.id)}`;
+// v80: link corto (?r=CODICE), anche nel messaggio dell'ordine che il cliente mi manda; ?recensione= dei
+// messaggi gia' mandati vale ancora
+const linkRecensione = order => `${window.location.origin}${window.location.pathname}?r=${encodeURIComponent(order.id)}`;
 const stelleTesto = quante => "★".repeat(quante) + "☆".repeat(5 - quante);
 const mediaTesto = media => media.toFixed(1).replace(".", ",");
 
@@ -2928,7 +2941,8 @@ function recensioniFatte() {
 }
 
 function apriRecensioneDaLink() {
-  const id = new URLSearchParams(window.location.search).get(RECENSIONE_QUERY) || "";
+  const parametri = new URLSearchParams(window.location.search);
+  const id = parametri.get("r") || parametri.get(RECENSIONE_QUERY) || "";
   if (!/^R[A-Z0-9]{4,10}$/.test(id)) return;
   recensione.id = id;
   scegliStelle(Number(recensioniFatte()[id]) || 0);
@@ -3248,9 +3262,61 @@ function savePreservesSettings() {
 // "INVIATO, DICE IL CLIENTE" = sul sito ha risposto SI' a "hai premuto INVIA?"; altrimenti lo controllo io
 function verificaOrdine(order) {
   if (order.daWhatsapp) return ["ok", "✓ ARRIVATO SU WHATSAPP"];
+  if (order.registratoDaMe) return ["ok", "✓ REGISTRATO DA TE"];
   if (order.inviatoDalCliente) return ["ok", "✓ INVIATO, DICE IL CLIENTE"];
   if (order.dalSito) return ["controlla", "CONTROLLA SU WHATSAPP"];
   return null;
+}
+
+// v80: tra gli ordini (numeri, giornate, giro, liste) entra solo l'ordine arrivato su WhatsApp: col link
+// "Registra l'ordine" del suo messaggio, inserito da me o registrato da me dall'avviso. Quello solo confermato
+// sul sito resta nella copia e tiene il posto, ma lo vedo a parte, in alto: "NON ANCORA ARRIVATI SU WHATSAPP".
+// Quelli gia' lavorati (conferma mandata o consegnati) restano dove sono.
+const ordineArrivato = order => !order.dalSito || Boolean(order.daWhatsapp || order.registratoDaMe || order.confermaInviata || order.status === "Consegnato");
+const ordiniArrivati = () => state.orders.filter(ordineArrivato);
+
+function renderInAttesa() {
+  const box = $("#inAttesaWhatsapp");
+  if (!box) return;
+  const oggi = oggiLocale();
+  const attesa = state.orders
+    .filter(order => !ordineArrivato(order) && String(order.date || "") >= oggi)
+    .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) || inizioFascia(a).localeCompare(inizioFascia(b)));
+  box.hidden = !attesa.length;
+  box.innerHTML = attesa.length ? `
+    <p class="eyebrow">${attesa.length === 1 ? "1 ORDINE CONFERMATO SUL SITO" : `${attesa.length} ORDINI CONFERMATI SUL SITO`} · NON ANCORA ARRIVATI SU WHATSAPP</p>
+    <p class="attesa-spiega">Non sono tra gli ordini: entrano quando tocchi il link "Registra l'ordine" nel messaggio WhatsApp del cliente. Se il messaggio non c'è, il cliente non ha premuto INVIA: scrivigli tu e, quando ti risponde, tocca REGISTRA. Il posto nella fascia intanto resta suo.</p>
+    ${attesa.map(order => `
+      <div class="attesa-voce">
+        <p><strong>${escapeHtml(order.name)}</strong><small>#${escapeHtml(order.id)} · ${escapeHtml(giornoCorto(order.date).toLowerCase())}, ${escapeHtml(order.deliveryWindow || order.time || "")} · ${escapeHtml(order.area || "")} · ${escapeHtml(order.box || "")} · ${money(order.total)} · ${escapeHtml(customerDisplayPhone(order.phone))}</small>${order.inviatoDalCliente ? `<small class="attesa-detto">Sul sito dice di aver premuto INVIA: cerca il suo nome su WhatsApp, anche tra le chat archiviate.</small>` : ""}</p>
+        <div class="attesa-azioni">
+          <button type="button" class="conferma-action" data-scrivi-attesa="${escapeHtml(order.id)}">SCRIVI AL CLIENTE</button>
+          <button type="button" class="delivery-action" data-registra-attesa="${escapeHtml(order.id)}">REGISTRA L'ORDINE</button>
+          <button type="button" class="elimina-action" data-elimina-ordine="${escapeHtml(order.id)}">ELIMINA</button>
+        </div>
+      </div>`).join("")}` : "";
+}
+
+// il messaggio lo invio io da WhatsApp
+function scriviAlClienteInAttesa(id) {
+  const order = state.orders.find(item => item.id === id);
+  const phone = normalizePhone(order?.phone);
+  if (!phone) return showToast("Questo ordine non ha un numero di telefono valido.");
+  const nome = String(order.name || "").split(" ")[0];
+  const testo = `Ciao ${nome}, ho visto il tuo ordine #${order.id} dal sito per ${formatDate(order.date).toLowerCase()}, ma il messaggio su WhatsApp non mi è arrivato. Me lo confermi? Così te lo preparo.\nAlessio`;
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(testo)}`, "_blank", "noopener");
+}
+
+function registraInAttesa(id) {
+  const order = state.orders.find(item => item.id === id);
+  if (!order) return;
+  order.registratoDaMe = true;
+  order.aggiornato = Date.now();
+  saveBusinessData();
+  state.giornoDashboard = order.date || "";
+  renderDashboard(state.orderFilter);
+  caricaPrenotazioni();
+  showToast(`Ordine di ${order.name} registrato: ora è tra gli ordini.`, 4500);
 }
 
 // v74: ELIMINA accanto a ogni ordine. Con la copia nel Foglio attiva lo tolgo prima li' (se no la prossima copia
@@ -3288,7 +3354,7 @@ const giornoCorto = giorno => new Date(`${giorno}T12:00:00`).toLocaleDateString(
 function giornataAutomatica() {
   const oggi = oggiLocale();
   return [
-    state.orders.filter(order => order.status !== "Consegnato" && String(order.date || "") >= oggi).map(order => order.date).sort()[0],
+    ordiniArrivati().filter(order => order.status !== "Consegnato" && String(order.date || "") >= oggi).map(order => order.date).sort()[0],
     giorniPrenotabili()[0] || state.deliveryDays.find(giorno => giorno >= oggi)
   ].filter(Boolean).sort()[0] || "";
 }
@@ -3296,7 +3362,7 @@ function giornataAutomatica() {
 // le giornate da scegliere: quelle da oggi in poi e le ultime 3 passate con ordini
 function giornateDashboard(automatica) {
   const oggi = oggiLocale();
-  const date = [...new Set([...state.orders.map(order => order.date), automatica].filter(giorno => /^\d{4}-\d{2}-\d{2}$/.test(giorno || "")))].sort();
+  const date = [...new Set([...ordiniArrivati().map(order => order.date), automatica].filter(giorno => /^\d{4}-\d{2}-\d{2}$/.test(giorno || "")))].sort();
   return [...date.filter(giorno => giorno < oggi).slice(-3), ...date.filter(giorno => giorno >= oggi)];
 }
 
@@ -3307,7 +3373,8 @@ function renderDashboard(filter = state.orderFilter || "all") {
   if (state.giornoDashboard !== "tutte" && !giornate.includes(state.giornoDashboard)) state.giornoDashboard = "";
   const giorno = state.giornoDashboard || automatica;
   const tutte = giorno === "tutte" || !giorno;
-  const dellaGiornata = tutte ? state.orders : state.orders.filter(order => order.date === giorno);
+  const arrivati = ordiniArrivati();
+  const dellaGiornata = tutte ? arrivati : arrivati.filter(order => order.date === giorno);
   const visible = dellaGiornata.filter(order => {
     if (filter === "all") return true;
     if (filter === "Fuori zona") return order.area !== "Viterbo";
@@ -3319,9 +3386,10 @@ function renderDashboard(filter = state.orderFilter || "all") {
     .slice(0, 5);
 
   $("#giornateDashboard").innerHTML = giornate.length ? [
-    ...giornate.map(data => `<button type="button" class="${data === giorno ? "active" : ""}${data < oggiLocale() ? " passata" : ""}" data-giornata="${data}" aria-pressed="${data === giorno}">${giornoCorto(data)} <b>${state.orders.filter(order => order.date === data).length}</b></button>`),
-    `<button type="button" class="${tutte ? "active" : ""}" data-giornata="tutte" aria-pressed="${tutte}">TOTALE <b>${state.orders.length}</b></button>`
+    ...giornate.map(data => `<button type="button" class="${data === giorno ? "active" : ""}${data < oggiLocale() ? " passata" : ""}" data-giornata="${data}" aria-pressed="${data === giorno}">${giornoCorto(data)} <b>${arrivati.filter(order => order.date === data).length}</b></button>`),
+    `<button type="button" class="${tutte ? "active" : ""}" data-giornata="tutte" aria-pressed="${tutte}">TOTALE <b>${arrivati.length}</b></button>`
   ].join("") : "";
+  renderInAttesa();
 
   $("#nextDeliveries").innerHTML = upcoming.map((order, index) => `
     <div class="next-delivery">
@@ -3372,9 +3440,9 @@ function renderDashboard(filter = state.orderFilter || "all") {
     $("#nextDeliveries").innerHTML = `<p class="dashboard-vuoto">Nessuna consegna in programma.</p>`;
   }
   if (!visible.length) {
-    $("#ordersTable").innerHTML = state.orders.length && !tutte
+    $("#ordersTable").innerHTML = arrivati.length && !tutte
       ? `<div class="empty-table-note">Nessun ordine per ${formatDate(giorno).toLowerCase()}${filter !== "all" ? " in questa zona" : ""}. Gli altri li trovi toccando le altre giornate, sopra i numeri.</div>`
-      : `<div class="empty-table-note">Ancora nessun ordine. Quando un cliente conferma dal sito, l'ordine compare qui da solo (la dashboard si aggiorna ogni 2 minuti). Per un ordine che non c'è, tocca il link "Registra l'ordine" nel suo messaggio WhatsApp.</div>`;
+      : `<div class="empty-table-note">Ancora nessun ordine. Un ordine entra qui quando tocchi il link "Registra l'ordine" nel messaggio WhatsApp del cliente.</div>`;
   }
   const viterbo = daConsegnare.filter(order => order.area === "Viterbo");
   const vicine = daConsegnare.filter(order => order.area !== "Viterbo");
@@ -3405,7 +3473,7 @@ function ordiniPerGiorno() {
   const oggi = oggiLocale();
   const ordini = state.orders
     .map((order, posizione) => ({ order, posizione }))
-    .filter(({ order }) => order.status !== "Consegnato" && String(order.date || "") >= oggi)
+    .filter(({ order }) => ordineArrivato(order) && order.status !== "Consegnato" && String(order.date || "") >= oggi)
     .sort((a, b) => a.order.date.localeCompare(b.order.date)
       || inizioFascia(a.order).localeCompare(inizioFascia(b.order))
       || (a.order.registrato || 0) - (b.order.registrato || 0)
@@ -4051,7 +4119,11 @@ async function sincronizzaCopia({ forza = false } = {}) {
       .filter(order => (Number(order.aggiornato) || 0) >= INIZIO_DATI_VERI)   // le prove di prima restano fuori
       .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
     state.orders = [...nuovi, ...miei];
-    if (nuovi.length) showToast(nuovi.length === 1 ? `Nuovo ordine: ${nuovi[0].name} (#${nuovi[0].id}).` : `${nuovi.length} ordini nuovi in dashboard.`, 5000);
+    // v80: quelli solo confermati sul sito vanno nell'avviso in alto, non tra gli ordini
+    const nuoviArrivati = nuovi.filter(ordineArrivato);
+    const nuoviInAttesa = nuovi.filter(order => !ordineArrivato(order) && String(order.date || "") >= oggiLocale());
+    if (nuoviArrivati.length) showToast(nuoviArrivati.length === 1 ? `Nuovo ordine: ${nuoviArrivati[0].name} (#${nuoviArrivati[0].id}).` : `${nuoviArrivati.length} ordini nuovi in dashboard.`, 5000);
+    else if (nuoviInAttesa.length) showToast(`${nuoviInAttesa.length === 1 ? `${nuoviInAttesa[0].name} ha confermato` : `${nuoviInAttesa.length} clienti hanno confermato`} sul sito: il messaggio WhatsApp non è ancora arrivato (lo vedi in alto).`, 5000);
     if (dati.clienti && typeof dati.clienti === "object") {
       state.customers = Object.fromEntries(Object.entries(dati.clienti)
         .filter(([chiave, cliente]) => state.customers[chiave] || (Number(cliente?.aggiornato) || 0) >= INIZIO_DATI_VERI));
@@ -4059,6 +4131,7 @@ async function sincronizzaCopia({ forza = false } = {}) {
     saveBusinessData({ copia: false });
     copiaFattaAlle = Date.now();
     renderDashboard(state.orderFilter);
+    if (nuovi.length) caricaPrenotazioni();   // i posti "arrivato / non arrivato" vanno rifatti con gli ordini nuovi
     scriviStatoCopia(`Copia di sicurezza nel Foglio Google aggiornata alle ${dati.salvato?.slice(-5) || "adesso"} ✓ · ${state.orders.length} ordini, ${Object.keys(state.customers).length} clienti${dati.cancellati ? ` · ${dati.cancellati} dati oltre i 24 mesi cancellati` : ""}`);
   } catch (errore) {
     scriviStatoCopia(String(errore?.message) === "parola"
@@ -4089,7 +4162,7 @@ async function caricaPrenotazioni() {
     }
     const conti = {};
     attive.forEach(posto => { conti[posto.giorno + posto.fascia] = (conti[posto.giorno + posto.fascia] || 0) + 1; });
-    const arrivati = new Set(state.orders.map(order => order.id));
+    const arrivati = new Set(ordiniArrivati().map(order => order.id));
     elenco.innerHTML = attive.map(posto => {
       const arrivato = arrivati.has(posto.id);
       const stato = arrivato ? ["arrivato", "ORDINE ARRIVATO"] : posto.stato === "confermata" ? ["manca", "CONFERMATO, MA NON TI È ARRIVATO"] : ["attesa", "AL RIEPILOGO (POSTO TENUTO 20 MINUTI)"];
@@ -4298,6 +4371,14 @@ function setupEvents() {
     if (button) markOrderDelivered(button.dataset.deliverOrder);
     const conferma = event.target.closest("[data-conferma-ordine]");
     if (conferma) inviaConfermaCliente(conferma.dataset.confermaOrdine);
+    const elimina = event.target.closest("[data-elimina-ordine]");
+    if (elimina) eliminaOrdine(elimina.dataset.eliminaOrdine);
+  });
+  $("#inAttesaWhatsapp").addEventListener("click", event => {
+    const scrivi = event.target.closest("[data-scrivi-attesa]");
+    if (scrivi) scriviAlClienteInAttesa(scrivi.dataset.scriviAttesa);
+    const registra = event.target.closest("[data-registra-attesa]");
+    if (registra) registraInAttesa(registra.dataset.registraAttesa);
     const elimina = event.target.closest("[data-elimina-ordine]");
     if (elimina) eliminaOrdine(elimina.dataset.eliminaOrdine);
   });

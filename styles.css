@@ -1141,6 +1141,24 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 .dashboard-date small, .dashboard-date strong { display: block; }
 .dashboard-date small { font-size: .71rem; letter-spacing: .14em; color: var(--muted); margin-bottom: 7px; }
 .dashboard-date strong { font-size: .91rem; letter-spacing: .08em; }
+/* v80: confermati sul sito ma non ancora arrivati su WhatsApp: fuori dagli ordini, in un avviso */
+.attesa-whatsapp { margin: 0 0 18px; padding: 16px 20px; border-radius: var(--soft-radius); background: #fff6e0; border: 2px solid #e9c35c; display: grid; gap: 10px; }
+.attesa-whatsapp[hidden] { display: none; }
+.attesa-whatsapp .eyebrow { margin: 0; color: #6b5a26; }
+.attesa-spiega { margin: 0; font-size: .82rem; line-height: 1.45; }
+.attesa-voce { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: var(--small-radius); background: #fffdf7; border: 1px solid #ecd9a4; }
+.attesa-voce p { margin: 0; min-width: 0; }
+.attesa-voce strong, .attesa-voce small { display: block; }
+.attesa-voce small { color: var(--muted); font-size: .72rem; margin-top: 3px; overflow-wrap: anywhere; }
+.attesa-voce .attesa-detto { color: #8a3f28; font-weight: 700; }
+.attesa-azioni { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; flex-shrink: 0; }
+.attesa-azioni button { min-height: 40px; }
+.attesa-azioni .delivery-action { width: auto; }
+@media (max-width: 700px) {
+  .attesa-whatsapp { padding: 14px 14px; }
+  .attesa-voce { flex-direction: column; align-items: stretch; }
+  .attesa-azioni { justify-content: flex-start; }
+}
 .giornate-dashboard { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
 .giornate-dashboard:empty { display: none; }
 .giornate-dashboard button { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; border: 1px solid var(--line); border-radius: 999px; background: #fffdf7; padding: 8px 14px; font-size: .72rem; font-weight: 900; letter-spacing: .08em; cursor: pointer; }
