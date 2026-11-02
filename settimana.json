@@ -1,5 +1,5 @@
 {
-  "aggiornato": "2026-10-30T19:54:01.863Z",
+  "aggiornato": "2026-11-02T21:37:05.607Z",
   "giorni": [],
   "giornoFisso": 5,
   "giornoFisso2": -1,
@@ -296,7 +296,7 @@
     {
       "id": "cavolo-nero",
       "nome": "Cavolo nero",
-      "peso": "1 mazzo",
+      "peso": "700/800 g",
       "disponibile": true,
       "unoSolo": false,
       "foto": ""
@@ -315,7 +315,6 @@
       "peso": "500 g",
       "disponibile": true,
       "unoSolo": false,
-      "massimo": 60,
       "foto": ""
     },
     {
@@ -341,6 +340,14 @@
       "disponibile": false,
       "unoSolo": false,
       "massimo": 40,
+      "foto": ""
+    },
+    {
+      "id": "finocchi",
+      "nome": "Finocchi",
+      "peso": "900/1000g",
+      "disponibile": true,
+      "unoSolo": false,
       "foto": ""
     }
   ],
