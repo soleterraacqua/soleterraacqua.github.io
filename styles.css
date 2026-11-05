@@ -1257,6 +1257,34 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 .uova-campi label { display: grid; gap: 6px; color: var(--muted); font-size: .66rem; font-weight: 900; letter-spacing: .08em; }
 .uova-campi input { width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--small-radius); background: #fff; color: var(--green-deep); font: inherit; font-size: 16px; font-weight: 900; letter-spacing: 0; }
 .popup-conserve-card > .uova-totale { margin: 0 auto 14px; color: var(--green-deep); font-size: .9rem; font-weight: 900; }
+/* v82: scheda dell'ordine, si apre toccando la riga in dashboard */
+.order-row[data-modifica-ordine] { cursor: pointer; }
+.order-row[data-modifica-ordine]:hover { background: #f8f3e6; }
+.attesa-voce p[data-modifica-ordine] { cursor: pointer; }
+.modifica-action { border: 1px solid var(--line); background: #fffdf7; color: var(--green-deep); border-radius: 999px; padding: 9px 12px; font-size: .66rem; font-weight: 900; letter-spacing: .07em; cursor: pointer; }
+.mod-card { width: min(640px, 100%); }
+.popup-conserve-card > .mod-corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; align-content: start; gap: 14px; margin-bottom: 12px; padding: 2px; text-align: left; }
+.mod-gruppo { min-width: 0; margin: 0; padding: 12px 14px 14px; border: 1px solid var(--line); border-radius: var(--small-radius); background: #fff; display: grid; gap: 10px; }
+.mod-gruppo legend { padding: 0 6px; color: var(--terracotta); font-size: .7rem; font-weight: 900; letter-spacing: .14em; }
+.mod-campi { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mod-orario[hidden] { display: none; }
+.mod-gruppo label { display: grid; gap: 5px; min-width: 0; color: var(--muted); font-size: .64rem; font-weight: 900; letter-spacing: .08em; }
+.mod-gruppo input, .mod-gruppo select, .mod-gruppo textarea { width: 100%; min-width: 0; min-height: 46px; padding: 9px 11px; border: 1px solid var(--line); border-radius: var(--small-radius); background: #fffdf7; color: var(--green-deep); font: inherit; font-size: 16px; font-weight: 700; letter-spacing: 0; }
+.mod-gruppo textarea { resize: vertical; }
+.mod-cassetta { display: grid; gap: 8px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px dashed var(--line); }
+.mod-cassetta-testa { display: flex; gap: 10px; align-items: flex-end; }
+.mod-cassetta-testa label { flex: 1 1 auto; }
+.mod-cassetta-testa .elimina-action { min-height: 44px; }
+.mod-voce { display: flex; gap: 10px; align-items: center; justify-content: space-between; min-height: 44px; font-size: .86rem; font-weight: 700; }
+.mod-voce > span { min-width: 0; overflow-wrap: anywhere; }
+.mod-passo { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.mod-passo button { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; background: #fffdf7; color: var(--green-deep); font-size: 1.15rem; font-weight: 900; cursor: pointer; }
+.mod-passo b { min-width: 26px; text-align: center; }
+.popup-conserve-card .mod-vuoto, .mod-vuoto { margin: 0; color: var(--muted); font-size: .76rem; }
+.mod-azioni { flex-shrink: 0; gap: 2px; }
+@media (max-width: 460px) {
+  .mod-campi { grid-template-columns: 1fr; }
+}
 .uova-annulla { border: 0; background: transparent; color: var(--muted); padding: 8px 12px; font-size: .72rem; font-weight: 900; letter-spacing: .08em; cursor: pointer; }
 .stato-cella { display: grid; gap: 5px; justify-items: start; }
 .verifica { font-size: .6rem; font-weight: 900; letter-spacing: .05em; line-height: 1.3; color: var(--green); }

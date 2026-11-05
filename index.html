@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=81">
+  <link rel="stylesheet" href="styles.css?v=82">
 </head>
 <body>
   <div class="app-shell">
@@ -920,10 +920,10 @@
             <div>
               <p class="eyebrow">CLIENTI E PUNTI</p>
               <h2>PROGRAMMA FEDELTÀ</h2>
-              <p>Il cliente viene riconosciuto come persona unica dal numero di telefono. Le consegne si contano solo quando confermi “ordine consegnato”: alla decima parte da sola la proposta dell’omaggio.</p>
+              <p>Il cliente viene riconosciuto come persona unica dal numero di telefono. Ogni ordine vale un punto appena entra nelle consegne da fare, anche quelli della prima settimana. Al decimo compare OMAGGIO PRONTO e la proposta parte con il messaggio di consegna.</p>
             </div>
             <div class="loyalty-prize">
-              <strong>10 CONSEGNE</strong>
+              <strong>10 ORDINI</strong>
               <span>UNA CONSERVA<br>IN OMAGGIO</span>
             </div>
           </div>
@@ -935,7 +935,7 @@
             <div>
               <p class="eyebrow">OMAGGIO FEDELTÀ</p>
               <h2>LE TUE CONSERVE</h2>
-              <p>Alla decima consegna il cliente riceve su WhatsApp l’elenco qui sotto e risponde con quella che preferisce. Spegni l’interruttore di quelle finite: spariscono dal messaggio senza cancellarle.</p>
+              <p>Al decimo ordine, quando tocchi CONSEGNATO + AVVISA, il cliente riceve su WhatsApp l’elenco qui sotto e risponde con quella che preferisce. Spegni l’interruttore di quelle finite: spariscono dal messaggio senza cancellarle.</p>
               <p class="preserves-count" id="preservesCount"></p>
             </div>
             <div class="preserves-actions">
@@ -1088,6 +1088,69 @@
     </div>
   </div>
 
+  <div class="popup-conserve popup-modifica" id="popupModifica" hidden>
+    <form class="popup-conserve-card mod-card" id="modificaForm" role="dialog" aria-modal="true" aria-labelledby="modificaTitolo" novalidate>
+      <p class="popup-conserve-aspetta" id="modificaCodice">ORDINE</p>
+      <h2 id="modificaTitolo">MODIFICA <em id="modificaNome"></em></h2>
+      <div class="mod-corpo">
+        <fieldset class="mod-gruppo">
+          <legend>CLIENTE</legend>
+          <div class="mod-campi">
+            <label>NOME E COGNOME<input id="modNome" type="text" autocomplete="off"></label>
+            <label>TELEFONO<input id="modTelefono" type="tel" autocomplete="off"></label>
+            <label>COME MI HA CONOSCIUTO<select id="modOrigine"></select></label>
+          </div>
+        </fieldset>
+        <fieldset class="mod-gruppo">
+          <legend>CONSEGNA</legend>
+          <div class="mod-campi">
+            <label>GIORNO<input id="modGiorno" type="date"></label>
+            <label>ORARIO<select id="modFascia"></select></label>
+          </div>
+          <div class="mod-campi mod-orario" id="modOrarioLibero" hidden>
+            <label>DALLE<input id="modDalle" type="time"></label>
+            <label>ALLE<input id="modAlle" type="time"></label>
+          </div>
+          <div class="mod-campi">
+            <label>LOCALITÀ<select id="modLocalita"></select></label>
+            <label>VIA E NUMERO<input id="modIndirizzo" type="text" autocomplete="off"></label>
+          </div>
+          <label class="mod-nota-campo">NOTE<textarea id="modNote" rows="2"></textarea></label>
+        </fieldset>
+        <fieldset class="mod-gruppo">
+          <legend>CASSETTE</legend>
+          <div id="modCassette"></div>
+          <button class="conferma-action" type="button" id="modAggiungiCassetta">+ AGGIUNGI UNA CASSETTA</button>
+        </fieldset>
+        <fieldset class="mod-gruppo">
+          <legend>CONSERVE</legend>
+          <div id="modConserve"></div>
+        </fieldset>
+        <fieldset class="mod-gruppo">
+          <legend>OLIO E UOVA</legend>
+          <div id="modOlio"></div>
+          <div class="mod-campi">
+            <label>QUANTE UOVA<input id="modUova" type="number" inputmode="numeric" min="0" max="999" step="1" placeholder="0"></label>
+            <label>PREZZO UOVA IN TUTTO (€)<input id="modUovaPrezzo" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00"></label>
+          </div>
+        </fieldset>
+        <fieldset class="mod-gruppo">
+          <legend>STATO E TOTALE</legend>
+          <div class="mod-campi">
+            <label>STATO<select id="modStato"></select></label>
+            <label>TOTALE (€)<input id="modTotale" type="text" inputmode="decimal" autocomplete="off"></label>
+          </div>
+          <p class="mod-vuoto" id="modTotaleNota"></p>
+          <button class="conferma-action" type="button" id="modRicalcola" hidden>RICALCOLA IL TOTALE</button>
+        </fieldset>
+      </div>
+      <div class="popup-conserve-azioni mod-azioni">
+        <button class="primary-button" type="submit">SALVA LE MODIFICHE <span>→</span></button>
+        <button class="uova-annulla" type="button" data-chiudi-modifica>ANNULLA</button>
+      </div>
+    </form>
+  </div>
+
   <div class="popup-conserve popup-uova" id="popupUova" hidden>
     <form class="popup-conserve-card" id="uovaForm" role="dialog" aria-modal="true" aria-labelledby="popupUovaTitolo" novalidate>
       <p class="popup-conserve-aspetta">SOLO DALLA DASHBOARD</p>
@@ -1180,6 +1243,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=81"></script>
+  <script src="app.js?v=82"></script>
 </body>
 </html>

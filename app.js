@@ -24,7 +24,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 81;
+const VERSIONE_SITO = 82;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -446,7 +446,7 @@ function saveBusinessData({ copia = true } = {}) {
   if (copia) programmaCopia();
 }
 
-function upsertCustomerFromOrder(order, addPoint = false) {
+function upsertCustomerFromOrder(order) {
   const key = customerKeyFromOrder(order);
   const existing = state.customers[key] || {
     id: key,
@@ -464,12 +464,6 @@ function upsertCustomerFromOrder(order, addPoint = false) {
   existing.orders = Math.max(existing.orders || 0, state.orders.filter(item => customerKeyFromOrder(item) === key && item.status === "Consegnato").length);
   existing.lastOrderId = order.id || existing.lastOrderId;
   existing.lastDelivery = order.date || existing.lastDelivery;
-  if (addPoint) {
-    existing.points = (existing.points || 0) + 1;
-    if (existing.points % POINTS_FOR_REWARD === 0) {
-      existing.rewardsEarned = (existing.rewardsEarned || 0) + 1;
-    }
-  }
   state.customers[key] = existing;
   return existing;
 }
@@ -480,7 +474,38 @@ function rebuildCustomersFromOrders() {
   state.orders.forEach(order => {
     const key = customerKeyFromOrder(order);
     if (savedCustomers[key]) state.customers[key] = savedCustomers[key];
-    if (order.status === "Consegnato") upsertCustomerFromOrder(order, Boolean(order.loyaltyCredited && !savedCustomers[key]));
+    if (order.status === "Consegnato") upsertCustomerFromOrder(order);
+  });
+}
+
+// v82: ogni ordine entrato nelle consegne vale un punto, senza aspettare CONSEGNATO. I punti si contano dagli ordini,
+// cosi' telefono e computer danno lo stesso numero e un ordine eliminato non conta piu'. Gli ordini della prima
+// settimana contano tutti: allora la dashboard li prendeva da soli e nessuno li segnava consegnati.
+const FINE_PRIMA_SETTIMANA = "2026-11-01";
+const ordineDaPunto = order => ordineArrivato(order) || String(order.date || "") < FINE_PRIMA_SETTIMANA;
+
+function ricalcolaFedelta() {
+  const perCliente = new Map();
+  state.orders.filter(ordineDaPunto).forEach(order => {
+    const chiave = customerKeyFromOrder(order);
+    perCliente.set(chiave, [...(perCliente.get(chiave) || []), order]);
+  });
+  Object.entries(state.customers).forEach(([chiave, cliente]) => {
+    if (!perCliente.has(chiave)) Object.assign(cliente, { points: 0, orders: 0, rewardsEarned: 0 });
+  });
+  perCliente.forEach((ordini, chiave) => {
+    const ultimo = ordini.reduce((prima, order) => (String(order.date || "") >= String(prima.date || "") ? order : prima));
+    // niente "aggiornato" sui clienti che ci sono gia': i punti rinascono ovunque, gli omaggi dati non vanno sovrascritti
+    state.customers[chiave] ||= { id: chiave, rewardsUsed: 0, aggiornato: Date.now() };
+    Object.assign(state.customers[chiave], {
+      name: ultimo.name,
+      phone: ultimo.phone || "",
+      points: ordini.length,
+      orders: ordini.length,
+      rewardsEarned: Math.floor(ordini.length / POINTS_FOR_REWARD),
+      lastOrderId: ultimo.id,
+      lastDelivery: ultimo.date
+    });
   });
 }
 
@@ -488,7 +513,7 @@ function rewardStatus(customer) {
   const available = Math.max(0, customer.rewardsEarned || 0) - Math.max(0, customer.rewardsUsed || 0);
   if (available > 0) return `${available} omaggio da consegnare`;
   const missing = POINTS_FOR_REWARD - ((customer.points || 0) % POINTS_FOR_REWARD);
-  return missing === 1 ? "1 consegna all'omaggio" : `${missing} consegne all'omaggio`;
+  return missing === 1 ? "1 ordine all'omaggio" : `${missing} ordini all'omaggio`;
 }
 
 function loadPreserves() {
@@ -3075,7 +3100,7 @@ function buildCustomerNotificationUrl(order, customer) {
   const righe = [`Ciao ${nome}, il tuo ordine ${order.id} risulta consegnato. Grazie da Sole Terra Acqua!`, ""];
   if (availableRewards > 0) {
     const conserve = availablePreserves();
-    righe.push(`Questa è la tua consegna numero ${customer.points || POINTS_FOR_REWARD}: hai diritto a una CONSERVA IN OMAGGIO.`);
+    righe.push(`Hai raggiunto ${customer.points || POINTS_FOR_REWARD} ordini: hai diritto a una CONSERVA IN OMAGGIO.`);
     if (conserve.length) {
       righe.push("", "Puoi scegliere tra:");
       conserve.forEach(item => righe.push(`- ${item.name}`));
@@ -3084,8 +3109,9 @@ function buildCustomerNotificationUrl(order, customer) {
       righe.push("", "Rispondi a questo messaggio e dimmi quale conserva preferisci.");
     }
   } else {
-    const quante = missingPoints === 1 ? "ancora una consegna" : `ancora ${missingPoints} consegne`;
-    righe.push(`Sei a ${customer.points || 0} consegne su ${POINTS_FOR_REWARD}: ${quante} e ricevi una conserva in omaggio.`);
+    const fatti = (customer.points || 0) % POINTS_FOR_REWARD;
+    const quante = missingPoints === 1 ? "ancora un ordine" : `ancora ${missingPoints} ordini`;
+    righe.push(`Sei a ${fatti} ${fatti === 1 ? "ordine" : "ordini"} su ${POINTS_FOR_REWARD}: ${quante} e ricevi una conserva in omaggio.`);
   }
   // v79: il link per la recensione anonima
   righe.push("", "⭐ Com'era la cassetta? Lasciami un voto da 1 a 5 stelle: è anonimo, bastano 10 secondi e mi aiuta a migliorare.", linkRecensione(order));
@@ -3138,14 +3164,14 @@ function markOrderDelivered(orderId) {
   const alreadyDelivered = order.status === "Consegnato" && order.loyaltyCredited;
   order.status = "Consegnato";
   order.deliveredAt = new Date().toISOString();
-  const customer = upsertCustomerFromOrder(order, !alreadyDelivered);
+  const customer = upsertCustomerFromOrder(order);
   order.loyaltyCredited = true;
   order.aggiornato = customer.aggiornato = Date.now();
   saveBusinessData();
   renderDashboard(state.orderFilter);
   const notificationUrl = buildCustomerNotificationUrl(order, customer);
   if (notificationUrl) window.open(notificationUrl, "_blank", "noopener");
-  showToast(alreadyDelivered ? "Ordine già consegnato: riapro l'avviso cliente." : "Ordine consegnato: punto fedeltà aggiunto.");
+  showToast(alreadyDelivered ? "Ordine già consegnato: riapro l'avviso cliente." : "Ordine consegnato.");
 }
 
 function useCustomerReward(customerId) {
@@ -3174,7 +3200,7 @@ function renderCustomers() {
   const table = $("#customersTable");
   if (!table) return;
   if (!customers.length) {
-    table.innerHTML = `<div class="empty-table-note">Ancora nessun cliente consegnato. I punti appariranno dopo il primo ordine segnato come consegnato.</div>`;
+    table.innerHTML = `<div class="empty-table-note">Ancora nessun cliente. Ogni ordine che entra nelle consegne vale un punto.</div>`;
     return;
   }
   const conserve = availablePreserves();
@@ -3183,7 +3209,7 @@ function renderCustomers() {
     : `<option value="">Nessuna conserva disponibile</option>`;
 
   table.innerHTML = `
-    <div class="customer-row header"><span>CLIENTE</span><span>TELEFONO</span><span>VERSO L’OMAGGIO</span><span>CONSEGNE</span><span>OMAGGIO</span></div>
+    <div class="customer-row header"><span>CLIENTE</span><span>TELEFONO</span><span>VERSO L’OMAGGIO</span><span>ORDINI</span><span>OMAGGIO</span></div>
     ${customers.map(customer => {
       const availableRewards = Math.max(0, (customer.rewardsEarned || 0) - (customer.rewardsUsed || 0));
       return `
@@ -3191,7 +3217,7 @@ function renderCustomers() {
           <span class="customer-name"><strong>${escapeHtml(customer.name || "Cliente")}</strong><small>Ultimo ordine ${escapeHtml(customer.lastOrderId || "—")}</small>${customer.lastReward ? `<small class="last-gift">Omaggio dato: ${escapeHtml(customer.lastReward)}</small>` : ""}</span>
           <span>${escapeHtml(customerDisplayPhone(customer.phone))}</span>
           <span class="points-pill ${availableRewards ? "reward-ready" : ""}">${availableRewards ? "OMAGGIO PRONTO" : `${(customer.points || 0) % POINTS_FOR_REWARD} / ${POINTS_FOR_REWARD}`}</span>
-          <span>${(customer.orders || 0) === 1 ? "1 consegna" : `${customer.orders || 0} consegne`}</span>
+          <span>${(customer.orders || 0) === 1 ? "1 ordine" : `${customer.orders || 0} ordini`}</span>
           <span>${availableRewards ? `
             <span class="reward-cell">
               <select class="reward-choice" data-reward-choice="${escapeHtml(customer.id)}" aria-label="Conserva scelta da ${escapeHtml(customer.name || "cliente")}">${opzioniConserve}</select>
@@ -3289,7 +3315,7 @@ function renderInAttesa() {
     <p class="attesa-spiega">Non sono tra gli ordini: entrano quando tocchi il link "Registra l'ordine" nel messaggio WhatsApp del cliente. Se il messaggio non c'è, il cliente non ha premuto INVIA: scrivigli tu e, quando ti risponde, tocca REGISTRA. Il posto nella fascia intanto resta suo.</p>
     ${attesa.map(order => `
       <div class="attesa-voce">
-        <p><strong>${escapeHtml(order.name)}</strong><small>#${escapeHtml(order.id)} · ${escapeHtml(giornoCorto(order.date).toLowerCase())}, ${escapeHtml(order.deliveryWindow || order.time || "")} · ${escapeHtml(order.area || "")} · ${escapeHtml(order.box || "")} · ${money(order.total)} · ${escapeHtml(customerDisplayPhone(order.phone))}</small>${order.inviatoDalCliente ? `<small class="attesa-detto">Sul sito dice di aver premuto INVIA: cerca il suo nome su WhatsApp, anche tra le chat archiviate.</small>` : ""}</p>
+        <p data-modifica-ordine="${escapeHtml(order.id)}"><strong>${escapeHtml(order.name)}</strong><small>#${escapeHtml(order.id)} · ${escapeHtml(giornoCorto(order.date).toLowerCase())}, ${escapeHtml(order.deliveryWindow || order.time || "")} · ${escapeHtml(order.area || "")} · ${escapeHtml(order.box || "")} · ${money(order.total)} · ${escapeHtml(customerDisplayPhone(order.phone))}</small>${order.inviatoDalCliente ? `<small class="attesa-detto">Sul sito dice di aver premuto INVIA: cerca il suo nome su WhatsApp, anche tra le chat archiviate.</small>` : ""}</p>
         <div class="attesa-azioni">
           <button type="button" class="conferma-action" data-scrivi-attesa="${escapeHtml(order.id)}">SCRIVI AL CLIENTE</button>
           <button type="button" class="delivery-action" data-registra-attesa="${escapeHtml(order.id)}">REGISTRA L'ORDINE</button>
@@ -3369,6 +3395,7 @@ function giornateDashboard(automatica) {
 
 function renderDashboard(filter = state.orderFilter || "all") {
   state.orderFilter = filter;
+  ricalcolaFedelta();
   const automatica = giornataAutomatica();
   const giornate = giornateDashboard(automatica);
   if (state.giornoDashboard !== "tutte" && !giornate.includes(state.giornoDashboard)) state.giornoDashboard = "";
@@ -3408,7 +3435,7 @@ function renderDashboard(filter = state.orderFilter || "all") {
       const points = customer?.points || 0;
       const verifica = verificaOrdine(order);
       return `
-        <div class="order-row">
+        <div class="order-row" data-modifica-ordine="${escapeHtml(order.id)}">
           <span>${escapeHtml(order.time || "—")}</span>
           <span class="order-customer"><strong>${escapeHtml(order.name)}</strong><small>#${order.id} · ${escapeHtml(customerDisplayPhone(order.phone))} · ${points} punti</small></span>
           <span>${escapeHtml(order.address)}</span>
@@ -3419,6 +3446,7 @@ function renderDashboard(filter = state.orderFilter || "all") {
             <button class="conferma-action ${order.confermaInviata ? "done" : ""}" data-conferma-ordine="${escapeHtml(order.id)}">${order.confermaInviata ? "RIMANDA CONFERMA" : olioDaProporre() && !order.olio ? "CONFERMA + OLIO" : "CONFERMA AL CLIENTE"}</button>
             <button class="delivery-action ${delivered ? "done" : ""}" data-deliver-order="${escapeHtml(order.id)}">${delivered ? "RIAVVISA CLIENTE" : "CONSEGNATO + AVVISA"}</button>
             <button class="uova-action ${uovaDellOrdine(order) ? "con-uova" : ""}" data-uova-ordine="${escapeHtml(order.id)}">🥚 ${uovaDellOrdine(order) ? testoUova(uovaDellOrdine(order)).toUpperCase() : "AGGIUNGI UOVA"}</button>
+            <button class="modifica-action" data-modifica-ordine="${escapeHtml(order.id)}">✏️ MODIFICA ORDINE</button>
             <button class="elimina-action" data-elimina-ordine="${escapeHtml(order.id)}">ELIMINA</button>
           </div>
         </div>
@@ -3469,8 +3497,8 @@ const testoUova = quante => `${quante} ${quante === 1 ? "uovo" : "uova"}`;
 const prezzoInCifre = valore => (Number(valore) || 0).toFixed(2).replace(".", ",");
 const uovaInCorso = { id: "", prezzoToccato: false };
 
-const prezzoScritto = () => {
-  const valore = Number(String($("#uovaPrezzo").value).trim().replace(",", "."));
+const prezzoScritto = (campo = "#uovaPrezzo") => {
+  const valore = Number(String($(campo).value).trim().replace(",", "."));
   return Number.isFinite(valore) && valore > 0 ? Math.round(valore * 100) / 100 : 0;
 };
 
@@ -3517,6 +3545,237 @@ function salvaUova(quante) {
   chiudiUova();
   renderDashboard(state.orderFilter);
   showToast(quante ? `${testoUova(quante)} per ${order.name}: ${order.confermaInviata ? "se vuoi avvisare il cliente tocca RIMANDA CONFERMA." : "le trovi nelle liste del giro."}` : `Uova tolte dall'ordine di ${order.name}.`, 5000);
+}
+
+// v82: dalla dashboard cambio tutto dell'ordine: tocco la riga e si apre la scheda. Le voci stanno nella bozza
+// finche' non salvo; il totale si sposta solo della differenza, cosi' i prezzi di allora restano com'erano
+const modifica = { id: "", cassette: [], conserve: [], olio: 0, totaleToccato: false, prezzoUovaToccato: false };
+const tondo = valore => Math.round(valore * 100) / 100;
+const chiaveScatola = nome => Object.keys(BOXES).find(chiave => BOXES[chiave].label === String(nome).toUpperCase()) || "media";
+const ordineInModifica = () => state.orders.find(item => item.id === modifica.id);
+const fasceDiConsegna = () => [...FASCE_ORARIE, ...FASCIA_ZONE_VICINE].map(([dalle, alle]) => `${dalle}–${alle}`);
+const orarioScelto = () => ($("#modFascia").value === "altro" ? [$("#modDalle").value, $("#modAlle").value] : $("#modFascia").value.split("–"));
+
+function costoVoci({ cassette, conserve, olio, area, uova }) {
+  const scatole = cassette.reduce((somma, cassetta) => {
+    const scatola = BOXES[chiaveScatola(cassetta.box)];
+    const pezzi = cassetta.items.reduce((quanti, item) => quanti + (Number(item.quantity) || 0), 0);
+    return somma + scatola.price + Math.max(0, pezzi - scatola.included) * 2;
+  }, 0);
+  const vasetti = conserve.reduce((somma, item) => somma + item.quantita * (CONSERVE.find(conserva => conserva.id === item.id)?.prezzo || 0), 0);
+  return scatole + vasetti + olio * prezzoLatta() + (LOCALITA.find(localita => localita.nome === area)?.costo || 0) + uova;
+}
+
+const vociDellOrdine = order => ({ cassette: cassetteDellOrdine(order), conserve: conserveDellOrdine(order), olio: Number(order.olio) || 0, area: order.area, uova: Number(order.uova?.prezzo) || 0 });
+
+function uovaDellaBozza() {
+  const quantita = Math.max(0, Math.floor(Number($("#modUova").value) || 0));
+  return { quantita, prezzo: quantita ? prezzoScritto("#modUovaPrezzo") : 0 };
+}
+
+const totaleCalcolato = order => Math.max(0, tondo(Number(order.total || 0) - costoVoci(vociDellOrdine(order))
+  + costoVoci({ cassette: modifica.cassette, conserve: modifica.conserve, olio: modifica.olio, area: $("#modLocalita").value, uova: uovaDellaBozza().prezzo })));
+
+function aggiornaTotaleModifica() {
+  const order = ordineInModifica();
+  if (!order) return;
+  const calcolato = totaleCalcolato(order);
+  if (!modifica.totaleToccato) $("#modTotale").value = prezzoInCifre(calcolato);
+  $("#modTotaleNota").textContent = modifica.totaleToccato
+    ? `Scritto da te. Con queste voci sarebbe ${money(calcolato)}.`
+    : "Si aggiorna da solo con le voci dell'ordine. Se vuoi puoi scriverlo tu.";
+  $("#modRicalcola").hidden = !modifica.totaleToccato;
+}
+
+const passoModifica = (testo, quante, chiave) => `
+  <div class="mod-voce">
+    <span>${escapeHtml(testo)}</span>
+    <div class="mod-passo">
+      <button type="button" data-mod-passo="${escapeHtml(chiave)}" data-delta="-1" aria-label="Uno in meno">−</button>
+      <b>${quante}</b>
+      <button type="button" data-mod-passo="${escapeHtml(chiave)}" data-delta="1" aria-label="Uno in più">+</button>
+    </div>
+  </div>`;
+
+function disegnaVociModifica() {
+  const verdure = [...PRODUCTS].sort((a, b) => a.name.localeCompare(b.name, "it"));
+  $("#modCassette").innerHTML = modifica.cassette.map((cassetta, indice) => {
+    const presenti = new Set(cassetta.items.map(item => item.id));
+    return `
+      <div class="mod-cassetta">
+        <div class="mod-cassetta-testa">
+          <label>${modifica.cassette.length > 1 ? `${indice + 1}ª CASSETTA` : "CASSETTA"}
+            <select data-mod-misura="${indice}">${Object.keys(BOXES).map(chiave => `<option value="${nomeScatola(chiave)}" ${chiaveScatola(cassetta.box) === chiave ? "selected" : ""}>${nomeScatola(chiave)} · ${money(BOXES[chiave].price)} · ${BOXES[chiave].included} prodotti</option>`).join("")}</select>
+          </label>
+          ${modifica.cassette.length > 1 ? `<button type="button" class="elimina-action" data-mod-togli-cassetta="${indice}">TOGLI</button>` : ""}
+        </div>
+        ${cassetta.items.map(item => passoModifica(item.name, item.quantity, `v:${indice}:${item.id}`)).join("") || `<p class="mod-vuoto">Nessuna verdura segnata in questa cassetta.</p>`}
+        <label>AGGIUNGI UNA VERDURA
+          <select data-mod-nuova-verdura="${indice}"><option value="">Scegli…</option>${verdure.filter(product => !presenti.has(product.id)).map(product => `<option value="${escapeHtml(product.id)}">${escapeHtml(product.name)}</option>`).join("")}</select>
+        </label>
+      </div>`;
+  }).join("");
+  const altre = modifica.conserve.filter(item => !CONSERVE.some(conserva => conserva.id === item.id));
+  $("#modConserve").innerHTML = [...CONSERVE, ...altre]
+    .map(conserva => passoModifica(conserva.nome, modifica.conserve.find(item => item.id === conserva.id)?.quantita || 0, `c:${conserva.id}`)).join("");
+  $("#modOlio").innerHTML = passoModifica(`Latte d'olio da ${OLIO.litri} L`, modifica.olio, "olio");
+  aggiornaTotaleModifica();
+}
+
+function cambiaVoceModifica(chiave, delta) {
+  const [tipo, primo, secondo] = chiave.split(":");
+  if (tipo === "olio") modifica.olio = Math.max(0, modifica.olio + delta);
+  if (tipo === "c") {
+    const conserva = CONSERVE.find(item => item.id === primo);
+    let voce = modifica.conserve.find(item => item.id === primo);
+    if (!voce && delta > 0) modifica.conserve.push(voce = { id: primo, nome: conserva?.nome || primo, peso: conserva?.peso, prezzo: conserva?.prezzo, quantita: 0 });
+    if (voce) voce.quantita += delta;
+    modifica.conserve = modifica.conserve.filter(item => item.quantita > 0);
+  }
+  if (tipo === "v") {
+    const cassetta = modifica.cassette[Number(primo)];
+    const voce = cassetta?.items.find(item => String(item.id) === secondo);
+    if (voce) voce.quantity += delta;
+    if (cassetta) cassetta.items = cassetta.items.filter(item => item.quantity > 0);
+  }
+  disegnaVociModifica();
+}
+
+function apriModificaOrdine(orderId) {
+  const order = state.orders.find(item => item.id === orderId);
+  if (!order) return;
+  Object.assign(modifica, {
+    id: orderId,
+    cassette: cassetteDellOrdine(order).map(cassetta => ({ ...cassetta, items: cassetta.items.map(item => ({ ...item })) })),
+    conserve: conserveDellOrdine(order).map(item => ({ ...(Array.isArray(order.conserve) ? order.conserve.find(voce => voce.id === item.id) : null), ...item })),
+    olio: Number(order.olio) || 0,
+    totaleToccato: false,
+    prezzoUovaToccato: uovaDellOrdine(order) > 0
+  });
+  const opzioni = (valori, scelto) => [...new Set([...valori, scelto])].filter(valore => valore !== undefined)
+    .map(valore => `<option value="${escapeHtml(valore)}" ${valore === scelto ? "selected" : ""}>${escapeHtml(valore) || "Non detto"}</option>`).join("");
+  const orario = String(order.deliveryWindow || order.time || "");
+  const fasce = fasceDiConsegna();
+  const [dalle = "", alle = ""] = orario.split("–");
+  $("#modificaCodice").textContent = `ORDINE #${order.id}`;
+  $("#modificaNome").textContent = order.name;
+  $("#modNome").value = order.name || "";
+  $("#modTelefono").value = order.phone || "";
+  $("#modOrigine").innerHTML = opzioni(["", ...ORIGINI_CLIENTE], order.source || "");
+  $("#modGiorno").value = order.date || "";
+  $("#modFascia").innerHTML = `${fasce.map(fascia => `<option value="${fascia}">${fascia}</option>`).join("")}<option value="altro">Altro orario…</option>`;
+  $("#modFascia").value = fasce.includes(orario) ? orario : "altro";
+  $("#modDalle").value = dalle.trim();
+  $("#modAlle").value = alle.trim();
+  $("#modOrarioLibero").hidden = $("#modFascia").value !== "altro";
+  $("#modLocalita").innerHTML = opzioni(LOCALITA.map(localita => localita.nome), order.area || "Viterbo");
+  $("#modIndirizzo").value = order.address || "";
+  $("#modNote").value = order.notes || "";
+  $("#modUova").value = uovaDellOrdine(order) || "";
+  $("#modUovaPrezzo").value = uovaDellOrdine(order) && order.uova.prezzo ? prezzoInCifre(order.uova.prezzo) : "";
+  $("#modStato").innerHTML = opzioni(["Confermato", "Consegnato"], order.status || "Confermato");
+  disegnaVociModifica();
+  $("#popupModifica").hidden = false;
+  $("#modificaForm .mod-corpo").scrollTop = 0;
+  document.body.style.overflow = "hidden";
+}
+
+function chiudiModifica() {
+  modifica.id = "";
+  $("#popupModifica").hidden = true;
+  document.body.style.overflow = "";
+}
+
+// numero corretto: la scheda del cliente (omaggi gia' dati) va col numero nuovo
+function spostaSchedaCliente(order, chiavePrima) {
+  const chiave = customerKeyFromOrder(order);
+  const scheda = state.customers[chiavePrima];
+  if (chiave === chiavePrima || !scheda || state.customers[chiave]) return;
+  if (state.orders.some(item => item !== order && customerKeyFromOrder(item) === chiavePrima)) return;
+  state.customers[chiave] = { ...scheda, id: chiave, name: order.name, phone: order.phone, aggiornato: Date.now() };
+  delete state.customers[chiavePrima];
+}
+
+// il posto nella fascia e le verdure contate dallo script: "tieni" sposta la prenotazione, "conferma" la fa restare
+async function spostaPosto(order) {
+  if (!postiAttivi() || order.status === "Consegnato" || !/^\d{2}:\d{2}–\d{2}:\d{2}$/.test(order.deliveryWindow)) return;
+  const { ordine, ...posto } = corpoConferma(order);
+  try {
+    const esito = await chiediAlFoglio({ ...posto, azione: "tieni" }, 15000);
+    if (esito?.pieno) {
+      showToast(`Ordine salvato. La fascia ${order.deliveryWindow} sul sito è piena: il posto resta contato su quella di prima.`, 6000);
+      return;
+    }
+    if (!esito?.ok) throw new Error(esito?.errore || "risposta");
+    const confermato = await chiediAlFoglio(posto, 15000);
+    if (!confermato?.ok) throw new Error(confermato?.errore || "risposta");
+  } catch (_) {
+    showToast("Ordine salvato, ma il posto nella fascia non si è aggiornato: controlla la rete.", 6000);
+  }
+  caricaPrenotazioni();
+}
+
+function salvaModifica() {
+  const order = ordineInModifica();
+  if (!order) return chiudiModifica();
+  const nome = $("#modNome").value.trim();
+  const giorno = $("#modGiorno").value;
+  const [dalle = "", alle = ""] = orarioScelto();
+  const totaleScritto = Number($("#modTotale").value.trim().replace(",", "."));
+  const errore = !nome ? ["#modNome", "Scrivi il nome del cliente."]
+    : !/^\d{4}-\d{2}-\d{2}$/.test(giorno) ? ["#modGiorno", "Scegli il giorno di consegna."]
+    : !dalle || (alle && alle <= dalle) ? ["#modDalle", "Controlla l'orario di consegna."]
+    : modifica.totaleToccato && !(totaleScritto >= 0) ? ["#modTotale", "Scrivi il totale in cifre, per esempio 19,50."]
+    : null;
+  if (errore) {
+    showToast(errore[1], 4000);
+    $(errore[0]).focus();
+    return;
+  }
+  const totale = modifica.totaleToccato ? tondo(totaleScritto) : totaleCalcolato(order);
+  const uova = uovaDellaBozza();
+  const chiavePrima = customerKeyFromOrder(order);
+  const statoPrima = order.status;
+  const postoDi = voce => JSON.stringify(corpoConferma(voce)).replace(/"ordine":.*$/, "");
+  const postoPrima = postoDi(order);
+  const perIlCliente = [order.date, order.deliveryWindow, order.total].join();
+  const cassette = modifica.cassette.map(({ box, items, senzaElenco }) => ({ box, items, ...(senzaElenco && !items.length ? { senzaElenco } : {}) }));
+  Object.assign(order, {
+    name: nome,
+    phone: $("#modTelefono").value.trim(),
+    source: $("#modOrigine").value,
+    date: giorno,
+    time: dalle,
+    deliveryWindow: alle ? `${dalle}–${alle}` : dalle,
+    area: $("#modLocalita").value,
+    address: $("#modIndirizzo").value.trim(),
+    notes: $("#modNote").value.trim(),
+    box: cassette.map(cassetta => cassetta.box).join(" + "),
+    cassette,
+    items: cassette.flatMap(cassetta => cassetta.items),
+    conserve: modifica.conserve,
+    olio: modifica.olio,
+    status: $("#modStato").value,
+    total: totale,
+    aggiornato: Date.now()
+  });
+  if (uova.quantita) order.uova = uova;
+  else delete order.uova;
+  if (uova.quantita && uova.prezzo) scriviInMemoria(PREZZO_UOVO_KEY, String(uova.prezzo / uova.quantita));
+  if (order.status !== statoPrima) {
+    if (order.status === "Consegnato") order.deliveredAt = new Date().toISOString();
+    else delete order.deliveredAt;
+  }
+  spostaSchedaCliente(order, chiavePrima);
+  if (state.customers[customerKeyFromOrder(order)]) upsertCustomerFromOrder(order);
+  saveBusinessData();
+  chiudiModifica();
+  state.giornoDashboard = order.date;
+  renderDashboard(state.orderFilter);
+  showToast(order.confermaInviata && perIlCliente !== [order.date, order.deliveryWindow, order.total].join()
+    ? `Ordine di ${order.name} aggiornato: per avvisare il cliente tocca RIMANDA CONFERMA.`
+    : `Ordine di ${order.name} aggiornato.`, 5000);
+  if (postoPrima !== postoDi(order)) spostaPosto(order);
 }
 
 // Non c'e' un server: le liste si rifanno sul telefono quando si apre la dashboard, quando si
@@ -3695,7 +3954,7 @@ function mostraStatoListe(testo) {
 
 async function aggiornaListe({ forza = false } = {}) {
   const gruppi = ordiniPerGiorno();
-  const firma = JSON.stringify(gruppi.map(gruppo => [gruppo.data, gruppo.ordini.map(order => [order.id, order.address, order.area, order.deliveryWindow, order.status, uovaDellOrdine(order), order.total])]));
+  const firma = JSON.stringify(gruppi.map(gruppo => [gruppo.data, gruppo.ordini.map(order => [order.id, order.address, order.area, order.deliveryWindow, order.status, order.aggiornato])]));
   if (!forza && firma === liste.firma && Date.now() - liste.alle < ORA_IN_MS) return;
   const giro = ++liste.giro;
   liste.firma = firma;
@@ -4442,6 +4701,9 @@ function setupEvents() {
     if (elimina) eliminaOrdine(elimina.dataset.eliminaOrdine);
     const uova = event.target.closest("[data-uova-ordine]");
     if (uova) apriUova(uova.dataset.uovaOrdine);
+    // tocco la riga (o il pulsante): gli altri pulsanti fanno solo il loro lavoro
+    const scheda = event.target.closest("button[data-modifica-ordine]") || (!event.target.closest("button, a") && event.target.closest("[data-modifica-ordine]"));
+    if (scheda) apriModificaOrdine(scheda.dataset.modificaOrdine);
   });
   $("#popupUova").addEventListener("click", event => {
     if (event.target === event.currentTarget || event.target.closest("[data-chiudi-uova]")) chiudiUova();
@@ -4459,7 +4721,64 @@ function setupEvents() {
     salvaUova(quante);
   });
   $("#uovaTogli").addEventListener("click", () => salvaUova(0));
+  $("#popupModifica").addEventListener("click", event => {
+    const passo = event.target.closest("[data-mod-passo]");
+    if (passo) cambiaVoceModifica(passo.dataset.modPasso, Number(passo.dataset.delta));
+    const togli = event.target.closest("[data-mod-togli-cassetta]");
+    if (togli) {
+      modifica.cassette.splice(Number(togli.dataset.modTogliCassetta), 1);
+      disegnaVociModifica();
+    }
+    if (event.target.closest("#modAggiungiCassetta")) {
+      modifica.cassette.push({ box: "Media", items: [] });
+      disegnaVociModifica();
+    }
+    if (event.target.closest("#modRicalcola")) {
+      modifica.totaleToccato = false;
+      aggiornaTotaleModifica();
+    }
+    if (event.target.closest("[data-chiudi-modifica]")) chiudiModifica();
+  });
+  $("#popupModifica").addEventListener("change", event => {
+    const misura = event.target.closest("[data-mod-misura]");
+    if (misura) {
+      modifica.cassette[Number(misura.dataset.modMisura)].box = misura.value;
+      disegnaVociModifica();
+    }
+    const nuova = event.target.closest("[data-mod-nuova-verdura]");
+    const product = nuova && PRODUCTS.find(item => item.id === nuova.value);
+    if (product) {
+      modifica.cassette[Number(nuova.dataset.modNuovaVerdura)].items.push({ id: product.id, name: product.name, weight: product.weight, emoji: product.emoji, quantity: 1 });
+      disegnaVociModifica();
+    }
+    if (event.target.id === "modFascia") $("#modOrarioLibero").hidden = event.target.value !== "altro";
+    if (event.target.id === "modLocalita") aggiornaTotaleModifica();
+  });
+  $("#modUova").addEventListener("input", () => {
+    const alUovo = Number(leggiDaMemoria(PREZZO_UOVO_KEY)) || 0;
+    const quante = uovaDellaBozza().quantita;
+    if (!modifica.prezzoUovaToccato && alUovo) $("#modUovaPrezzo").value = quante ? prezzoInCifre(quante * alUovo) : "";
+    aggiornaTotaleModifica();
+  });
+  $("#modUovaPrezzo").addEventListener("input", () => {
+    modifica.prezzoUovaToccato = true;
+    aggiornaTotaleModifica();
+  });
+  $("#modTotale").addEventListener("input", () => {
+    modifica.totaleToccato = Boolean($("#modTotale").value.trim());
+    aggiornaTotaleModifica();
+  });
+  // Invio sulla tastiera del telefono non deve salvare a meta' scheda
+  $("#modificaForm").addEventListener("keydown", event => {
+    if (event.key === "Enter" && event.target.matches("input, select")) event.preventDefault();
+  });
+  $("#modificaForm").addEventListener("submit", event => {
+    event.preventDefault();
+    salvaModifica();
+  });
   $("#inAttesaWhatsapp").addEventListener("click", event => {
+    const voce = event.target.closest("[data-modifica-ordine]");
+    if (voce) apriModificaOrdine(voce.dataset.modificaOrdine);
     const scrivi = event.target.closest("[data-scrivi-attesa]");
     if (scrivi) scriviAlClienteInAttesa(scrivi.dataset.scriviAttesa);
     const registra = event.target.closest("[data-registra-attesa]");
