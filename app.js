@@ -24,7 +24,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 82;
+const VERSIONE_SITO = 83;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -3193,14 +3193,25 @@ function useCustomerReward(customerId) {
   showToast(scelta ? `Omaggio segnato: ${scelta}.` : "Omaggio segnato come consegnato.");
 }
 
+// v83: cerco un cliente per nome (senza badare a maiuscole e accenti, in qualsiasi ordine) o per cellulare (con o senza +39)
+const senzaAccenti = valore => String(valore || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+function clienteCercato(cercato, nome, telefono) {
+  const parole = senzaAccenti(cercato).split(/\s+/).filter(Boolean);
+  if (!parole.length) return true;
+  if (/[a-z]/.test(parole.join(""))) return parole.every(parola => senzaAccenti(nome).includes(parola));
+  const cifre = String(cercato).replace(/\D/g, "").replace(/^(00)?39(?=\d{3})/, "");
+  return Boolean(cifre) && normalizePhone(telefono).includes(cifre);
+}
+
 function renderCustomers() {
+  const cercato = $("#cercaCliente")?.value.trim() || "";
   const customers = Object.values(state.customers)
-    .filter(customer => customer.phone || customer.name)
+    .filter(customer => (customer.phone || customer.name) && clienteCercato(cercato, customer.name, customer.phone))
     .sort((a, b) => ((b.rewardsEarned || 0) - (b.rewardsUsed || 0)) - ((a.rewardsEarned || 0) - (a.rewardsUsed || 0)) || (b.points || 0) - (a.points || 0));
   const table = $("#customersTable");
   if (!table) return;
   if (!customers.length) {
-    table.innerHTML = `<div class="empty-table-note">Ancora nessun cliente. Ogni ordine che entra nelle consegne vale un punto.</div>`;
+    table.innerHTML = `<div class="empty-table-note">${cercato ? `Nessun cliente trovato per “${escapeHtml(cercato)}”.` : "Ancora nessun cliente. Ogni ordine che entra nelle consegne vale un punto."}</div>`;
     return;
   }
   const conserve = availablePreserves();
@@ -3403,7 +3414,10 @@ function renderDashboard(filter = state.orderFilter || "all") {
   const tutte = giorno === "tutte" || !giorno;
   const arrivati = ordiniArrivati();
   const dellaGiornata = tutte ? arrivati : arrivati.filter(order => order.date === giorno);
-  const visible = dellaGiornata.filter(order => {
+  // cercando un cliente guardo in tutte le giornate, non solo in quella aperta
+  const cercato = $("#cercaOrdine")?.value.trim() || "";
+  const visible = (cercato ? arrivati : dellaGiornata).filter(order => {
+    if (!clienteCercato(cercato, order.name, order.phone)) return false;
     if (filter === "all") return true;
     if (filter === "Fuori zona") return order.area !== "Viterbo";
     return order.area === filter;
@@ -3437,7 +3451,7 @@ function renderDashboard(filter = state.orderFilter || "all") {
       return `
         <div class="order-row" data-modifica-ordine="${escapeHtml(order.id)}">
           <span>${escapeHtml(order.time || "—")}</span>
-          <span class="order-customer"><strong>${escapeHtml(order.name)}</strong><small>#${order.id} · ${escapeHtml(customerDisplayPhone(order.phone))} · ${points} punti</small></span>
+          <span class="order-customer"><strong>${escapeHtml(order.name)}</strong><small>${cercato ? `${escapeHtml(giornoCorto(order.date))} · ` : ""}#${order.id} · ${escapeHtml(customerDisplayPhone(order.phone))} · ${points} ${points === 1 ? "punto" : "punti"}</small></span>
           <span>${escapeHtml(order.address)}</span>
           <span class="area-pill">${escapeHtml(order.area.toUpperCase())}</span>
           <span>${escapeHtml(order.box)} · ${money(order.total)}${uovaDellOrdine(order) ? `<small class="uova-nota">🥚 ${testoUova(uovaDellOrdine(order))}</small>` : ""}</span>
@@ -3465,12 +3479,12 @@ function renderDashboard(filter = state.orderFilter || "all") {
   $("#statRevenueNota").textContent = tutte ? "da tutti gli ordini" : `dagli ordini di ${giornoCorto(giorno).toLowerCase()}`;
   $("#statExtra").textContent = dellaGiornata.filter(order => order.area !== "Viterbo").length;
   $("#statClienti").textContent = Object.keys(state.customers).length;
-  $("#ordiniEyebrow").textContent = tutte ? "TUTTI GLI ORDINI" : `ORDINI DI ${formatDate(giorno)}`;
+  $("#ordiniEyebrow").textContent = cercato ? "RICERCA IN TUTTE LE GIORNATE" : tutte ? "TUTTI GLI ORDINI" : `ORDINI DI ${formatDate(giorno)}`;
   if (!daConsegnare.length) {
     $("#nextDeliveries").innerHTML = `<p class="dashboard-vuoto">Nessuna consegna in programma.</p>`;
   }
   if (!visible.length) {
-    $("#ordersTable").innerHTML = arrivati.length && !tutte
+    $("#ordersTable").innerHTML = cercato ? `<div class="empty-table-note">Nessun ordine trovato per “${escapeHtml(cercato)}”.</div>` : arrivati.length && !tutte
       ? `<div class="empty-table-note">Nessun ordine per ${formatDate(giorno).toLowerCase()}${filter !== "all" ? " in questa zona" : ""}. Gli altri li trovi toccando le altre giornate, sopra i numeri.</div>`
       : `<div class="empty-table-note">Ancora nessun ordine. Un ordine entra qui quando tocchi il link "Registra l'ordine" nel messaggio WhatsApp del cliente.</div>`;
   }
@@ -4776,6 +4790,12 @@ function setupEvents() {
     event.preventDefault();
     salvaModifica();
   });
+  let attesaRicerca = null;
+  $("#cercaOrdine").addEventListener("input", () => {
+    clearTimeout(attesaRicerca);
+    attesaRicerca = setTimeout(() => renderDashboard(state.orderFilter), 200);
+  });
+  $("#cercaCliente").addEventListener("input", renderCustomers);
   $("#inAttesaWhatsapp").addEventListener("click", event => {
     const voce = event.target.closest("[data-modifica-ordine]");
     if (voce) apriModificaOrdine(voce.dataset.modificaOrdine);

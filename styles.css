@@ -1285,6 +1285,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 @media (max-width: 460px) {
   .mod-campi { grid-template-columns: 1fr; }
 }
+/* v83: ricerca del cliente in dashboard */
+.cerca-cliente { display: flex; align-items: center; gap: 8px; max-width: 420px; min-height: 46px; margin: 0 0 12px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--small-radius); background: #fffdf7; }
+.cerca-cliente:focus-within { border-color: var(--green); }
+.cerca-cliente input { flex: 1 1 auto; min-width: 0; min-height: 44px; border: 0; outline: 0; background: transparent; color: var(--green-deep); font: inherit; font-size: 16px; font-weight: 700; }
 .uova-annulla { border: 0; background: transparent; color: var(--muted); padding: 8px 12px; font-size: .72rem; font-weight: 900; letter-spacing: .08em; cursor: pointer; }
 .stato-cella { display: grid; gap: 5px; justify-items: start; }
 .verifica { font-size: .6rem; font-weight: 900; letter-spacing: .05em; line-height: 1.3; color: var(--green); }
