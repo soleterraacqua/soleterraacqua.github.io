@@ -28,7 +28,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="styles.css?v=80">
+  <link rel="stylesheet" href="styles.css?v=81">
 </head>
 <body>
   <div class="app-shell">
@@ -1088,6 +1088,23 @@
     </div>
   </div>
 
+  <div class="popup-conserve popup-uova" id="popupUova" hidden>
+    <form class="popup-conserve-card" id="uovaForm" role="dialog" aria-modal="true" aria-labelledby="popupUovaTitolo" novalidate>
+      <p class="popup-conserve-aspetta">SOLO DALLA DASHBOARD</p>
+      <h2 id="popupUovaTitolo">UOVA PER <em id="popupUovaNome"></em></h2>
+      <div class="uova-campi">
+        <label>QUANTE UOVA<input id="uovaQuantita" type="number" inputmode="numeric" min="1" max="999" step="1" placeholder="6"></label>
+        <label>PREZZO IN TUTTO (€)<input id="uovaPrezzo" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00"></label>
+      </div>
+      <p class="uova-totale" id="uovaTotale"></p>
+      <div class="popup-conserve-azioni">
+        <button class="primary-button" type="submit">SALVA <span>→</span></button>
+        <button class="elimina-action" type="button" id="uovaTogli" hidden>TOGLI LE UOVA</button>
+        <button class="uova-annulla" type="button" data-chiudi-uova>ANNULLA</button>
+      </div>
+    </form>
+  </div>
+
   <div class="popup-conserve popup-chiusi" id="popupChiusi" hidden>
     <div class="popup-conserve-card" role="dialog" aria-modal="true" aria-labelledby="popupChiusiTitolo">
       <p class="popup-conserve-aspetta" id="popupChiusiOcchiello">ORDINI CHIUSI FINO ALLE 13:00</p>
@@ -1163,6 +1180,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=80"></script>
+  <script src="app.js?v=81"></script>
 </body>
 </html>

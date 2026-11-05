@@ -24,7 +24,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 80;
+const VERSIONE_SITO = 81;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -196,7 +196,7 @@ const PRODUCTS = [
   { id: "melone-invernale", name: "Melone invernale", weight: "1 pz", emoji: "🍈", cm: 22, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 1, y: 0, enabled: false },
   { id: "cime-rapa", name: "Cime di rapa", weight: "500 g", emoji: "🥬", cm: 30, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 2, y: 0, enabled: false },
   { id: "cavolo-punta", name: "Cavolo cappuccio a punta", weight: "1 pz", emoji: "🥬", cm: 20, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 3, y: 0, enabled: false },
-  { id: "finocchi", name: "Finocchi", weight: "2 pz", emoji: "🌿", cm: 28, sheet: SHEET_FINOCCHI, cols: 1, rows: 1, x: 0, y: 0, enabled: true }
+  { id: "finocchi", name: "Finocchi", weight: "2 pz", emoji: "🌿", cm: 18, sheet: SHEET_FINOCCHI, cols: 1, rows: 1, x: 0, y: 0, enabled: true }
 ];
 
 const BOXES = {
@@ -3103,6 +3103,7 @@ function buildConfirmationUrl(order) {
   const righe = [
     `Ciao ${nome}, ho ricevuto il tuo ordine #${order.id} ✅`,
     order.date ? `📅 Te lo porto ${formatDate(order.date).toLowerCase()}${dalle && alle ? `, tra le ${dalle} e le ${alle}` : ""}.` : "📅 Ti scrivo io per il giorno di consegna.",
+    ...(uovaDellOrdine(order) ? [`🥚 Uova: ${uovaDellOrdine(order)}${order.uova.prezzo ? ` (${money(order.uova.prezzo)})` : ""}.`] : []),
     `💶 Totale ${money(order.total)}${order.area === "Viterbo" ? " (consegna gratuita)" : ` (consegna ${money(2.5)} inclusa)`}.`
   ];
   // la proposta dell'olio in grassetto (v66): in mezzo al messaggio passava inosservata. Prezzo = quello della dashboard
@@ -3412,11 +3413,12 @@ function renderDashboard(filter = state.orderFilter || "all") {
           <span class="order-customer"><strong>${escapeHtml(order.name)}</strong><small>#${order.id} · ${escapeHtml(customerDisplayPhone(order.phone))} · ${points} punti</small></span>
           <span>${escapeHtml(order.address)}</span>
           <span class="area-pill">${escapeHtml(order.area.toUpperCase())}</span>
-          <span>${escapeHtml(order.box)} · ${money(order.total)}</span>
+          <span>${escapeHtml(order.box)} · ${money(order.total)}${uovaDellOrdine(order) ? `<small class="uova-nota">🥚 ${testoUova(uovaDellOrdine(order))}</small>` : ""}</span>
           <span class="stato-cella"><span class="status-pill ${delivered ? "delivered" : ""}">${escapeHtml(order.status.toUpperCase())}</span>${verifica ? `<small class="verifica ${verifica[0]}">${verifica[1]}</small>` : ""}</span>
           <div class="order-azioni">
             <button class="conferma-action ${order.confermaInviata ? "done" : ""}" data-conferma-ordine="${escapeHtml(order.id)}">${order.confermaInviata ? "RIMANDA CONFERMA" : olioDaProporre() && !order.olio ? "CONFERMA + OLIO" : "CONFERMA AL CLIENTE"}</button>
             <button class="delivery-action ${delivered ? "done" : ""}" data-deliver-order="${escapeHtml(order.id)}">${delivered ? "RIAVVISA CLIENTE" : "CONSEGNATO + AVVISA"}</button>
+            <button class="uova-action ${uovaDellOrdine(order) ? "con-uova" : ""}" data-uova-ordine="${escapeHtml(order.id)}">🥚 ${uovaDellOrdine(order) ? testoUova(uovaDellOrdine(order)).toUpperCase() : "AGGIUNGI UOVA"}</button>
             <button class="elimina-action" data-elimina-ordine="${escapeHtml(order.id)}">ELIMINA</button>
           </div>
         </div>
@@ -3459,6 +3461,64 @@ function renderDashboard(filter = state.orderFilter || "all") {
 }
 
 // ---------- Liste del giro: consegne (con i km) e raccolta, in anteprima e in PDF ----------
+// v81: le uova non si vendono dal sito. Me le chiedono su WhatsApp e le aggiungo io all'ordine del cliente:
+// order.uova = { quantita, prezzo }, dove prezzo e' quello di tutte le uova ed e' gia' dentro order.total
+const PREZZO_UOVO_KEY = "sole-terra-acqua-prezzo-uovo";
+const uovaDellOrdine = order => Math.max(0, Math.floor(Number(order?.uova?.quantita) || 0));
+const testoUova = quante => `${quante} ${quante === 1 ? "uovo" : "uova"}`;
+const prezzoInCifre = valore => (Number(valore) || 0).toFixed(2).replace(".", ",");
+const uovaInCorso = { id: "", prezzoToccato: false };
+
+const prezzoScritto = () => {
+  const valore = Number(String($("#uovaPrezzo").value).trim().replace(",", "."));
+  return Number.isFinite(valore) && valore > 0 ? Math.round(valore * 100) / 100 : 0;
+};
+
+function aggiornaPopupUova() {
+  const order = state.orders.find(item => item.id === uovaInCorso.id);
+  if (!order) return;
+  const quante = Math.max(0, Math.floor(Number($("#uovaQuantita").value) || 0));
+  const alUovo = Number(leggiDaMemoria(PREZZO_UOVO_KEY)) || 0;
+  if (!uovaInCorso.prezzoToccato && alUovo) $("#uovaPrezzo").value = quante ? prezzoInCifre(quante * alUovo) : "";
+  const senzaUova = Number(order.total || 0) - (Number(order.uova?.prezzo) || 0);
+  $("#uovaTotale").textContent = `Totale dell'ordine: ${money(senzaUova + (quante ? prezzoScritto() : 0))}`;
+}
+
+function apriUova(orderId) {
+  const order = state.orders.find(item => item.id === orderId);
+  if (!order) return;
+  const quante = uovaDellOrdine(order);
+  uovaInCorso.id = orderId;
+  uovaInCorso.prezzoToccato = Boolean(quante);
+  $("#popupUovaNome").textContent = order.name;
+  $("#uovaQuantita").value = quante || "";
+  $("#uovaPrezzo").value = quante && order.uova.prezzo ? prezzoInCifre(order.uova.prezzo) : "";
+  $("#uovaTogli").hidden = !quante;
+  aggiornaPopupUova();
+  $("#popupUova").hidden = false;
+  $("#uovaQuantita").focus();
+}
+
+function chiudiUova() {
+  uovaInCorso.id = "";
+  $("#popupUova").hidden = true;
+}
+
+function salvaUova(quante) {
+  const order = state.orders.find(item => item.id === uovaInCorso.id);
+  if (!order) return chiudiUova();
+  const prezzo = quante ? prezzoScritto() : 0;
+  order.total = Math.round((Number(order.total || 0) - (Number(order.uova?.prezzo) || 0) + prezzo) * 100) / 100;
+  if (quante) order.uova = { quantita: quante, prezzo };
+  else delete order.uova;
+  if (quante && prezzo) scriviInMemoria(PREZZO_UOVO_KEY, String(prezzo / quante));
+  order.aggiornato = Date.now();
+  saveBusinessData();
+  chiudiUova();
+  renderDashboard(state.orderFilter);
+  showToast(quante ? `${testoUova(quante)} per ${order.name}: ${order.confermaInviata ? "se vuoi avvisare il cliente tocca RIMANDA CONFERMA." : "le trovi nelle liste del giro."}` : `Uova tolte dall'ordine di ${order.name}.`, 5000);
+}
+
 // Non c'e' un server: le liste si rifanno sul telefono quando si apre la dashboard, quando si
 // registra un ordine e ogni ora finche' la dashboard resta aperta.
 const ORA_IN_MS = 60 * 60 * 1000;
@@ -3555,6 +3615,7 @@ function documentoConsegne(gruppi, kmPerGiorno) {
             : "le verdure sono nel messaggio WhatsApp"}`),
           conserve.length ? `Conserve: ${conserve.map(item => `${item.quantita}× ${item.nome}`).join(", ")}` : "",
           order.olio ? `Olio: ${latte(order.olio)}` : "",
+          uovaDellOrdine(order) ? `Uova: ${uovaDellOrdine(order)}${order.uova.prezzo ? ` (${money(order.uova.prezzo)})` : ""}` : "",
           order.notes && !/^(Conserve|Olio):/.test(order.notes) ? `Note: ${order.notes}` : "",
           `Totale ${money(order.total)} · ordine #${order.id}`
         ].filter(Boolean)
@@ -3617,6 +3678,12 @@ function documentoRaccolta(gruppi) {
       blocchi.push({ tipo: "sezione", testo: "OLIO" });
       blocchi.push({ tipo: "voce", testo: `Latte d'olio da ${OLIO.litri} L`, destra: `${olio} (${olio * OLIO.litri} litri)` });
     }
+
+    const uova = gruppo.ordini.reduce((somma, order) => somma + uovaDellOrdine(order), 0);
+    if (uova) {
+      blocchi.push({ tipo: "sezione", testo: "UOVA" });
+      blocchi.push({ tipo: "voce", testo: "Uova da portare", destra: testoUova(uova) });
+    }
   });
   return { titolo: "LISTA RACCOLTA", sottotitolo: aggiornataAlle(liste.alle), piede: "Sole Terra Acqua · lista raccolta", nome: "lista-raccolta", blocchi };
 }
@@ -3628,7 +3695,7 @@ function mostraStatoListe(testo) {
 
 async function aggiornaListe({ forza = false } = {}) {
   const gruppi = ordiniPerGiorno();
-  const firma = JSON.stringify(gruppi.map(gruppo => [gruppo.data, gruppo.ordini.map(order => [order.id, order.address, order.area, order.deliveryWindow, order.status])]));
+  const firma = JSON.stringify(gruppi.map(gruppo => [gruppo.data, gruppo.ordini.map(order => [order.id, order.address, order.area, order.deliveryWindow, order.status, uovaDellOrdine(order), order.total])]));
   if (!forza && firma === liste.firma && Date.now() - liste.alle < ORA_IN_MS) return;
   const giro = ++liste.giro;
   liste.firma = firma;
@@ -4373,7 +4440,25 @@ function setupEvents() {
     if (conferma) inviaConfermaCliente(conferma.dataset.confermaOrdine);
     const elimina = event.target.closest("[data-elimina-ordine]");
     if (elimina) eliminaOrdine(elimina.dataset.eliminaOrdine);
+    const uova = event.target.closest("[data-uova-ordine]");
+    if (uova) apriUova(uova.dataset.uovaOrdine);
   });
+  $("#popupUova").addEventListener("click", event => {
+    if (event.target === event.currentTarget || event.target.closest("[data-chiudi-uova]")) chiudiUova();
+  });
+  $("#uovaQuantita").addEventListener("input", aggiornaPopupUova);
+  $("#uovaPrezzo").addEventListener("input", () => { uovaInCorso.prezzoToccato = true; aggiornaPopupUova(); });
+  $("#uovaForm").addEventListener("submit", event => {
+    event.preventDefault();
+    const quante = Math.max(0, Math.floor(Number($("#uovaQuantita").value) || 0));
+    if (!quante) {
+      showToast("Scrivi quante uova vuole il cliente.");
+      $("#uovaQuantita").focus();
+      return;
+    }
+    salvaUova(quante);
+  });
+  $("#uovaTogli").addEventListener("click", () => salvaUova(0));
   $("#inAttesaWhatsapp").addEventListener("click", event => {
     const scrivi = event.target.closest("[data-scrivi-attesa]");
     if (scrivi) scriviAlClienteInAttesa(scrivi.dataset.scriviAttesa);
