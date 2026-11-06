@@ -1,21 +1,21 @@
 {
-  "aggiornato": "2026-11-02T21:37:05.607Z",
+  "aggiornato": "2026-11-06T16:12:11.798Z",
   "giorni": [],
   "giornoFisso": 5,
   "giornoFisso2": -1,
   "saltati": [
-    "2026-11-13",
     "2026-11-20",
     "2026-11-27",
     "2026-12-04",
-    "2026-12-11"
+    "2026-12-11",
+    "2026-12-18"
   ],
   "prodotti": [
     {
       "id": "peperoni",
       "nome": "Peperoni",
       "peso": "600 g",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": true,
       "foto": ""
     },
@@ -23,7 +23,7 @@
       "id": "melanzane",
       "nome": "Melanzane",
       "peso": "750/800 g",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "foto": ""
     },
@@ -217,7 +217,7 @@
       "id": "zucca",
       "nome": "Zucca butternut",
       "peso": "1 -2 pz",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "foto": ""
     },
@@ -251,6 +251,7 @@
       "peso": "700 - 800 g",
       "disponibile": true,
       "unoSolo": true,
+      "massimo": 10,
       "foto": ""
     },
     {
@@ -299,6 +300,7 @@
       "peso": "700/800 g",
       "disponibile": true,
       "unoSolo": false,
+      "massimo": 12,
       "foto": ""
     },
     {
@@ -327,7 +329,7 @@
     },
     {
       "id": "cime-rapa",
-      "nome": "Cime di rapa senza infiorescenza",
+      "nome": "Cime di rapa",
       "peso": "700 g",
       "disponibile": true,
       "unoSolo": false,
@@ -346,7 +348,7 @@
       "id": "finocchi",
       "nome": "Finocchi",
       "peso": "900/1000g",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "foto": ""
     }
