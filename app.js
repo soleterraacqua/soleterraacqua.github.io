@@ -11,6 +11,8 @@ const SHEET_VERE = "assets/catalogo-foto-vere.webp";
 // finocchi (2 novembre 2026): foto Wikimedia Commons di Tiia Monto (CC BY-SA 4.0), scontornata e ripulita
 // dalle macchiette marroni, una casella sola
 const SHEET_FINOCCHI = "assets/catalogo-finocchi.webp";
+// cardi (11 novembre 2026): foto fatta con Gemini nello stesso stile delle altre, scontornata, una casella sola
+const SHEET_CARDI = "assets/catalogo-cardi.webp";
 const WHATSAPP_NUMBER = "393202732892";
 const ADMIN_PIN = "2892";
 const ADMIN_SESSION_KEY = "sole-terra-acqua-admin-unlocked";
@@ -24,7 +26,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 83;
+const VERSIONE_SITO = 84;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -196,7 +198,9 @@ const PRODUCTS = [
   { id: "melone-invernale", name: "Melone invernale", weight: "1 pz", emoji: "🍈", cm: 22, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 1, y: 0, enabled: false },
   { id: "cime-rapa", name: "Cime di rapa", weight: "500 g", emoji: "🥬", cm: 30, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 2, y: 0, enabled: false },
   { id: "cavolo-punta", name: "Cavolo cappuccio a punta", weight: "1 pz", emoji: "🥬", cm: 20, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 3, y: 0, enabled: false },
-  { id: "finocchi", name: "Finocchi", weight: "2 pz", emoji: "🌿", cm: 18, sheet: SHEET_FINOCCHI, cols: 1, rows: 1, x: 0, y: 0, enabled: true }
+  { id: "finocchi", name: "Finocchi", weight: "2 pz", emoji: "🌿", cm: 18, sheet: SHEET_FINOCCHI, cols: 1, rows: 1, x: 0, y: 0, enabled: true },
+  // cm = lato del riquadro della foto: il mazzo e' in diagonale, cosi' resta lungo come il cavolo nero e non di piu'
+  { id: "cardi", name: "Cardi", weight: "1 mazzo", emoji: "🌿", cm: 26, sheet: SHEET_CARDI, cols: 1, rows: 1, x: 0, y: 0, enabled: true }
 ];
 
 const BOXES = {
@@ -640,7 +644,9 @@ const VERDURE_NEL_LINK = [
   // aggiunte dopo (v66): le verdure nuove vanno sempre in fondo, mai in mezzo, o i link gia' mandati sbagliano verdura
   "castagne", "melone-invernale", "cime-rapa", "cavolo-punta",
   // v80
-  "finocchi"
+  "finocchi",
+  // v84
+  "cardi"
 ];
 
 const codiceVerdure = cassette => (cassette || []).map(cassetta => (cassetta.items || []).map(item => {

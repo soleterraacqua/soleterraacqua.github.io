@@ -390,7 +390,7 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
   line-height: .95;
   margin: 0 0 28px;
 }
-.story-copy > p:not(.eyebrow) { color: var(--muted); font-family: Arial, sans-serif; font-size: .97rem; line-height: 1.8; max-width: 500px; }
+.story-copy > p:not(.eyebrow) { color: var(--muted); font-size: .97rem; line-height: 1.8; max-width: 500px; }
 .text-link { margin-top: 22px; border: 0; border-bottom: 1px solid var(--ink); background: transparent; font-size: .81rem; letter-spacing: .12em; font-weight: 900; padding: 10px 0; cursor: pointer; }
 .text-link span { margin-left: 18px; color: var(--terracotta); }
 
@@ -444,7 +444,7 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .olio-figura img { width: min(100%, 330px); height: auto; filter: drop-shadow(0 26px 28px rgba(31,45,36,.16)); }
 .olio-testo h2 { font-size: clamp(2.5rem, 4.4vw, 4.4rem); letter-spacing: -.05em; line-height: .95; margin: 0 0 24px; }
 .olio-testo h2 em { color: var(--green); }
-.olio-testo > p:not(.eyebrow) { color: var(--muted); font-family: Arial, sans-serif; font-size: .97rem; line-height: 1.75; max-width: 500px; margin: 0; }
+.olio-testo > p:not(.eyebrow) { color: var(--muted); font-size: .97rem; line-height: 1.75; max-width: 500px; margin: 0; }
 .olio-prezzi[hidden] { display: none; }
 /* in grande il prezzo della latta, in piccolo quello al litro */
 .olio-prezzi { display: flex; align-items: center; gap: 16px; margin: 28px 0 22px; }
@@ -626,7 +626,7 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .step-heading { display: grid; grid-template-columns: 48px 1fr; gap: 20px; margin-bottom: 35px; }
 .step-heading > span { font: italic 1.45rem Georgia, serif; color: var(--terracotta); border-top: 1px solid var(--terracotta); padding-top: 10px; }
 .step-heading h2 { font-size: clamp(2rem, 3.1vw, 3.4rem); margin: 0 0 12px; }
-.step-heading p { color: var(--muted); line-height: 1.6; margin: 0; max-width: 650px; font-family: Arial, sans-serif; font-size: .94rem; }
+.step-heading p { color: var(--muted); line-height: 1.6; margin: 0; max-width: 650px; font-size: .94rem; }
 .box-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .box-option { min-height: 390px; position: relative; border: 1px solid var(--line); background: var(--cream); padding: 42px 25px 25px; text-align: left; cursor: pointer; transition: .25s ease; border-radius: var(--soft-radius); overflow: hidden; }
 .box-option:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
@@ -691,7 +691,7 @@ em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 .price sup { font: italic 1.35rem Georgia, serif; margin: 8px 0 0 6px; }
 .old-price { position: absolute; top: 102px; right: 20px; font-size: .82rem; text-decoration: line-through; color: var(--terracotta); font-weight: 900; }
 .box-option.selected .old-price { color: var(--peach); }
-.box-option p { font-family: Arial, sans-serif; font-size: .87rem; line-height: 1.6; margin-top: 20px; color: var(--muted); }
+.box-option p { font-size: .87rem; line-height: 1.6; margin-top: 20px; color: var(--muted); }
 .box-option.selected p { color: rgba(255,250,240,.72); }
 .box-option > i { font-style: normal; position: absolute; right: 24px; bottom: 22px; font-size: 1.13rem; }
 .step-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 36px; padding-top: 25px; border-top: 1px solid var(--line); }
@@ -1036,7 +1036,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
   60% { transform: translateX(-5px); }
   80% { transform: translateX(5px); }
 }
-.privacy-check span { font-family: Arial, sans-serif; font-size: .82rem; line-height: 1.45; color: var(--muted); }
+.privacy-check span { font-size: .82rem; line-height: 1.45; color: var(--muted); }
 .link-privacy { border: 0; background: none; padding: 0; font: inherit; color: var(--green); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 /* Informativa privacy: stessa finestra del popup conserve, scorre solo il testo */
 .privacy-card { width: min(620px, 100%); border-top-color: var(--green); }
@@ -1049,7 +1049,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 /* dopo la conferma: l'ultimo passo e' premere INVIA su WhatsApp */
 .success-mark.success-whatsapp { background: #25d366; box-shadow: 0 10px 26px rgba(37,211,102,.35); }
 .success-whatsapp svg { width: 42px; height: 42px; }
-.success-testo { max-width: 520px; margin: 0 auto; font-family: Arial, sans-serif; font-size: .97rem; line-height: 1.65; color: var(--muted); }
+.success-testo { max-width: 520px; margin: 0 auto; font-size: .97rem; line-height: 1.65; color: var(--muted); }
 .success-testo p { margin: 0 0 14px; }
 .success-testo strong { color: var(--ink); }
 .success-testo .success-saluto { font: italic 1.55rem/1.25 Georgia, serif; color: var(--green-deep); }
@@ -1065,7 +1065,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--green); box-shad
 .order-success.active { display: block; }
 .success-mark { width: 78px; height: 78px; border-radius: 50%; background: var(--sage-light); color: var(--green); display: grid; place-items: center; margin: 0 auto 30px; font-size: 2rem; }
 .order-success h2 em { color: var(--terracotta); }
-.order-success > p:not(.eyebrow) { font-family: Arial, sans-serif; color: var(--muted); line-height: 1.7; }
+.order-success > p:not(.eyebrow) { color: var(--muted); line-height: 1.7; }
 .success-actions { display: flex; justify-content: center; gap: 10px; margin-top: 30px; }
 
 /* Dashboard */
@@ -1978,4 +1978,24 @@ html.leggero .invia-tasto { box-shadow: 0 0 0 5px rgba(37,211,102,.35); }
   .hero-stelle { margin-bottom: 12px; font-size: .76rem; }
   .recensione-stelle button { width: 48px; height: 48px; font-size: 2.35rem; }
   .recensioni-elenco { max-height: 380px; }
+}
+/* v84: titoli nel carattere geometrico del logo (Josefin Sans Bold; licenza libera OFL in assets/fonts).
+   Il file sta nel sito: i telefoni dei clienti non chiamano Google. Prima erano in Trebuchet molto
+   stretto e le lettere si toccavano. Sta in fondo al foglio per valere anche sulle regole dei telefoni. */
+@font-face { font-family: "Josefin Sans"; font-style: normal; font-weight: 700; font-display: swap; src: url("assets/fonts/josefin-sans-700.woff2") format("woff2"); }
+.hero h1, .builder-header h1,
+.story h2, .weekly h2, .conserve h2, .home-cta h2, .contacts h2, .step-heading h2, .order-success h2 {
+  font-family: "Josefin Sans", "Trebuchet MS", sans-serif;
+  font-weight: 700;
+  letter-spacing: -.035em;
+  line-height: .98;
+}
+.hero h1 em, .builder-header h1 em, .story h2 em, .weekly h2 em, .conserve h2 em, .home-cta h2 em, .contacts h2 em, .order-success h2 em { letter-spacing: -.045em; }
+/* le lettere sono piu' larghe: corpo misurato perche' "LA TUA SPESA" resti su una riga a ogni larghezza */
+.hero h1 { font-size: clamp(3.5rem, 5.4vw, 4.9rem); }
+@media (max-width: 980px) {
+  .hero h1 { font-size: min(3.5rem, calc(14.6vw - 7.6px)); }
+}
+@media (max-width: 700px) {
+  .story h2, .weekly h2, .conserve h2, .home-cta h2, .contacts h2 { font-size: min(2.55rem, 10.4vw); }
 }

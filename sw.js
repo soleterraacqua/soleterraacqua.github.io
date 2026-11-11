@@ -1,4 +1,4 @@
-const CACHE_NAME = "sole-terra-acqua-v83";
+const CACHE_NAME = "sole-terra-acqua-v84";
 
 // Solo l'essenziale per far comparire il sito subito, anche senza rete.
 // Tutto il resto (foto della galleria, immagini del catalogo) viene messo in
@@ -11,6 +11,7 @@ const APP_SHELL = [
   "./app.js",
   "./manifest.webmanifest",
   "./assets/logo-completo.webp",
+  "./assets/fonts/josefin-sans-700.woff2",
   "./assets/icon-192.png",
   "./assets/icon-512.png",
   "./assets/apple-touch-icon.png",
