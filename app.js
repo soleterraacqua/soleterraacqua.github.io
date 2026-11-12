@@ -13,6 +13,8 @@ const SHEET_VERE = "assets/catalogo-foto-vere.webp";
 const SHEET_FINOCCHI = "assets/catalogo-finocchi.webp";
 // cardi (11 novembre 2026): foto fatta con Gemini nello stesso stile delle altre, scontornata, una casella sola
 const SHEET_CARDI = "assets/catalogo-cardi.webp";
+// puntarelle (12 novembre 2026): foto fatta con Gemini come i cardi, scontornata, una casella sola
+const SHEET_PUNTARELLE = "assets/catalogo-puntarelle.webp";
 const WHATSAPP_NUMBER = "393202732892";
 const ADMIN_PIN = "2892";
 const ADMIN_SESSION_KEY = "sole-terra-acqua-admin-unlocked";
@@ -26,7 +28,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 84;
+const VERSIONE_SITO = 85;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -200,8 +202,24 @@ const PRODUCTS = [
   { id: "cavolo-punta", name: "Cavolo cappuccio a punta", weight: "1 pz", emoji: "🥬", cm: 20, sheet: SHEET_AUTUNNO, cols: 4, rows: 1, x: 3, y: 0, enabled: false },
   { id: "finocchi", name: "Finocchi", weight: "2 pz", emoji: "🌿", cm: 18, sheet: SHEET_FINOCCHI, cols: 1, rows: 1, x: 0, y: 0, enabled: true },
   // cm = lato del riquadro della foto: il mazzo e' in diagonale, cosi' resta lungo come il cavolo nero e non di piu'
-  { id: "cardi", name: "Cardi", weight: "1 mazzo", emoji: "🌿", cm: 26, sheet: SHEET_CARDI, cols: 1, rows: 1, x: 0, y: 0, enabled: true }
+  { id: "cardi", name: "Cardi", weight: "1 mazzo", emoji: "🌿", cm: 26, sheet: SHEET_CARDI, cols: 1, rows: 1, x: 0, y: 0, enabled: true },
+  // v85: spente finche' non le accendo dalla dashboard
+  { id: "puntarelle", name: "Puntarelle", weight: "1 cespo", emoji: "🥬", cm: 26, sheet: SHEET_PUNTARELLE, cols: 1, rows: 1, x: 0, y: 0, enabled: false }
 ];
+
+// v85: l'ordine delle verdure nel sito (lista "Riempi la tua cassetta", dashboard, raccolta) e' quello di
+// importanza scelto da me; quelle che non sono qui vengono dopo, nell'ordine di prima.
+// Il link degli ordini non dipende da questo ordine (usa VERDURE_NEL_LINK).
+const ORDINE_VERDURE = [
+  "cavolo-nero", "cicoria", "bieta-verde", "bieta-colorata", "puntarelle", "cime-rapa", "patate", "castagne",
+  "zucchine-romanesche", "lattuga-romana", "lattuga-canasta", "scarola-riccia", "scarola-liscia", "aglio",
+  "melanzane", "peperoni", "cardi", "cavolo-punta", "cavolo-cappuccio-viola", "verza", "zucca", "melone-invernale"
+];
+{
+  const posto = product => { const n = ORDINE_VERDURE.indexOf(product.id); return n < 0 ? ORDINE_VERDURE.length : n; };
+  const ordinate = PRODUCTS.map((product, prima) => ({ product, prima })).sort((a, b) => posto(a.product) - posto(b.product) || a.prima - b.prima).map(voce => voce.product);
+  PRODUCTS.splice(0, PRODUCTS.length, ...ordinate);
+}
 
 const BOXES = {
   piccola: { label: "PICCOLA", price: 12, min: 3, included: 5 },
@@ -646,7 +664,9 @@ const VERDURE_NEL_LINK = [
   // v80
   "finocchi",
   // v84
-  "cardi"
+  "cardi",
+  // v85
+  "puntarelle"
 ];
 
 const codiceVerdure = cassette => (cassette || []).map(cassetta => (cassetta.items || []).map(item => {
