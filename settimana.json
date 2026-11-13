@@ -1,5 +1,5 @@
 {
-  "aggiornato": "2026-11-13T20:52:15.566Z",
+  "aggiornato": "2026-11-13T21:42:00.295Z",
   "giorni": [],
   "giornoFisso": 5,
   "giornoFisso2": -1,
@@ -155,7 +155,7 @@
       "id": "cavolo-punta",
       "nome": "Cavolo cappuccio a punta",
       "peso": "1 pz - 2pz",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "massimo": 40,
       "foto": ""
@@ -164,7 +164,7 @@
       "id": "cavolo-cappuccio-viola",
       "nome": "Cavolo cappuccio viola",
       "peso": "1 pz",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "foto": ""
     },
@@ -220,7 +220,7 @@
       "id": "radicchio-treviso",
       "nome": "Radicchio di Treviso",
       "peso": "500 g",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "foto": ""
     },
