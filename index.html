@@ -29,7 +29,7 @@
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="preload" href="assets/fonts/josefin-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=85">
+  <link rel="stylesheet" href="styles.css?v=87">
 </head>
 <body>
   <div class="app-shell">
@@ -673,8 +673,37 @@
           <article><span id="statOrdersTitolo">ORDINI DELLA GIORNATA</span><strong id="statOrders">0</strong><small id="statOrdersNota">su 40 posti per giornata</small></article>
           <article><span id="statRevenueTitolo">INCASSO PREVISTO</span><strong id="statRevenue">0,00 €</strong><small id="statRevenueNota">dagli ordini della giornata</small></article>
           <article><span>CONSEGNE EXTRA</span><strong id="statExtra">0</strong><small>fuori Viterbo, +2,50 €</small></article>
-          <article class="mint"><span>CLIENTI</span><strong id="statClienti">0</strong><small id="statRecensioni">recensioni: ancora nessuna</small></article>
+          <article class="mint"><span>CLIENTI</span><strong id="statClienti">0</strong><button type="button" class="stat-recensioni" id="statRecensioni">recensioni: —</button></article>
         </div>
+
+        <!-- v86: le recensioni in una casella tutta loro, in alto -->
+        <section class="review-panel" id="recensioniPanel" aria-labelledby="recensioniTitolo">
+          <div class="recensioni-sinistra">
+            <div class="recensioni-testa">
+              <div>
+                <p class="eyebrow">RECENSIONI ANONIME</p>
+                <h2 id="recensioniTitolo">LE MIE RECENSIONI</h2>
+              </div>
+              <span class="recensioni-nuove" id="recensioniNuove" hidden></span>
+            </div>
+            <button type="button" class="recensioni-tutte" id="tutteRecensioni" aria-expanded="false" aria-controls="recensioniElenco" hidden>LEGGI TUTTE LE RECENSIONI</button>
+            <div class="recensioni-accesso" id="recensioniAccesso" hidden>
+              <label for="parolaRecensioni">PAROLA SEGRETA <span>(la stessa delle statistiche)</span></label>
+              <div>
+                <input id="parolaRecensioni" type="password" autocomplete="off" spellcheck="false" placeholder="La parola delle statistiche">
+                <button class="primary-button" id="entraRecensioni" type="button">LEGGI <span>→</span></button>
+              </div>
+              <small class="field-error" id="recensioniParolaErrore"></small>
+              <small>La scrivi una volta sola: resta salvata su questo dispositivo, insieme alle statistiche.</small>
+            </div>
+            <div class="recensioni-media" id="recensioniMedia"></div>
+            <div class="recensioni-pulsanti">
+              <button type="button" class="pubblica-cambia" id="aggiornaRecensioni">AGGIORNA</button>
+            </div>
+            <p class="recensioni-nota">Il link per lasciare da 1 a 5 stelle parte nel messaggio di CONSEGNATO + AVVISA. Sono anonime: vedi le stelle e il commento, non chi li ha scritti. Sul sito compare solo la media delle stelle, i commenti li leggi solo tu.</p>
+          </div>
+          <div class="recensioni-elenco corto" id="recensioniElenco"><p class="stat-vuoto">—</p></div>
+        </section>
 
         <section class="liste-giro">
           <div class="panel-head compact">
@@ -949,16 +978,6 @@
           <div class="preserves-editor" id="preservesEditor"></div>
         </section>
 
-        <section class="review-panel" id="recensioniPanel">
-          <div>
-            <p class="eyebrow">RECENSIONI ANONIME</p>
-            <h2>ASCOLTA CHI HA<br>RICEVUTO LA CASSETTA.</h2>
-            <div class="recensioni-media" id="recensioniMedia"></div>
-            <p>Il link per lasciare da 1 a 5 stelle parte nel messaggio di CONSEGNATO + AVVISA. Sono anonime: vedi le stelle e il commento, non chi li ha scritti. Sul sito compare solo la media delle stelle, i commenti li leggi solo tu.</p>
-            <button type="button" class="pubblica-cambia" id="aggiornaRecensioni">AGGIORNA</button>
-          </div>
-          <div class="recensioni-elenco" id="recensioniElenco"><p class="stat-vuoto">—</p></div>
-        </section>
       </section>
     </main>
 
@@ -1246,6 +1265,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=85"></script>
+  <script src="app.js?v=87"></script>
 </body>
 </html>

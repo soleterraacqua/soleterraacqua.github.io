@@ -15,6 +15,8 @@ const SHEET_FINOCCHI = "assets/catalogo-finocchi.webp";
 const SHEET_CARDI = "assets/catalogo-cardi.webp";
 // puntarelle (12 novembre 2026): foto fatta con Gemini come i cardi, scontornata, una casella sola
 const SHEET_PUNTARELLE = "assets/catalogo-puntarelle.webp";
+// radicchio pan di zucchero (17 novembre 2026): foto fatta con Gemini come cardi e puntarelle, una casella sola
+const SHEET_PAN_DI_ZUCCHERO = "assets/catalogo-pan-di-zucchero.webp";
 const WHATSAPP_NUMBER = "393202732892";
 const ADMIN_PIN = "2892";
 const ADMIN_SESSION_KEY = "sole-terra-acqua-admin-unlocked";
@@ -28,7 +30,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 85;
+const VERSIONE_SITO = 87;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -38,6 +40,8 @@ const CHIAVE_GITHUB_KEY = "sole-terra-acqua-chiave-pubblicazione";
 const STATISTICHE_URL = "https://script.google.com/macros/s/AKfycbwcCvqGJ6j35nKpCoyNpnOr0aBELSlewzfRc9xq3uS6nuCjGnwy5PzSvilsAR6Mhhs/exec";
 const NON_CONTARE_KEY = "sole-terra-acqua-non-contare";
 const PAROLA_STATISTICHE_KEY = "sole-terra-acqua-parola-statistiche";
+// v86: quante recensioni ho gia' visto su questo dispositivo (le altre sono NUOVE)
+const RECENSIONI_VISTE_KEY = "sole-terra-acqua-recensioni-viste";
 const PERIODO_STATISTICHE_KEY = "sole-terra-acqua-periodo-statistiche";
 // Viterbo: fasce da 40 minuti fino alle 19:00 (l'ultima e' di mezz'ora). Zone vicine (+2,50 €): dalle 19:00 alle 20:40.
 const FASCE_ORARIE = [
@@ -204,7 +208,9 @@ const PRODUCTS = [
   // cm = lato del riquadro della foto: il mazzo e' in diagonale, cosi' resta lungo come il cavolo nero e non di piu'
   { id: "cardi", name: "Cardi", weight: "1 mazzo", emoji: "🌿", cm: 26, sheet: SHEET_CARDI, cols: 1, rows: 1, x: 0, y: 0, enabled: true },
   // v85: spente finche' non le accendo dalla dashboard
-  { id: "puntarelle", name: "Puntarelle", weight: "1 cespo", emoji: "🥬", cm: 26, sheet: SHEET_PUNTARELLE, cols: 1, rows: 1, x: 0, y: 0, enabled: false }
+  { id: "puntarelle", name: "Puntarelle", weight: "1 cespo", emoji: "🥬", cm: 26, sheet: SHEET_PUNTARELLE, cols: 1, rows: 1, x: 0, y: 0, enabled: false },
+  // v87: acceso (lo vendo dalla consegna del 20 novembre); si spegne dalla dashboard come le altre
+  { id: "radicchio-pan-di-zucchero", name: "Radicchio pan di zucchero", weight: "2-3 cespi", emoji: "🥬", cm: 26, sheet: SHEET_PAN_DI_ZUCCHERO, cols: 1, rows: 1, x: 0, y: 0, enabled: true }
 ];
 
 // v85: l'ordine delle verdure nel sito (lista "Riempi la tua cassetta", dashboard, raccolta) e' quello di
@@ -212,7 +218,7 @@ const PRODUCTS = [
 // Il link degli ordini non dipende da questo ordine (usa VERDURE_NEL_LINK).
 const ORDINE_VERDURE = [
   "cavolo-nero", "cicoria", "bieta-verde", "bieta-colorata", "puntarelle", "cime-rapa", "patate", "castagne",
-  "zucchine-romanesche", "lattuga-romana", "lattuga-canasta", "scarola-riccia", "scarola-liscia", "aglio",
+  "zucchine-romanesche", "lattuga-romana", "lattuga-canasta", "scarola-riccia", "scarola-liscia", "radicchio-pan-di-zucchero", "aglio",
   "melanzane", "peperoni", "cardi", "cavolo-punta", "cavolo-cappuccio-viola", "verza", "zucca", "melone-invernale"
 ];
 {
@@ -666,7 +672,9 @@ const VERDURE_NEL_LINK = [
   // v84
   "cardi",
   // v85
-  "puntarelle"
+  "puntarelle",
+  // v87
+  "radicchio-pan-di-zucchero"
 ];
 
 const codiceVerdure = cassette => (cassette || []).map(cassetta => (cassetta.items || []).map(item => {
@@ -3083,19 +3091,87 @@ async function caricaRecensioni() {
   const elenco = $("#recensioniElenco");
   if (!elenco || !isDashboardUnlocked()) return;
   const parola = leggiDaMemoria(PAROLA_STATISTICHE_KEY);
-  if (!indirizzoStatistiche() || !parola) {
-    elenco.innerHTML = `<p class="stat-vuoto">Per leggere le recensioni scrivi la parola segreta nel riquadro STATISTICHE DEI CLICK.</p>`;
+  if (!indirizzoStatistiche()) {
+    elenco.innerHTML = `<p class="stat-vuoto">Le recensioni arrivano dal Foglio Google, che non è ancora collegato al sito.</p>`;
     return;
   }
+  if (!parola) {
+    mostraAccessoRecensioni(true);
+    return;
+  }
+  mostraAccessoRecensioni(false);
+  if (!$("#recensioniElenco .recensione-voce")) elenco.innerHTML = `<p class="stat-vuoto">Carico le recensioni…</p>`;
   try {
     const dati = await chiediAlFoglio({ azione: "recensioni", parola }, 20000);
     if (!dati?.ok) throw new Error(dati?.errore || "risposta");
     renderRecensioni(Array.isArray(dati.recensioni) ? dati.recensioni : []);
   } catch (errore) {
-    elenco.innerHTML = `<p class="stat-vuoto">${String(errore?.message) === "parola"
-      ? "La parola segreta non è giusta: riscrivila nel riquadro STATISTICHE DEI CLICK."
-      : "Non riesco a leggere le recensioni adesso: riprova con AGGIORNA."}</p>`;
+    if (String(errore?.message) === "parola") {
+      scriviInMemoria(PAROLA_STATISTICHE_KEY, null);
+      mostraAccessoRecensioni(true, "La parola segreta non è giusta: riscrivila.");
+      return;
+    }
+    elenco.innerHTML = `<p class="stat-vuoto">Non riesco a leggere le recensioni adesso (manca la rete o il Foglio Google non risponde): riprova con AGGIORNA.</p>`;
   }
+}
+
+// v86: la parola si scrive anche qui, nella casella delle recensioni (e' la stessa delle statistiche)
+function scriviPulsanteTutte(intero) {
+  $("#tutteRecensioni").textContent = intero && recensioniTotali > 2 ? "SOLO LE ULTIME 2" : `LEGGI TUTTE LE RECENSIONI (${recensioniTotali})`;
+  $("#tutteRecensioni").setAttribute("aria-expanded", String(intero && recensioniTotali > 2));
+}
+
+// apro l'elenco intero e lo porto davanti (dal pulsante della casella e dal riquadro CLIENTI)
+function apriTutteLeRecensioni() {
+  $("#recensioniElenco").classList.remove("corto");
+  scriviPulsanteTutte(true);
+  const prima = $("#recensioniElenco .recensione-voce") || $("#recensioniPanel");
+  prima.scrollIntoView({ behavior: "smooth", block: matchMedia("(max-width: 900px)").matches ? "start" : "nearest" });
+}
+
+function mostraAccessoRecensioni(mostra, errore = "") {
+  $("#recensioniAccesso").hidden = !mostra;
+  $("#recensioniParolaErrore").textContent = errore;
+  $("#parolaRecensioni").classList.toggle("invalid", Boolean(errore));
+  if (!mostra) return;
+  $("#recensioniMedia").innerHTML = "";
+  $("#recensioniNuove").hidden = true;
+  $("#tutteRecensioni").hidden = true;
+  $("#recensioniElenco").innerHTML = `<p class="stat-vuoto">Scrivi qui sopra la parola segreta (la stessa delle statistiche) e premi LEGGI.</p>`;
+  $("#statRecensioni").textContent = "recensioni: serve la parola segreta";
+}
+
+function entraRecensioni() {
+  const parola = $("#parolaRecensioni").value.trim();
+  if (parola.length < 8) {
+    mostraAccessoRecensioni(true, "La parola segreta ha almeno 8 caratteri.");
+    return;
+  }
+  scriviInMemoria(PAROLA_STATISTICHE_KEY, parola);
+  $("#parolaRecensioni").value = "";
+  mostraAccessoRecensioni(false);
+  // statistiche e recensioni insieme (le statistiche, se va bene, ricaricano anche le recensioni)
+  caricaStatistiche({ forza: true });
+  caricaRecensioni();
+}
+
+// NUOVE: quelle arrivate dopo l'ultima volta che ho avuto la casella davanti per qualche secondo
+let recensioniTotali = 0;
+let visteAllApertura = null;
+const recensioniViste = () => {
+  const salvate = leggiDaMemoria(RECENSIONI_VISTE_KEY);
+  return salvate === "" ? 0 : Math.max(0, Number(salvate) || 0);
+};
+let guardaRecensioni = null;
+function segnaRecensioniVisteQuandoLeGuardo() {
+  if (guardaRecensioni || !("IntersectionObserver" in window)) return;
+  let tempo = null;
+  guardaRecensioni = new IntersectionObserver(voci => {
+    const davanti = voci.some(voce => voce.isIntersecting);
+    clearTimeout(tempo);
+    if (davanti && recensioniTotali > recensioniViste()) tempo = setTimeout(() => scriviInMemoria(RECENSIONI_VISTE_KEY, String(recensioniTotali)), 2500);
+  }, { threshold: .35 });
+  guardaRecensioni.observe($("#recensioniPanel"));
 }
 
 function renderRecensioni(lista) {
@@ -3108,10 +3184,23 @@ function renderRecensioni(lista) {
       const quante = valide.filter(voce => voce.stelle === stelle).length;
       return `<div><span>${stelle} ★</span><i><b style="width:${quante / valide.length * 100}%"></b></i><small>${quante}</small></div>`;
     }).join("")}</div>` : "";
+  // v86: le piu' recenti sono le prime; NUOVE quelle oltre il numero gia' visto su questo dispositivo
+  recensioniTotali = valide.length;
+  // le NUOVE restano segnate per tutta la visita, anche dopo che le ho viste (si azzerano alla prossima apertura)
+  if (visteAllApertura === null) visteAllApertura = recensioniViste();
+  const viste = Math.min(visteAllApertura, valide.length);
+  const nuove = valide.length - viste;
+  $("#recensioniNuove").hidden = !nuove;
+  $("#recensioniNuove").textContent = nuove === 1 ? "1 NUOVA" : `${nuove} NUOVE`;
+  const elencoIntero = !$("#recensioniElenco").classList.contains("corto");
+  // v87: il pulsante sta all'inizio della casella e c'e' appena arriva la prima recensione
+  $("#tutteRecensioni").hidden = !valide.length;
+  scriviPulsanteTutte(elencoIntero);
+  segnaRecensioniVisteQuandoLeGuardo();
   $("#recensioniElenco").innerHTML = valide.length
-    ? valide.map(voce => `
-      <article class="recensione-voce">
-        <div><span class="stars">${stelleTesto(voce.stelle)}</span><small>${/^\d{4}-\d{2}-\d{2}$/.test(voce.giorno || "") ? escapeHtml(formatDate(voce.giorno)) : ""}</small></div>
+    ? valide.map((voce, posto) => `
+      <article class="recensione-voce${posto < nuove ? " nuova" : ""}">
+        <div><span class="stars">${stelleTesto(voce.stelle)}${posto < nuove ? `<span class="recensione-nuova">NUOVA</span>` : ""}</span><small>${/^\d{4}-\d{2}-\d{2}$/.test(voce.giorno || "") ? escapeHtml(formatDate(voce.giorno)) : ""}</small></div>
         ${voce.commento ? `<p>${escapeHtml(String(voce.commento))}</p>` : `<p class="senza-commento">Solo le stelle, senza commento.</p>`}
       </article>`).join("")
     : `<p class="stat-vuoto">Ancora nessuna recensione. Quando premi CONSEGNATO + AVVISA, nel messaggio al cliente c'è il link per lasciarla.</p>`;
@@ -4261,6 +4350,8 @@ const percentuale = (parte, tutto) => tutto ? `${Math.round(parte / tutto * 100)
 
 function mostraAccessoStatistiche(mostra, errore = "") {
   $("#statisticheAccesso").hidden = !mostra;
+  // v86: senza parola anche la casella delle recensioni la chiede
+  if (mostra && isDashboardUnlocked() && indirizzoStatistiche()) mostraAccessoRecensioni(true, errore);
   $("#statisticheParolaErrore").textContent = errore;
   $("#parolaStatistiche").classList.toggle("invalid", Boolean(errore));
   $("#cambiaParolaStatistiche").hidden = mostra || !leggiDaMemoria(PAROLA_STATISTICHE_KEY);
@@ -4979,6 +5070,24 @@ function setupEvents() {
     else if (event.target === event.currentTarget || event.target.closest("[data-chiudi-recensione]")) chiudiRecensione();
   });
   $("#aggiornaRecensioni").addEventListener("click", caricaRecensioni);
+  // v86: parola dalla casella delle recensioni, TUTTE / SOLO LE ULTIME 2
+  $("#entraRecensioni").addEventListener("click", entraRecensioni);
+  $("#parolaRecensioni").addEventListener("keydown", event => { if (event.key === "Enter") entraRecensioni(); });
+  $("#tutteRecensioni").addEventListener("click", () => {
+    const elenco = $("#recensioniElenco");
+    if (elenco.classList.contains("corto") || recensioniTotali <= 2) { apriTutteLeRecensioni(); return; }
+    elenco.classList.add("corto");
+    scriviPulsanteTutte(false);
+    $("#recensioniPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  // dal riquadro CLIENTI in cima: con le recensioni gia' lette apro l'elenco intero, se no porto alla casella (parola)
+  $("#statRecensioni").addEventListener("click", () => {
+    if (recensioniTotali && $("#recensioniAccesso").hidden) apriTutteLeRecensioni();
+    else {
+      $("#recensioniPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+      if (!$("#recensioniAccesso").hidden) setTimeout(() => $("#parolaRecensioni").focus({ preventScroll: true }), 400);
+    }
+  });
   $("#giornateDashboard").addEventListener("click", event => {
     const bottone = event.target.closest("[data-giornata]");
     if (!bottone) return;

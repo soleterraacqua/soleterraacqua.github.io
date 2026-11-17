@@ -1999,3 +1999,40 @@ html.leggero .invia-tasto { box-shadow: 0 0 0 5px rgba(37,211,102,.35); }
 @media (max-width: 700px) {
   .story h2, .weekly h2, .conserve h2, .home-cta h2, .contacts h2 { font-size: min(2.55rem, 10.4vw); }
 }
+
+/* v86: casella LE MIE RECENSIONI in alto nella dashboard */
+.review-panel { margin: 18px 0; gap: 34px; align-items: start; }
+.review-panel h2 { font-size: 2rem; margin: 0; }
+.recensioni-sinistra { display: grid; gap: 14px; align-content: start; }
+.recensioni-testa { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.recensioni-testa .eyebrow { color: #f2c14e; margin: 0 0 6px; }
+.recensioni-nuove { flex: none; background: #f2c14e; color: var(--green); font-size: .7rem; font-weight: 900; letter-spacing: .1em; padding: 7px 11px; border-radius: 999px; }
+.review-panel .recensioni-media { margin: 0; }
+.recensioni-pulsanti { display: flex; flex-wrap: wrap; gap: 10px; }
+#recensioniPanel .recensioni-nota { margin: 0; color: #c6d1c7; line-height: 1.55; font-size: .82rem; font-family: inherit; }
+.recensioni-accesso { display: grid; gap: 8px; background: rgba(255, 250, 240, .08); border: 1px solid rgba(255, 250, 240, .22); padding: 14px; border-radius: var(--soft-radius); }
+.recensioni-accesso[hidden] { display: none; }
+.recensioni-accesso label { font-size: .72rem; font-weight: 900; letter-spacing: .12em; }
+.recensioni-accesso label span { font-weight: 400; letter-spacing: 0; color: #c6d1c7; }
+.recensioni-accesso > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.recensioni-accesso input { flex: 1 1 180px; min-width: 0; min-height: 48px; border-radius: 12px; border: 1px solid rgba(255, 250, 240, .5); background: var(--cream); color: var(--ink); padding: 0 14px; font-size: 1rem; }
+.recensioni-accesso input.invalid { border-color: #e8836b; box-shadow: 0 0 0 2px rgba(232, 131, 107, .45); }
+.recensioni-accesso .primary-button { flex: 0 0 auto; min-height: 48px; }
+.recensioni-accesso small { color: #c6d1c7; font-size: .74rem; line-height: 1.45; }
+.recensioni-accesso small.field-error { color: #ffb4a2; }
+.recensioni-accesso small.field-error:empty { display: none; }
+.recensioni-elenco.corto { max-height: none; overflow: visible; }
+.recensioni-elenco.corto .recensione-voce:nth-child(n+3) { display: none; }
+.recensione-nuova { display: inline-block; margin-left: 8px; background: #f2c14e; color: var(--green); font-size: .62rem; font-weight: 900; letter-spacing: .1em; padding: 3px 8px; border-radius: 999px; vertical-align: middle; }
+@media (max-width: 700px) {
+  .review-panel { gap: 18px; }
+  .review-panel h2 { font-size: 1.6rem; }
+}
+/* v87: LEGGI TUTTE LE RECENSIONI all'inizio della casella, e dal riquadro CLIENTI */
+.recensioni-tutte { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; min-height: 50px; padding: 0 18px; border: 0; border-radius: 14px; background: #f2c14e; color: var(--green); font-family: inherit; font-weight: 900; font-size: .82rem; line-height: 1.2; letter-spacing: .1em; text-align: left; cursor: pointer; }
+.recensioni-tutte[hidden] { display: none; }
+.recensioni-tutte::after { content: "↓"; font-size: 1.1rem; }
+.recensioni-tutte[aria-expanded="true"]::after { content: "↑"; }
+.recensioni-tutte:focus-visible { outline: 3px solid var(--cream); outline-offset: 2px; }
+.stat-recensioni { display: block; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: .74rem; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.stat-recensioni::after { content: " ›"; }
