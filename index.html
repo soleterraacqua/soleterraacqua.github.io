@@ -29,7 +29,7 @@
   <meta name="apple-mobile-web-app-title" content="Sole Terra Acqua">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="preload" href="assets/fonts/josefin-sans-700.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="styles.css?v=87">
+  <link rel="stylesheet" href="styles.css?v=88">
 </head>
 <body>
   <div class="app-shell">
@@ -663,7 +663,10 @@
           </div>
         </div>
 
-        <button type="button" class="primary-button nuovo-ordine-whatsapp" id="nuovoOrdineWhatsapp">+ AGGIUNGI UN ORDINE ARRIVATO SU WHATSAPP <span>→</span></button>
+        <div class="nuovi-ordini">
+          <button type="button" class="primary-button nuovo-ordine-whatsapp" id="nuovoOrdineWhatsapp">+ AGGIUNGI UN ORDINE ARRIVATO SU WHATSAPP <span>→</span></button>
+          <button type="button" class="primary-button nuovo-ordine-whatsapp nuovo-ordine-uova" id="nuovoOrdineUova">🥚 + ORDINE DI SOLE UOVA <span>→</span></button>
+        </div>
 
         <section class="attesa-whatsapp" id="inAttesaWhatsapp" aria-live="polite" hidden></section>
 
@@ -1115,7 +1118,7 @@
       <p class="popup-conserve-aspetta" id="modificaCodice">ORDINE</p>
       <h2 id="modificaTitolo">MODIFICA <em id="modificaNome"></em></h2>
       <div class="mod-corpo">
-        <fieldset class="mod-gruppo">
+        <fieldset class="mod-gruppo mod-gruppo-cliente">
           <legend>CLIENTE</legend>
           <div class="mod-campi">
             <label>NOME E COGNOME<input id="modNome" type="text" autocomplete="off"></label>
@@ -1148,7 +1151,7 @@
           <legend>CONSERVE</legend>
           <div id="modConserve"></div>
         </fieldset>
-        <fieldset class="mod-gruppo">
+        <fieldset class="mod-gruppo mod-gruppo-uova">
           <legend>OLIO E UOVA</legend>
           <div id="modOlio"></div>
           <div class="mod-campi">
@@ -1167,7 +1170,7 @@
         </fieldset>
       </div>
       <div class="popup-conserve-azioni mod-azioni">
-        <button class="primary-button" type="submit">SALVA LE MODIFICHE <span>→</span></button>
+        <button class="primary-button" type="submit" id="modSalva">SALVA LE MODIFICHE <span>→</span></button>
         <button class="uova-annulla" type="button" data-chiudi-modifica>ANNULLA</button>
       </div>
     </form>
@@ -1265,6 +1268,6 @@
   </a>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=87"></script>
+  <script src="app.js?v=88"></script>
 </body>
 </html>

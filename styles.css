@@ -2036,3 +2036,21 @@ html.leggero .invia-tasto { box-shadow: 0 0 0 5px rgba(37,211,102,.35); }
 .recensioni-tutte:focus-visible { outline: 3px solid var(--cream); outline-offset: 2px; }
 .stat-recensioni { display: block; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: .74rem; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .stat-recensioni::after { content: " ›"; }
+/* v88: rubrica dei clienti sotto il nome (solo negli ordini che inserisco io) e ordine di sole uova */
+.nuovi-ordini { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+.nuovi-ordini .nuovo-ordine-whatsapp { margin: 0; }
+.nuovo-ordine-uova { background: var(--cream); color: var(--green); border: 2px solid var(--green); box-shadow: none; }
+.nuovo-ordine-uova span { color: var(--green); }
+@media (max-width: 700px) { .nuovi-ordini { display: grid; } }
+.rubrica { display: grid; gap: 6px; margin-top: 6px; padding: 6px; border: 1px solid var(--line); border-radius: var(--small-radius); background: #fff; box-shadow: 0 8px 22px rgba(36, 48, 30, .12); }
+.rubrica[hidden] { display: none; }
+.rubrica-testa { margin: 0 4px; color: var(--terracotta); font-size: .62rem; font-weight: 900; letter-spacing: .12em; }
+.rubrica button { display: grid; gap: 2px; width: 100%; min-height: 48px; padding: 8px 10px; border: 0; border-radius: 10px; background: var(--cream); color: var(--ink); font-family: inherit; text-align: left; cursor: pointer; }
+.rubrica button:hover, .rubrica button:focus-visible { background: #e8eedc; outline: none; }
+.rubrica button strong { font-size: .92rem; letter-spacing: 0; }
+.rubrica button small { color: var(--muted); font-size: .74rem; font-weight: 400; letter-spacing: 0; line-height: 1.35; overflow-wrap: anywhere; }
+.rubrica-fatto { margin: 6px 0 0; color: var(--green); font-size: .74rem; font-weight: 700; letter-spacing: 0; }
+.rubrica-fatto[hidden] { display: none; }
+#modificaForm.solo-uova .mod-gruppo-cliente { order: -2; }
+#modificaForm.solo-uova .mod-gruppo-uova { order: -1; border-color: var(--green); box-shadow: 0 0 0 2px rgba(80, 105, 50, .18); }
+.rubrica-usa { margin: 4px 0 0 4px; min-height: 36px; padding: 0 12px; border: 1px solid var(--green); border-radius: 999px; background: #fff; color: var(--green); font-family: inherit; font-size: .7rem; font-weight: 900; letter-spacing: .08em; cursor: pointer; }
