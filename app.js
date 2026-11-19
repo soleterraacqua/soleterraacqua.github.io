@@ -30,7 +30,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 88;
+const VERSIONE_SITO = 89;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -2080,6 +2080,27 @@ function selectedProductLines() {
 // messaggio che il cliente mi manda: corto, una riga per cosa. "Come mi hai conosciuto" non ci va (v66):
 // il cliente la vedeva scritta nel messaggio. Resta nel link "Registra l'ordine" (un numero) e da li'
 // arriva nella dashboard, accanto al nome del cliente.
+// v89: nel messaggio del cliente, in grassetto, a che punto e' con la conserva in omaggio. Il suo telefono non sa
+// quanti ordini ha fatto: lo chiedo allo script (copia degli ordini della dashboard) quando arriva al riepilogo;
+// se la risposta non c'e' ancora (o il nome non e' quello dei suoi ordini) la riga non c'e'.
+async function chiediPuntiCliente() {
+  state.puntiCliente = null;
+  const telefono = normalizePhone(state.orderData.phone);
+  if (state.inserisco || !postiAttivi() || !telefono) return;
+  try {
+    const esito = await chiediAlFoglio({ azione: "punti", telefono: state.orderData.phone, nome: state.orderData.fullName, id: state.idOrdine }, 8000);
+    if (esito?.ok && Number.isInteger(esito.punti) && esito.punti >= 0 && normalizePhone(state.orderData.phone) === telefono) {
+      state.puntiCliente = { telefono, punti: esito.punti, usati: Math.max(0, Number(esito.usati) || 0) };
+    }
+  } catch (_) {}
+}
+
+function rigaOmaggioCliente() {
+  const conto = state.puntiCliente;
+  if (!conto || conto.telefono !== normalizePhone(state.orderData.phone)) return "";
+  return testoOmaggio(conto.punti + 1, conto.usati);   // + questo ordine
+}
+
 function buildWhatsAppUrl(orderInput) {
   const order = typeof orderInput === "object" ? orderInput : null;
   const orderId = order?.id || orderInput;
@@ -2109,6 +2130,7 @@ function buildWhatsAppUrl(orderInput) {
     ...(notes ? [`📝 ${notes}`] : []),
     "",
     `💶 *Totale ${money(order?.total || total())}* (${area === "Viterbo" ? "consegna gratuita" : `consegna ${money(2.5)} inclusa`})`,
+    ...(rigaOmaggioCliente() ? ["", rigaOmaggioCliente()] : []),
     // v72: la proposta dell'olio anche nell'ordine del cliente, in grassetto, al prezzo della dashboard
     ...(olioDaProporre() && !olio ? ["", `🫒 *Vuoi anche l'olio nuovo? Latta da ${OLIO.litri} litri a ${money(prezzoLatta()).replace(",00", "")} (${money(OLIO.prezzoLitro).replace(",00", "")} al litro): scrivimi SÌ OLIO e te lo porto con la cassetta.*`] : []),
     // v80: il link della recensione resta nella chat del cliente, per quando ha ricevuto la cassetta
@@ -3246,8 +3268,12 @@ function puntiOmaggio(order) {
   const chiave = customerKeyFromOrder(order);
   const punti = state.orders.filter(item => ordineDaPunto(item) && customerKeyFromOrder(item) === chiave).length
     + (ordineDaPunto(order) && !state.orders.includes(order) ? 1 : 0);
+  return testoOmaggio(punti, Number(state.customers[chiave]?.rewardsUsed) || 0);
+}
+
+function testoOmaggio(punti, usati) {
   if (!punti) return "";
-  const daScegliere = Math.floor(punti / POINTS_FOR_REWARD) - (Number(state.customers[chiave]?.rewardsUsed) || 0);
+  const daScegliere = Math.floor(punti / POINTS_FOR_REWARD) - usati;
   if (daScegliere > 0) return `🎁 *Con questo sei a ${punti} ordini: hai diritto a una conserva in omaggio! Dimmi quale preferisci e te la porto.*`;
   const fatti = punti % POINTS_FOR_REWARD;
   const mancano = POINTS_FOR_REWARD - fatti;
@@ -4956,6 +4982,8 @@ function setupEvents() {
     bottone.disabled = true;
     bottone.innerHTML = "CONTROLLO IL POSTO…";
     // inserendo io l'ordine niente posto tenuto: lo confermo direttamente quando salvo
+    // v89: intanto chiedo a che punto e' con la conserva in omaggio (per il suo messaggio WhatsApp)
+    chiediPuntiCliente();
     const esito = state.inserisco ? null : await tieniPosto();
     bottone.disabled = false;
     bottone.innerHTML = testo;
