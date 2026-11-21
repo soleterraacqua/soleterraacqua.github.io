@@ -1,14 +1,14 @@
 {
-  "aggiornato": "2026-11-14T20:58:52.593Z",
+  "aggiornato": "2026-11-21T09:22:13.039Z",
   "giorni": [],
-  "giornoFisso": 5,
+  "giornoFisso": 4,
   "giornoFisso2": -1,
   "saltati": [
-    "2026-11-27",
-    "2026-12-04",
-    "2026-12-11",
-    "2026-12-18",
-    "2026-12-25"
+    "2026-12-03",
+    "2026-12-10",
+    "2026-12-17",
+    "2026-12-24",
+    "2026-12-31"
   ],
   "prodotti": [
     {
@@ -72,7 +72,7 @@
       "id": "castagne",
       "nome": "Castagne",
       "peso": "500 g",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "foto": ""
     },
@@ -120,10 +120,18 @@
       "foto": ""
     },
     {
+      "id": "radicchio-pan-di-zucchero",
+      "nome": "Radicchio pan di zucchero",
+      "peso": "2-3 cespi",
+      "disponibile": false,
+      "unoSolo": false,
+      "foto": ""
+    },
+    {
       "id": "aglio",
       "nome": "Mazzo di aglio",
       "peso": "7 teste",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "foto": ""
     },
@@ -364,7 +372,7 @@
       "id": "finocchi",
       "nome": "Finocchi",
       "peso": "900/1000g",
-      "disponibile": false,
+      "disponibile": true,
       "unoSolo": false,
       "foto": ""
     }
