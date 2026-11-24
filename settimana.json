@@ -1,5 +1,5 @@
 {
-  "aggiornato": "2026-11-21T09:22:13.039Z",
+  "aggiornato": "2026-11-24T07:26:54.306Z",
   "giorni": [],
   "giornoFisso": 4,
   "giornoFisso2": -1,
@@ -23,7 +23,7 @@
     {
       "id": "cicoria",
       "nome": "Cicoria",
-      "peso": "600 g",
+      "peso": "700 g",
       "disponibile": true,
       "unoSolo": false,
       "foto": ""
