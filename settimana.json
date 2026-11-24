@@ -1,5 +1,5 @@
 {
-  "aggiornato": "2026-11-24T07:26:54.306Z",
+  "aggiornato": "2026-11-24T07:45:06.351Z",
   "giorni": [],
   "giornoFisso": 4,
   "giornoFisso2": -1,
@@ -282,9 +282,9 @@
     },
     {
       "id": "cavolo-cappuccio",
-      "nome": "Cavolo cappuccio",
-      "peso": "1 pz",
-      "disponibile": false,
+      "nome": "Cavolo cappuccio verde",
+      "peso": "2-3 pz",
+      "disponibile": true,
       "unoSolo": false,
       "foto": ""
     },

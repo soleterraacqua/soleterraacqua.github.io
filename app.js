@@ -17,6 +17,8 @@ const SHEET_CARDI = "assets/catalogo-cardi.webp";
 const SHEET_PUNTARELLE = "assets/catalogo-puntarelle.webp";
 // radicchio pan di zucchero (17 novembre 2026): foto fatta con Gemini come cardi e puntarelle, una casella sola
 const SHEET_PAN_DI_ZUCCHERO = "assets/catalogo-pan-di-zucchero.webp";
+// cavolo cappuccio verde (24 novembre 2026): foto fatta con Gemini (quella del catalogo era tagliata in cima e stirata)
+const SHEET_CAPPUCCIO_VERDE = "assets/catalogo-cappuccio-verde.webp";
 const WHATSAPP_NUMBER = "393202732892";
 const ADMIN_PIN = "2892";
 const ADMIN_SESSION_KEY = "sole-terra-acqua-admin-unlocked";
@@ -30,7 +32,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 89;
+const VERSIONE_SITO = 90;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -180,7 +182,7 @@ const PRODUCTS = [
   { id: "broccolo-romanesco", name: "Broccolo romanesco", weight: "1 pz", emoji: "🥦", cm: 15, sheet: SHEET_1, cols: 5, rows: 4, x: 2, y: 2, enabled: true },
   { id: "broccolo-siciliano", name: "Broccolo siciliano", weight: "1 pz", emoji: "🥦", cm: 17, sheet: SHEET_1, cols: 5, rows: 4, x: 3, y: 2, enabled: true },
   { id: "cavolfiore", name: "Cavolfiore", weight: "1 pz", emoji: "🥦", cm: 18, sheet: SHEET_1, cols: 5, rows: 4, x: 4, y: 2, enabled: true },
-  { id: "cavolo-cappuccio", name: "Cavolo cappuccio", weight: "1 pz", emoji: "🥬", cm: 17, sheet: SHEET_1, cols: 5, rows: 4, x: 0, y: 3, enabled: true },
+  { id: "cavolo-cappuccio", name: "Cavolo cappuccio verde", weight: "2-3 pz", emoji: "🥬", cm: 18, sheet: SHEET_CAPPUCCIO_VERDE, cols: 1, rows: 1, x: 0, y: 0, enabled: true },
   { id: "cavolo-cappuccio-viola", name: "Cavolo cappuccio viola", weight: "1 pz", emoji: "🥬", cm: 15, sheet: SHEET_1, cols: 5, rows: 4, x: 1, y: 3, enabled: true },
   { id: "verza", name: "Verza", weight: "1 pz", emoji: "🥬", cm: 22, sheet: SHEET_1, cols: 5, rows: 4, x: 2, y: 3, enabled: true },
   { id: "cipolle-tropea", name: "Cipolle di Tropea", weight: "500 g", emoji: "🧅", cm: 18, sheet: SHEET_1, cols: 5, rows: 4, x: 3, y: 3, enabled: true },
@@ -219,7 +221,7 @@ const PRODUCTS = [
 const ORDINE_VERDURE = [
   "cavolo-nero", "cicoria", "bieta-verde", "bieta-colorata", "puntarelle", "cime-rapa", "patate", "castagne",
   "zucchine-romanesche", "lattuga-romana", "lattuga-canasta", "scarola-riccia", "scarola-liscia", "radicchio-pan-di-zucchero", "aglio",
-  "melanzane", "peperoni", "cardi", "cavolo-punta", "cavolo-cappuccio-viola", "verza", "zucca", "melone-invernale"
+  "melanzane", "peperoni", "cardi", "cavolo-punta", "cavolo-cappuccio", "cavolo-cappuccio-viola", "verza", "zucca", "melone-invernale"
 ];
 {
   const posto = product => { const n = ORDINE_VERDURE.indexOf(product.id); return n < 0 ? ORDINE_VERDURE.length : n; };
@@ -2471,6 +2473,8 @@ function applicaSettimana(dati) {
       const product = PRODUCTS.find(item => item.id === voce?.id);
       if (!product) return;
       if (typeof voce.nome === "string" && voce.nome.trim()) product.name = voce.nome.trim();
+      // v90: il cappuccio tondo si chiama "verde"; le settimane gia' pubblicate hanno ancora il nome di prima
+      if (product.id === "cavolo-cappuccio" && product.name === "Cavolo cappuccio") product.name = "Cavolo cappuccio verde";
       if (typeof voce.peso === "string" && voce.peso.trim()) product.weight = voce.peso.trim();
       if (typeof voce.disponibile === "boolean") product.enabled = voce.disponibile;
       product.unoSolo = voce.unoSolo === true;
