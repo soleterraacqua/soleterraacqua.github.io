@@ -32,7 +32,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 90;
+const VERSIONE_SITO = 91;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -512,7 +512,7 @@ function rebuildCustomersFromOrders() {
 // cosi' telefono e computer danno lo stesso numero e un ordine eliminato non conta piu'. Gli ordini della prima
 // settimana contano tutti: allora la dashboard li prendeva da soli e nessuno li segnava consegnati.
 const FINE_PRIMA_SETTIMANA = "2026-11-01";
-const ordineDaPunto = order => !order.soloUova && (ordineArrivato(order) || String(order.date || "") < FINE_PRIMA_SETTIMANA);   // v88: le sole uova non sono una cassetta
+const ordineDaPunto = order => !order.soloUova && (ordineArrivato(order) || String(order.date || "") < FINE_PRIMA_SETTIMANA);   // v88: senza cassetta (sole uova o sole conserve) non vale un punto
 
 function ricalcolaFedelta() {
   const perCliente = new Map();
@@ -3260,7 +3260,7 @@ function buildCustomerNotificationUrl(order, customer) {
     righe.push(`Sei a ${fatti} ${fatti === 1 ? "ordine" : "ordini"} su ${POINTS_FOR_REWARD}: ${quante} e ricevi una conserva in omaggio.`);
   }
   // v79: il link per la recensione anonima
-  righe.push("", `⭐ ${order.soloUova ? "Com'erano le uova?" : "Com'era la cassetta?"} Lasciami un voto da 1 a 5 stelle: è anonimo, bastano 10 secondi e mi aiuta a migliorare.`, linkRecensione(order));
+  righe.push("", `⭐ ${comeEra(order)} Lasciami un voto da 1 a 5 stelle: è anonimo, bastano 10 secondi e mi aiuta a migliorare.`, linkRecensione(order));
   righe.push("", "A presto!");
   return `https://wa.me/${phone}?text=${encodeURIComponent(righe.join("\n"))}`;
 }
@@ -3292,6 +3292,8 @@ function buildConfirmationUrl(order) {
   const righe = [
     `Ciao ${nome}, ho ricevuto il tuo ordine #${order.id} ✅`,
     order.date ? `📅 Te lo porto ${formatDate(order.date).toLowerCase()}${dalle && alle ? `, tra le ${dalle} e le ${alle}` : ""}.` : "📅 Ti scrivo io per il giorno di consegna.",
+    ...(senzaCassetta(order) && conserveDellOrdine(order).length ? [`🫙 Conserve: ${testoConserve(order)}.`] : []),
+    ...(senzaCassetta(order) && Number(order.olio) > 0 ? [`🫒 Olio: ${latte(order.olio)}.`] : []),
     ...(uovaDellOrdine(order) ? [`🥚 Uova: ${uovaDellOrdine(order)}${order.uova.prezzo ? ` (${money(order.uova.prezzo)})` : ""}.`] : []),
     `💶 Totale ${money(order.total)}${order.area === "Viterbo" ? " (consegna gratuita)" : ` (consegna ${money(2.5)} inclusa)`}.`
   ];
@@ -3302,7 +3304,7 @@ function buildConfirmationUrl(order) {
   if (olioDaProporre() && !order.olio) {
     const euro = valore => money(valore).replace(",00", "");
     righe.push("", `🫒 *Ho anche l'olio nuovo: latta da ${OLIO.litri} litri a ${euro(prezzoLatta())} (${euro(OLIO.prezzoLitro)} al litro).*`,
-      `Se lo vuoi rispondimi *SÌ OLIO* e te lo porto insieme ${order.soloUova ? "alle uova" : "alla cassetta"}.`);
+      `Se lo vuoi rispondimi *SÌ OLIO* e te lo porto insieme ${insiemeA(order)}.`);
   }
   righe.push("", "A presto!", "Alessio");
   return `https://wa.me/${phone}?text=${encodeURIComponent(righe.join("\n"))}`;
@@ -3727,7 +3729,7 @@ function renderDashboard(filter = state.orderFilter || "all") {
           <span class="order-customer"><strong>${escapeHtml(order.name)}</strong><small>${cercato ? `${escapeHtml(giornoCorto(order.date))} · ` : ""}#${order.id} · ${escapeHtml(customerDisplayPhone(order.phone))} · ${points} ${points === 1 ? "punto" : "punti"}</small></span>
           <span>${escapeHtml(order.address)}</span>
           <span class="area-pill">${escapeHtml(order.area.toUpperCase())}</span>
-          <span>${escapeHtml(nomeCassette(order))} · ${money(order.total)}${uovaDellOrdine(order) ? `<small class="uova-nota">🥚 ${testoUova(uovaDellOrdine(order))}</small>` : ""}</span>
+          <span>${escapeHtml(nomeCassette(order))} · ${money(order.total)}${senzaCassetta(order) && conserveDellOrdine(order).length ? `<small class="uova-nota">🫙 ${escapeHtml(testoConserve(order))}</small>` : ""}${senzaCassetta(order) && Number(order.olio) > 0 ? `<small class="uova-nota">🫒 ${latte(order.olio)}</small>` : ""}${uovaDellOrdine(order) ? `<small class="uova-nota">🥚 ${testoUova(uovaDellOrdine(order))}</small>` : ""}</span>
           <span class="stato-cella"><span class="status-pill ${delivered ? "delivered" : ""}">${escapeHtml(order.status.toUpperCase())}</span>${verifica ? `<small class="verifica ${verifica[0]}">${verifica[1]}</small>` : ""}</span>
           <div class="order-azioni">
             <button class="conferma-action ${order.confermaInviata ? "done" : ""}" data-conferma-ordine="${escapeHtml(order.id)}">${order.confermaInviata ? "RIMANDA CONFERMA" : olioDaProporre() && !order.olio ? "CONFERMA + OLIO" : "CONFERMA AL CLIENTE"}</button>
@@ -3836,11 +3838,26 @@ function salvaUova(quante) {
 
 // v82: dalla dashboard cambio tutto dell'ordine: tocco la riga e si apre la scheda. Le voci stanno nella bozza
 // finche' non salvo; il totale si sposta solo della differenza, cosi' i prezzi di allora restano com'erano
-const modifica = { id: "", cassette: [], conserve: [], olio: 0, totaleToccato: false, prezzoUovaToccato: false, nuovo: null, soloUova: false };
+const modifica = { id: "", cassette: [], conserve: [], olio: 0, totaleToccato: false, prezzoUovaToccato: false, nuovo: null, tipoNuovo: "", soloUova: false };
 const tondo = valore => Math.round(valore * 100) / 100;
 const chiaveScatola = nome => Object.keys(BOXES).find(chiave => BOXES[chiave].label === String(nome).toUpperCase()) || "media";
 const ordineInModifica = () => (modifica.nuovo?.id === modifica.id ? modifica.nuovo : state.orders.find(item => item.id === modifica.id));
-const nomeCassette = order => (order.soloUova && !cassetteDellOrdine(order).length ? "Solo uova" : order.box);
+// v91: ordini senza cassetta (order.soloUova, nato con le sole uova): solo conserve, solo uova, o piu' cose insieme
+const senzaCassetta = order => Boolean(order.soloUova) && !cassetteDellOrdine(order).length;
+const testoConserve = order => conserveDellOrdine(order).map(item => `${item.quantita > 1 ? `${item.quantita}× ` : ""}${item.nome}`).join(", ");
+const coseSenzaCassetta = order => [conserveDellOrdine(order).length && "conserve", Number(order.olio) > 0 && "olio", uovaDellOrdine(order) && "uova"].filter(Boolean);
+function nomeCassette(order) {
+  if (!senzaCassetta(order)) return order.box;
+  const cose = coseSenzaCassetta(order);
+  if (!cose.length) return "Senza cassetta";
+  if (cose.length === 1) return `Solo ${cose[0]}`;
+  const testo = `${cose.slice(0, -1).join(", ")} e ${cose[cose.length - 1]}`;
+  return testo.charAt(0).toUpperCase() + testo.slice(1);
+}
+// nei messaggi al cliente: "insieme alle conserve", "Com'erano le conserve?"
+const soloDi = order => (senzaCassetta(order) ? coseSenzaCassetta(order).join("+") || "altro" : "cassetta");
+const insiemeA = order => ({ cassetta: "alla cassetta", conserve: "alle conserve", olio: "all'olio", uova: "alle uova" }[soloDi(order)] || "al resto");
+const comeEra = order => ({ cassetta: "Com'era la cassetta?", conserve: "Com'erano le conserve?", olio: "Com'era l'olio?", uova: "Com'erano le uova?" }[soloDi(order)] || "Com'era il tuo ordine?");
 const fasceDiConsegna = () => [...FASCE_ORARIE, ...FASCIA_ZONE_VICINE].map(([dalle, alle]) => `${dalle}–${alle}`);
 const orarioScelto = () => ($("#modFascia").value === "altro" ? [$("#modDalle").value, $("#modAlle").value] : $("#modFascia").value.split("–"));
 
@@ -3895,14 +3912,14 @@ function disegnaVociModifica() {
           <label>${modifica.cassette.length > 1 ? `${indice + 1}ª CASSETTA` : "CASSETTA"}
             <select data-mod-misura="${indice}">${Object.keys(BOXES).map(chiave => `<option value="${nomeScatola(chiave)}" ${chiaveScatola(cassetta.box) === chiave ? "selected" : ""}>${nomeScatola(chiave)} · ${money(BOXES[chiave].price)} · ${BOXES[chiave].included} prodotti</option>`).join("")}</select>
           </label>
-          <button type="button" class="elimina-action" data-mod-togli-cassetta="${indice}">TOGLI</button>${/* v88: anche l'ultima: senza cassette resta un ordine di sole uova */ ""}
+          <button type="button" class="elimina-action" data-mod-togli-cassetta="${indice}">TOGLI</button>${/* v88: anche l'ultima: resta un ordine senza cassetta */ ""}
         </div>
         ${cassetta.items.map(item => passoModifica(item.name, item.quantity, `v:${indice}:${item.id}`)).join("") || `<p class="mod-vuoto">Nessuna verdura segnata in questa cassetta.</p>`}
         <label>AGGIUNGI UNA VERDURA
           <select data-mod-nuova-verdura="${indice}"><option value="">Scegli…</option>${verdure.filter(product => !presenti.has(product.id)).map(product => `<option value="${escapeHtml(product.id)}">${escapeHtml(product.name)}</option>`).join("")}</select>
         </label>
       </div>`;
-  }).join("") || `<p class="mod-vuoto">Nessuna cassetta: è un ordine di sole uova. Se il cliente vuole anche la cassetta, aggiungila qui sotto.</p>`;
+  }).join("") || `<p class="mod-vuoto">Nessuna cassetta in questo ordine. Se il cliente la vuole, aggiungila qui sotto.</p>`;
   const altre = modifica.conserve.filter(item => !CONSERVE.some(conserva => conserva.id === item.id));
   $("#modConserve").innerHTML = [...CONSERVE, ...altre]
     .map(conserva => passoModifica(conserva.nome, modifica.conserve.find(item => item.id === conserva.id)?.quantita || 0, `c:${conserva.id}`)).join("");
@@ -3948,9 +3965,9 @@ function apriModificaOrdine(orderId) {
   const fasce = fasceDiConsegna();
   const [dalle = "", alle = ""] = orario.split("–");
   $("#modificaCodice").textContent = modifica.nuovo ? `NUOVO ORDINE #${order.id}` : `ORDINE #${order.id}`;
-  $("#modificaTitolo").innerHTML = modifica.nuovo ? `ORDINE <em id="modificaNome">DI SOLE UOVA</em>` : `MODIFICA <em id="modificaNome"></em>`;
+  $("#modificaTitolo").innerHTML = modifica.nuovo ? `ORDINE <em id="modificaNome">${{ conserve: "DI SOLE CONSERVE", olio: "DI SOLO OLIO" }[modifica.tipoNuovo] || "DI SOLE UOVA"}</em>` : `MODIFICA <em id="modificaNome"></em>`;
   if (!modifica.nuovo) $("#modificaNome").textContent = order.name;
-  $("#modificaForm").classList.toggle("solo-uova", Boolean(modifica.nuovo));
+  ["uova", "conserve", "olio"].forEach(tipo => $("#modificaForm").classList.toggle(`solo-${tipo}`, Boolean(modifica.nuovo) && modifica.tipoNuovo === tipo));
   $("#modSalva").innerHTML = modifica.nuovo ? "SALVA L'ORDINE <span>→</span>" : "SALVA LE MODIFICHE <span>→</span>";
   $("#modNome").value = order.name || "";
   $("#modTelefono").value = order.phone || "";
@@ -3974,9 +3991,11 @@ function apriModificaOrdine(orderId) {
   if (modifica.nuovo) $("#modNome").focus({ preventScroll: true });
 }
 
-// v88: ORDINE DI SOLE UOVA: la scheda dell'ordine, vuota e senza cassette; entra negli ordini quando salvo
-function apriNuovoOrdineUova() {
+// v88 e v91: ORDINE DI SOLE UOVA, DI SOLE CONSERVE o DI SOLO OLIO: la scheda dell'ordine, vuota e senza cassette; entra negli
+// ordini quando salvo. Se serve si possono mettere insieme conserve, olio, uova e anche una cassetta.
+function apriNuovoOrdineSenzaCassetta(tipo) {
   if (!isDashboardUnlocked()) return;
+  modifica.tipoNuovo = tipo;
   const oggi = oggiLocale();
   const giorno = state.giornoDashboard && state.giornoDashboard >= oggi ? state.giornoDashboard
     : giorniPrenotabiliDa(spostaGiorno(oggi, -1), false)[0] || oggi;
@@ -4038,7 +4057,10 @@ function salvaModifica() {
     : !/^\d{4}-\d{2}-\d{2}$/.test(giorno) ? ["#modGiorno", "Scegli il giorno di consegna."]
     : !dalle || (alle && alle <= dalle) ? ["#modDalle", "Controlla l'orario di consegna."]
     : modifica.totaleToccato && !(totaleScritto >= 0) ? ["#modTotale", "Scrivi il totale in cifre, per esempio 19,50."]
-    : !modifica.cassette.length && !uovaDellaBozza().quantita && !modifica.conserve.length && !modifica.olio ? ["#modUova", "Scrivi quante uova (o aggiungi una cassetta)."]
+    : !modifica.cassette.length && !uovaDellaBozza().quantita && !modifica.conserve.length && !modifica.olio ? (modifica.nuovo && modifica.tipoNuovo === "conserve"
+      ? ['#modConserve [data-delta="1"]', "Aggiungi almeno una conserva (o una cassetta)."]
+      : modifica.nuovo && modifica.tipoNuovo === "olio" ? ['#modOlio [data-delta="1"]', "Aggiungi almeno una latta d'olio (o una cassetta)."]
+      : ["#modUova", "Scrivi quante uova (o aggiungi una cassetta)."])
     : null;
   if (errore) {
     showToast(errore[1], 4000);
@@ -4076,7 +4098,7 @@ function salvaModifica() {
   if (uova.quantita) order.uova = uova;
   else delete order.uova;
   if (uova.quantita && uova.prezzo) scriviInMemoria(PREZZO_UOVO_KEY, String(uova.prezzo / uova.quantita));
-  // v88: senza cassette e' un ordine di sole uova (anche se le cassette le ho tolte io)
+  // v88: ordine senza cassetta (anche se le cassette le ho tolte io)
   if (!cassette.length) order.soloUova = true;
   else delete order.soloUova;
   if (nuovo) {
@@ -4094,7 +4116,7 @@ function salvaModifica() {
   state.giornoDashboard = order.date;
   renderDashboard(state.orderFilter);
   if (nuovo) {
-    showToast(order.soloUova ? `Ordine di sole uova di ${order.name} salvato: ${testoUova(uovaDellOrdine(order))}, ${money(order.total)}.` : `Ordine di ${order.name} salvato.`, 5000);
+    showToast(`Ordine di ${order.name} salvato${senzaCassetta(order) ? ` (${nomeCassette(order).toLowerCase()}, ${money(order.total)})` : ""}.`, 5000);
     registraPostoInserito(order);
     return;
   }
@@ -4133,7 +4155,7 @@ function ordiniPerGiorno() {
 }
 
 function cassetteDellOrdine(order) {
-  if (order.soloUova) return order.cassette || [];   // v88: ordine di sole uova
+  if (order.soloUova) return order.cassette || [];   // v88: ordine senza cassetta
   if (order.cassette?.length) return order.cassette;
   return String(order.box || "Media").split(" + ").map((box, indice) => ({
     box,
@@ -5125,7 +5147,9 @@ function setupEvents() {
   });
   $("#nuovoOrdineWhatsapp").addEventListener("click", entraInserimento);
   // v88: ordine di sole uova e rubrica dei clienti (nome -> telefono, via, localita')
-  $("#nuovoOrdineUova").addEventListener("click", apriNuovoOrdineUova);
+  $("#nuovoOrdineUova").addEventListener("click", () => apriNuovoOrdineSenzaCassetta("uova"));
+  $("#nuovoOrdineConserve").addEventListener("click", () => apriNuovoOrdineSenzaCassetta("conserve"));
+  $("#nuovoOrdineOlio").addEventListener("click", () => apriNuovoOrdineSenzaCassetta("olio"));
   attivaRubrica($('#deliveryForm [name="fullName"]'), {
     attiva: () => state.inserisco && isDashboardUnlocked(),
     campi: () => ({ telefono: $('#deliveryForm [name="phone"]'), indirizzo: $('#deliveryForm [name="address"]') }),
