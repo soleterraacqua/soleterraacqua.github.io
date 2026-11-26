@@ -1,14 +1,14 @@
 {
-  "aggiornato": "2026-11-24T07:45:06.351Z",
+  "aggiornato": "2026-11-26T13:02:03.443Z",
   "giorni": [],
-  "giornoFisso": 4,
+  "giornoFisso": 5,
   "giornoFisso2": -1,
   "saltati": [
-    "2026-12-03",
-    "2026-12-10",
-    "2026-12-17",
-    "2026-12-24",
-    "2026-12-31"
+    "2026-11-27",
+    "2026-12-11",
+    "2026-12-18",
+    "2026-12-25",
+    "2027-01-01"
   ],
   "prodotti": [
     {
@@ -58,6 +58,7 @@
       "peso": "700 g",
       "disponibile": true,
       "unoSolo": false,
+      "massimo": 15,
       "foto": ""
     },
     {
@@ -115,7 +116,7 @@
       "id": "scarola-liscia",
       "nome": "Scarola liscia",
       "peso": "1 - 2 cespi",
-      "disponibile": true,
+      "disponibile": false,
       "unoSolo": false,
       "foto": ""
     },
@@ -169,10 +170,18 @@
       "foto": ""
     },
     {
+      "id": "cavolo-cappuccio",
+      "nome": "Cavolo cappuccio verde",
+      "peso": "2-3 pz",
+      "disponibile": true,
+      "unoSolo": false,
+      "foto": ""
+    },
+    {
       "id": "cavolo-cappuccio-viola",
       "nome": "Cavolo cappuccio viola",
       "peso": "1 pz",
-      "disponibile": false,
+      "disponibile": true,
       "unoSolo": false,
       "foto": ""
     },
@@ -277,14 +286,6 @@
       "nome": "Cavolfiore",
       "peso": "1 pz",
       "disponibile": false,
-      "unoSolo": false,
-      "foto": ""
-    },
-    {
-      "id": "cavolo-cappuccio",
-      "nome": "Cavolo cappuccio verde",
-      "peso": "2-3 pz",
-      "disponibile": true,
       "unoSolo": false,
       "foto": ""
     },
