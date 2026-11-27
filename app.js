@@ -32,7 +32,7 @@ const PRESERVES_STORAGE_KEY = "sole-terra-acqua-conserve";
 // e' l'unico posto che vedono tutti i clienti. La dashboard lo riscrive su GitHub.
 // deve essere uguale al numero di CACHE_NAME in sw.js e al ?v= di app.js/styles.css in index.html:
 // si alzano tutti insieme a ogni pubblicazione
-const VERSIONE_SITO = 91;
+const VERSIONE_SITO = 92;
 const SITO_REPO = "soleterraacqua/soleterraacqua.github.io";
 const SETTIMANA_FILE = "settimana.json";
 const SETTIMANA_COPIA_KEY = "sole-terra-acqua-settimana";
@@ -221,7 +221,7 @@ const PRODUCTS = [
 const ORDINE_VERDURE = [
   "cavolo-nero", "cicoria", "bieta-verde", "bieta-colorata", "puntarelle", "cime-rapa", "patate", "castagne",
   "zucchine-romanesche", "lattuga-romana", "lattuga-canasta", "scarola-riccia", "scarola-liscia", "radicchio-pan-di-zucchero", "aglio",
-  "melanzane", "peperoni", "cardi", "cavolo-punta", "cavolo-cappuccio", "cavolo-cappuccio-viola", "verza", "zucca", "melone-invernale"
+  "melanzane", "peperoni", "cardi", "cavolo-punta", "cavolo-cappuccio", "cavolo-cappuccio-viola", "verza", "cavolfiore", "zucca", "melone-invernale"
 ];
 {
   const posto = product => { const n = ORDINE_VERDURE.indexOf(product.id); return n < 0 ? ORDINE_VERDURE.length : n; };

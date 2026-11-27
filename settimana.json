@@ -285,7 +285,7 @@
       "id": "cavolfiore",
       "nome": "Cavolfiore",
       "peso": "1 pz",
-      "disponibile": false,
+      "disponibile": true,
       "unoSolo": false,
       "foto": ""
     },
